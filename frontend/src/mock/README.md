@@ -1,0 +1,1 @@
+Do not put JSON here. All mock data is served by the backend (`MOCK_MODE=true`) from `data/mock/`. If you need a new shape, ask Yuvraj to add it to `data/mock/` + `app/services/mock_service.py` so backend and frontend never drift.
