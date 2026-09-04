@@ -1,0 +1,35 @@
+sources:
+  indigo:
+    enabled: true
+    rate_limit_rps: 0.33  # 1 req / 3s
+    max_retries: 4
+    use_playwright_fallback: true
+    robots_paths_checked: true
+
+  makemytrip:
+    enabled: true
+    rate_limit_rps: 0.33
+    max_retries: 4
+    use_playwright_fallback: true
+    robots_paths_checked: true
+
+  airindia:
+    enabled: false
+    rate_limit_rps: 0.33
+    max_retries: 4
+    use_playwright_fallback: true
+    robots_paths_checked: false
+
+  akasa:
+    enabled: false
+    rate_limit_rps: 0.33
+    max_retries: 4
+    use_playwright_fallback: true
+    robots_paths_checked: false
+
+  easemytrip:
+    enabled: false
+    rate_limit_rps: 0.33
+    max_retries: 4
+    use_playwright_fallback: true
+    robots_paths_checked: false
