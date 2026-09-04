@@ -1,0 +1,7 @@
+pytest
+pytest-asyncio
+pytest-cov
+ruff
+pre-commit
+respx
+factory-boy

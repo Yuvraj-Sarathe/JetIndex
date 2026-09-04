@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "jetindex"
+version = "0.1.0"
+description = "APIx — Real-time Airfare Price Index for India"
+requires-python = ">=3.11"
+license = "MIT"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+ignore = [
+    "B008",  # FastAPI Depends/Query in function args — standard pattern
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: tests requiring external services (DB, network)",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*", "scrapers*", "pipeline*", "engine*", "db*"]
