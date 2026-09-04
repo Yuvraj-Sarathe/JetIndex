@@ -5,14 +5,19 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import settings
 
-# SQLAlchemy engine
+
+# Base class for models (must be defined before engine)
+class Base(DeclarativeBase):
+    """SQLAlchemy declarative base for all models."""
+
+    pass
+
+
+# SQLAlchemy engine (lazy — only connects when used)
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
 
 # Session factory
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-
-# Base class for models
-Base = DeclarativeBase()
 
 
 def get_db():
