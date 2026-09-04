@@ -12,6 +12,17 @@ license = "MIT"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+extend-exclude = [
+    "*.md",
+    "*.json",
+    "*.csv",
+    "*.yaml",
+    "*.yml",
+    "frontend/",
+    "data/",
+    "slides/",
+    "demo/",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]

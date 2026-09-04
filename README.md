@@ -290,10 +290,10 @@ jetindex/
 CleanQuote(
     base_fare=3500,
     udf=500,
-    taxes=300,      # GST + PSF + ASF
+    taxes=300,  # GST + PSF + ASF
     convenience_fee=200,
     other_fees=0,
-    total_fare=4500
+    total_fare=4500,
 )
 ```
 
