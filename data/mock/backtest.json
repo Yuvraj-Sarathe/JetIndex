@@ -1,0 +1,30 @@
+{
+  "monthly": [
+    {
+      "month": "2026-07",
+      "apix_avg": 98.5603,
+      "dgca_avg_fare": 4907.87,
+      "apix_rebased": 98.5603,
+      "error_pct": 0.41
+    },
+    {
+      "month": "2026-08",
+      "apix_avg": 102.1142,
+      "dgca_avg_fare": 5068.72,
+      "apix_rebased": 102.1142,
+      "error_pct": 0.73
+    },
+    {
+      "month": "2026-09",
+      "apix_avg": 96.4739,
+      "dgca_avg_fare": 5064.82,
+      "apix_rebased": 96.4739,
+      "error_pct": 4.76
+    }
+  ],
+  "summary": {
+    "mape": 1.61,
+    "rmse": 36.46,
+    "corr": 0.9502
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "lead_time": 1,
+    "avg_total_fare": 10233.27,
+    "avg_base_fare": 7589.49,
+    "n": 23
+  },
+  {
+    "lead_time": 7,
+    "avg_total_fare": 8087.1,
+    "avg_base_fare": 6425.42,
+    "n": 24
+  },
+  {
+    "lead_time": 15,
+    "avg_total_fare": 7011.31,
+    "avg_base_fare": 5727.59,
+    "n": 14
+  },
+  {
+    "lead_time": 30,
+    "avg_total_fare": 6086.06,
+    "avg_base_fare": 4578.93,
+    "n": 17
+  },
+  {
+    "lead_time": 45,
+    "avg_total_fare": 5514.15,
+    "avg_base_fare": 4534.14,
+    "n": 16
+  }
+]

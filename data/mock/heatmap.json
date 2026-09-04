@@ -1,0 +1,74 @@
+[
+  {
+    "route_id": 1,
+    "origin": "DEL",
+    "dest": "BOM",
+    "o_lat": 28.5562,
+    "o_lon": 77.1,
+    "d_lat": 19.0896,
+    "d_lon": 72.8656,
+    "avg_fare": 4796.53,
+    "volatility": 0.0422,
+    "index_contrib": 0.2384
+  },
+  {
+    "route_id": 2,
+    "origin": "DEL",
+    "dest": "BLR",
+    "o_lat": 28.5562,
+    "o_lon": 77.1,
+    "d_lat": 13.1986,
+    "d_lon": 77.7066,
+    "avg_fare": 5393.41,
+    "volatility": 0.0782,
+    "index_contrib": 0.1947
+  },
+  {
+    "route_id": 3,
+    "origin": "BOM",
+    "dest": "BLR",
+    "o_lat": 19.0896,
+    "o_lon": 72.8656,
+    "d_lat": 13.1986,
+    "d_lon": 77.7066,
+    "avg_fare": 4513.91,
+    "volatility": 0.0626,
+    "index_contrib": 0.2492
+  },
+  {
+    "route_id": 4,
+    "origin": "DEL",
+    "dest": "CCU",
+    "o_lat": 28.5562,
+    "o_lon": 77.1,
+    "d_lat": 22.652,
+    "d_lon": 88.4463,
+    "avg_fare": 5898.47,
+    "volatility": 0.0903,
+    "index_contrib": 0.1542
+  },
+  {
+    "route_id": 5,
+    "origin": "BLR",
+    "dest": "HYD",
+    "o_lat": 13.1986,
+    "o_lon": 77.7066,
+    "d_lat": 17.2403,
+    "d_lon": 78.4294,
+    "avg_fare": 3412.99,
+    "volatility": 0.0321,
+    "index_contrib": 0.1385
+  },
+  {
+    "route_id": 6,
+    "origin": "MAA",
+    "dest": "DEL",
+    "o_lat": 12.9941,
+    "o_lon": 80.1709,
+    "d_lat": 28.5562,
+    "d_lon": 77.1,
+    "avg_fare": 4809.78,
+    "volatility": 0.0736,
+    "index_contrib": 0.2524
+  }
+]
