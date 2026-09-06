@@ -2,14 +2,9 @@
 
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.core.config import settings
-
-# Engine (lazy — only created if not in mock mode)
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine)
+from db.session import SessionLocal
 
 
 async def get_db() -> AsyncGenerator[Session, None]:
