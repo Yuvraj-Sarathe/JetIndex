@@ -1,4 +1,140 @@
-"""Placeholder: MakeMyTrip sample fixture.
-
-Replace with actual scraped data from DevTools capture.
-"""
+{
+  "status": "SUCCESS",
+  "searchResult": {
+    "tripType": "OW",
+    "searchParams": {
+      "origin": "DEL",
+      "destination": "BOM",
+      "departureDate": "2026-10-13",
+      "adults": 1,
+      "cabinClass": "E"
+    },
+    "flightOffers": [
+      {
+        "airline": {
+          "code": "6E",
+          "name": "IndiGo"
+        },
+        "flightNumber": "6E-2054",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departure": "2026-10-13T06:00:00",
+        "arrival": "2026-10-13T08:15:00",
+        "duration": 135,
+        "stops": 0,
+        "refundable": false,
+        "seatsLeft": 4,
+        "fare": {
+          "currency": "INR",
+          "totalFare": 4500,
+          "breakdown": {
+            "baseFare": 3600,
+            "taxes": 550,
+            "convenienceFee": 350,
+            "udf": 0
+          }
+        }
+      },
+      {
+        "airline": {
+          "code": "6E",
+          "name": "IndiGo"
+        },
+        "flightNumber": "6E-5318",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departure": "2026-10-13T08:30:00",
+        "arrival": "2026-10-13T10:45:00",
+        "duration": 135,
+        "stops": 0,
+        "refundable": false,
+        "seatsLeft": 7,
+        "fare": {
+          "currency": "INR",
+          "totalFare": 4850,
+          "breakdown": {
+            "baseFare": 3900,
+            "taxes": 600,
+            "convenienceFee": 350,
+            "udf": 0
+          }
+        }
+      },
+      {
+        "airline": {
+          "code": "AI",
+          "name": "Air India"
+        },
+        "flightNumber": "AI-805",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departure": "2026-10-13T10:15:00",
+        "arrival": "2026-10-13T12:35:00",
+        "duration": 140,
+        "stops": 0,
+        "refundable": true,
+        "seatsLeft": 2,
+        "fare": {
+          "currency": "INR",
+          "totalFare": 5420,
+          "breakdown": {
+            "baseFare": 4400,
+            "taxes": 670,
+            "convenienceFee": 350,
+            "udf": 0
+          }
+        }
+      },
+      {
+        "airline": {
+          "code": "6E",
+          "name": "IndiGo"
+        },
+        "flightNumber": "6E-6470",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departure": "2026-10-13T16:00:00",
+        "arrival": "2026-10-13T18:15:00",
+        "duration": 135,
+        "stops": 0,
+        "refundable": false,
+        "seatsLeft": 1,
+        "fare": {
+          "currency": "INR",
+          "totalFare": 6057,
+          "breakdown": {
+            "baseFare": 4395,
+            "taxes": 1312,
+            "convenienceFee": 350,
+            "udf": 0
+          }
+        }
+      },
+      {
+        "airline": {
+          "code": "AI",
+          "name": "Air India"
+        },
+        "flightNumber": "AI-865",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departure": "2026-10-13T19:00:00",
+        "arrival": "2026-10-13T21:15:00",
+        "duration": 135,
+        "stops": 0,
+        "refundable": true,
+        "seatsLeft": 9,
+        "fare": {
+          "currency": "INR",
+          "totalFare": 5120,
+          "breakdown": {
+            "baseFare": 4150,
+            "taxes": 620,
+            "convenienceFee": 350,
+            "udf": 0
+          }
+        }
+      }
+    ]
+  }
+}
