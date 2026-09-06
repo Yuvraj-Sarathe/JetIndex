@@ -1142,18 +1142,19 @@ SCRAPING SUPPORT
   [ ] Implement BaseScraper.fetch() retry loop
   [x] Do IndiGo endpoint recon (DevTools → recon/indigo_endpoint.md)
   [x] Save real fixture → tests/fixtures/indigo_sample.json
-  [ ] Share recon template with Sourabh/Abhay for MakeMyTrip
+  [x] Implement IndiGo build_request/parse_ok (done by Abhay)
+  [x] Implement MakeMyTrip build_request/parse_ok (done by Abhay)
 
 DATA / CONFIG
-  [ ] Download real DGCA city-pair passenger traffic
-  [ ] Compute and update dgca_weights.csv with real weights
+  [x] Download real DGCA city-pair passenger traffic
+  [x] Compute and update dgca_weights.csv with real weights
   [ ] Define and document base_period config
-  [ ] Download DGCA monthly average fare data for backtest
+  [x] Download DGCA monthly average fare data for backtest
 
 TEAM COORDINATION
   [X] Tell Vanshika: expose run_pipeline() as function
   [X] Tell Vanshika: implement loader.load() using db.queries
-  [ ] Tell Sourabh/Abhay: fill build_request/parse_ok after recon
+  [x] Tell Sourabh/Abhay: fill build_request/parse_ok after recon
   [ ] Tell Sourabh/Abhay: wire engine to db/queries.py
   [X] Tell Sneh: start docs/architecture.md and index_methodology.md
   [ ] Daily 10-min sync: done / doing / blocked

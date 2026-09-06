@@ -611,14 +611,11 @@ GitHub Actions (push/PR to main)
 
 ### ⚠️ Stubbed / not yet implemented
 - `BaseScraper.fetch()` retry loop (**Sourabh/Abhay**) — blocked on endpoint recon
-- `build_request()`/`parse_ok()` for IndiGo & MakeMyTrip (**Sourabh/Abhay**)
 - `playwright_fallback.fetch_with_browser()` (**Sourabh/Abhay**)
 - `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
-- Source parsers `indigo_parser` / `makemytrip_parser` (**Vanshika**)
 - `loader.load()` DB upsert (**Vanshika**)
 - `compute_daily` real DB path (**Sourabh/Abhay**)
 - `get_base_period_prices` real DB path (**Sourabh/Abhay**)
-- Weekly/monthly rollups, elasticity matrix, backtest real queries (**Sourabh/Abhay**)
 - `docs/*` content, slides deck, demo video (**Sneh**)
 
 ---
