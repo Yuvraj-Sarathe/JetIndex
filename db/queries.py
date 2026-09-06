@@ -9,7 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from db.models import ApixDaily, DGCABenchmark, DGCAWeight, FareQuote, RawQuote, Route
+from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, RawQuote, Route
 
 # ── Routes ──────────────────────────────────────────────────────
 
@@ -136,7 +136,7 @@ def get_base_period_prices(
 
 def get_weights(session: Session) -> dict[int, float]:
     """Returns {route_id: normalised_weight}."""
-    rows = session.scalars(select(DGCAWeight)).all()
+    rows = session.scalars(select(DgcaWeight)).all()
     total = sum(r.weight for r in rows)
     if total == 0:
         return {}
@@ -334,5 +334,5 @@ def get_elasticity_data(
 
 def get_dgca_benchmarks(session: Session) -> list[dict]:
     """Return all DGCA monthly average fare benchmarks."""
-    rows = session.scalars(select(DGCABenchmark).order_by(DGCABenchmark.month)).all()
+    rows = session.scalars(select(DgcaBenchmark).order_by(DgcaBenchmark.month)).all()
     return [{"month": r.month, "avg_fare": r.avg_fare} for r in rows]
