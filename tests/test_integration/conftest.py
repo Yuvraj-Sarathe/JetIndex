@@ -7,6 +7,8 @@ Run inside Docker: pytest -m integration
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 
 try:
@@ -15,6 +17,11 @@ try:
     _DB_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     _DB_AVAILABLE = False
+
+
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(element, compiler, **kw):
+    return "JSON"
 
 
 @pytest.fixture()
