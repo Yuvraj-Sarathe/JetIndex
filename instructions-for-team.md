@@ -8,7 +8,7 @@
 
 ## What's Already Done (Infrastructure Complete)
 
-Yuvraj has completed the infrastructure layer. Here's what's ready for you:
+I have completed the infrastructure layer. Here's what's ready for you:
 
 | Component | Status | What it means for you |
 |---|---|---|
@@ -61,7 +61,7 @@ SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA
 `MOCK_MODE=true` is set by default:
 - The API serves **realistic fake data** from `data/mock/`.
 - **No database is required** to see the dashboard working.
-- When real scraping data exists, Yuvraj will flip to `MOCK_MODE=false`.
+- When real scraping data exists, I will flip to `MOCK_MODE=false`.
 
 ### 5. Branch Naming
 
@@ -148,7 +148,7 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
 
 **Your packages:** `scrapers/`, `db/`, `engine/`
 
-**What Yuvraj already did for you:**
+**What I already did for you:**
 - IndiGo endpoint recon captured in `scrapers/recon/indigo_endpoint.md`
 - Real Indigo fixture saved in `tests/fixtures/indigo_sample.json` (77 flights, 756 KB)
 - DB migration + hypertable ready (`make migrate && make seed`)
@@ -218,7 +218,7 @@ Response path: `data.trips[0].journeysAvailable[]` — each has `designator` (ti
 
 **Your package:** `pipeline/`
 
-**What Yuvraj already did for you:**
+**What I already did for you:**
 - Real Indigo fixture in `tests/fixtures/indigo_sample.json` (77 flights)
 - Fixture is a flat array matching `RawQuote` schema — ready to parse
 - `db/queries.py` has `upsert_fare_quotes()` for loading data
