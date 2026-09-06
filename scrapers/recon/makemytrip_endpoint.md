@@ -9,17 +9,26 @@
 ---
 
 ## Key Headers
-* `accept`: `application/json, text/plain, */*`
-* `accept-language`: `en-US,en;q=0.9`
-* `content-type`: `application/json`
-* `origin`: `https://www.makemytrip.com`
-* `referer`: `https://www.makemytrip.com/flight/search`
-* `user-agent`: Standard browser User-Agent (Chrome / macOS or Windows)
-* `sec-fetch-dest`: `empty`
-* `sec-fetch-mode`: `cors`
-* `sec-fetch-site`: `same-site`
-* `sec-ch-ua`: `"Chromium";v="124", "Google Chrome";v="124"`
-* `sec-ch-ua-platform`: `"macOS"`
+
+- `x-flt`: Encoded search context / filter token
+- `device-id` / `mcid`: Client device UUID
+- `domain` / `region`: Regional routing headers (`in`)
+- `pfm`: Platform identifier (`DESKTOP`)
+- `origin` / `referer`: Must point to `https://www.makemytrip.com`
+- `Cookie`: Required session & Akamai Bot Manager cookies (`_abck`, `bm_sz`, `ak_bmsc`, `bm_s`, `bm_so`)
+
+## Request Body Shape
+
+- `it`: Route itinerary string in format `{ORIGIN}-{DESTINATION}-{YYYYMMDD}` (e.g. `DEL-BOM-20260906`)
+- `pax`: Passenger counts string (e.g. `A-1_C-0_I-0` for 1 Adult, 0 Child, 0 Infant)
+- `cc`: Cabin class code (`E` for Economy)
+- `cur`: Currency code (`INR`)
+- `crId`: Search correlation / session UUID
+- `pfm`: Platform (`DESKTOP`)
+- `rkeys`: List of flight listing keys
+- `user-agent`: Standard browser User-Agent (Chrome / macOS or Windows)
+- `sec-ch-ua`: `"Chromium";v="124", "Google Chrome";v="124"`
+- `sec-ch-ua-platform`: `"macOS"`
 
 ---
 
