@@ -371,7 +371,8 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 
 - **`routes.yaml`** — 6-route basket with airport lat/lon and `lead_times: [1,7,15,30,45]`.
 - **`sources.yaml`** — per-source config. Enabled: **indigo**, **makemytrip**.
-- **`dgca_weights.csv`** — placeholder values.
+- **`dgca_weights.csv`** — real DGCA FY 2024–25 passenger traffic weights (6 routes, total 23,163,234 passengers). Source: DGCA "City Pair Wise Passenger Traffic."
+- **`dgca_monthly_avg_fare.csv`** — real DGCA monthly average fares, Jan 2024 – Nov 2025 (32 data points across 6 routes). Source: Kaggle "India Aviation Traffic Data" by Vonter (compiled from DGCA published reports).
 
 ### 7.7 `frontend/` — APIx Dashboard **(Owner: Mehak)**
 
@@ -428,6 +429,25 @@ I_t = Σ_i (P_i,t × Q_i,0) / Σ_i (P_i,0 × Q_i,0) × 100
 - `P_i,t` — median `total_fare` across carriers & lead times
 - `Q_i,0` — DGCA passenger volume weight (normalised to sum 1)
 - `P_i,0` — base-period price (first 7 days of data → index = 100)
+
+### Real DGCA Weights (FY 2024–25)
+
+| Route | Passengers | Weight (`Q_i,0`) |
+|-------|----------:|---------:|
+| DEL–BOM | 68,50,869 | 0.2958 |
+| DEL–BLR | 46,81,042 | 0.2021 |
+| BOM–BLR | 41,14,574 | 0.1776 |
+| DEL–CCU | 27,70,386 | 0.1196 |
+| MAA–DEL | 24,52,761 | 0.1059 |
+| BLR–HYD | 22,93,602 | 0.0990 |
+
+**Source:** DGCA "City Pair Wise Passenger Traffic" FY 2024–25 ([dgca.gov.in](https://dgca.gov.in)).
+
+### Backtest Data
+
+The backtest compares APIx output against **DGCA Monthly Average Fares** (Jan 2024 – Nov 2025, 32 data points across 6 routes).
+
+**Source:** Kaggle dataset ["India Aviation Traffic Data"](https://github.com/Vonter/india-aviation-traffic) by Vonter — sourced from DGCA published reports. DGCA's own portal had not been updated with recent monthly figures, so this Kaggle aggregation (which compiles the same DGCA reports) was used.
 
 ### Backtest metrics
 - **MAPE** — Mean Absolute Percentage Error
@@ -586,6 +606,8 @@ GitHub Actions (push/PR to main)
 - Scrapers: registry, job builder, proxy/session managers, fingerprints, storage
 - Entire frontend (7 components + hooks + client)
 - GitHub Actions CI/CD, PR/issue templates
+- **DGCA weights** — real FY 2024–25 passenger traffic (`config/dgca_weights.csv`, 6 routes, 23,163,234 total passengers)
+- **DGCA monthly average fares** — real Jan 2024–Nov 2025 data (`config/dgca_monthly_avg_fare.csv`, 32 data points, sourced from Kaggle/Vonter DGCA compilation)
 
 ### ⚠️ Stubbed / not yet implemented
 - `BaseScraper.fetch()` retry loop (**Sourabh/Abhay**) — blocked on endpoint recon
@@ -615,7 +637,7 @@ GitHub Actions (push/PR to main)
 | Celery task chain | **Done** (chord workflow implemented) |
 | Centralised query layer | **Done** (db/queries.py) |
 | Admin endpoints | **Done** (POST /admin/trigger-sweep + GET /admin/status) |
-| 30+ day backtest vs DGCA | In progress |
+| 30+ day backtest vs DGCA | **Data ready** — real DGCA FY 2024–25 weights + monthly avg fares (Jan 2024–Nov 2025, 32 data points) loaded in `config/`; backtest engine integration pending |
 | Architecture doc, demo video, slides | Not started |
 
 ---

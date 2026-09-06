@@ -126,7 +126,23 @@ fix/<yourname>/<topic>       # bug fixes
 - If you need to change it, open a PR tagged `data-contract` and ping Yuvraj + Vanshika.
 - All API responses, database models, and frontend types must match this file.
 
-### 11. Database Queries
+### 11. Data Sources (Real DGCA Data)
+
+The project uses **real DGCA data** for route weighting and backtesting. Do NOT use placeholder values.
+
+**DGCA Passenger Traffic (FY 2024–25):**
+- File: `config/dgca_weights.csv`
+- 6 routes, total 23,163,234 passengers
+- Weights: DEL-BOM 0.2958, DEL-BLR 0.2021, BOM-BLR 0.1776, DEL-CCU 0.1196, MAA-DEL 0.1059, BLR-HYD 0.0990
+- Source: DGCA "City Pair Wise Passenger Traffic" ([dgca.gov.in](https://dgca.gov.in))
+
+**DGCA Monthly Average Fares (Jan 2024 – Nov 2025):**
+- File: `config/dgca_monthly_avg_fare.csv`
+- 32 data points across 6 routes
+- Source: Kaggle dataset ["India Aviation Traffic Data"](https://github.com/Vonter/india-aviation-traffic) by Vonter — compiled from DGCA published reports
+- Note: DGCA's own portal hasn't been updated in recent years; this Kaggle aggregation compiles the same DGCA reports
+
+### 12. Database Queries
 
 **Use `db/queries.py`** for all database access. Do NOT write raw SQLAlchemy in your modules.
 
