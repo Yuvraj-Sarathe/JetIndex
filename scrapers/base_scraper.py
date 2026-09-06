@@ -97,7 +97,7 @@ def _load_source_config(source: str) -> dict:
 
 def _is_retryable(status_code: int) -> bool:
     """Return True for status codes that should trigger a retry."""
-    return status_code in (403, 429) or status_code >= 500
+    return status_code in (401, 403, 429) or status_code >= 500
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +222,10 @@ class BaseScraper(ABC):
         try:
             resp = _attempt()
             payload = resp.json() if resp.content else None
+            is_ok = (resp.status_code == 200) and self.parse_ok(resp)
+            if not is_ok:
+                raise RetryableStatusError(resp.status_code)
+
             result = ScrapeResult(
                 job=job,
                 ok=True,

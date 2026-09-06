@@ -67,7 +67,7 @@ def parse(payload: list[dict], job_meta: dict) -> list[RawQuote]:
                 flight_no=item["flight_no"],
                 depart_date=item["depart_date"],
                 depart_time=_parse_depart_time(item.get("depart_time")),
-                scrape_date=item.get("scrape_date", job_meta["scrape_date"]),
+                scrape_date=item.get("scrape_date") or job_meta.get("scrape_date"),
                 scraped_at=item["scraped_at"],
                 lead_time=item["lead_time"],
                 fare_class=item.get("fare_class"),
@@ -86,9 +86,9 @@ def parse(payload: list[dict], job_meta: dict) -> list[RawQuote]:
         except (KeyError, TypeError, ValueError) as exc:
             logger.warning(f"Skipping invalid IndiGo record: {exc}")
 
-            logger.info(f"IndiGo parser: parsed {len(quotes)} quotes")
+    logger.info(f"IndiGo parser: parsed {len(quotes)} quotes")
 
-        return quotes
+    return quotes
 
 
 def _parse_depart_time(dt_str: str | None) -> time | None:
