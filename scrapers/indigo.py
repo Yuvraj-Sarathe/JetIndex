@@ -1,20 +1,11 @@
 """IndiGo Airlines scraper.
 
 RECON NOTES:
-Before implementing, capture the XHR endpoint via DevTools:
-1. Open https://www.goindigo.in in Chrome
-2. DevTools → Network → filter XHR/Fetch
-3. Perform a one-way search (e.g., DEL → BOM)
-4. Find the response containing fare data
-5. Right-click → "Copy as cURL (bash)"
-6. Paste the cURL command below and extract:
-   - URL, method, required headers, body template
-   - Auth/token flow (where tokens come from, TTL, refresh)
-   - Response shape (fare array path, base/tax/fee fields, sold-out marker)
-   - Anti-bot observations (Cloudflare/Akamai, challenge pages, rate limits)
-
-Document findings in scrapers/recon/indigo_endpoint.md
+Captured XHR endpoint: https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search
+See details in scrapers/recon/indigo_endpoint.md
 """
+
+from typing import Any
 
 from scrapers.base_scraper import BaseScraper, RequestSpec, ScrapeJob
 
@@ -25,28 +16,94 @@ class IndigoScraper(BaseScraper):
     source = "indigo"
     rate_limit_rps = 0.33  # 1 req / 3s
 
-    # TODO: Fill in after recon
-    # ENDPOINT_URL = "https://<discovered-endpoint>"
-    # ENDPOINT_NOTES = "See scrapers/recon/indigo_endpoint.md"
+    ENDPOINT_URL = "https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search"
+    USER_KEY = "31e90be8fff2f5e2eea242c225f21b1a"
 
     def build_request(self, job: ScrapeJob) -> RequestSpec:
         """Build the IndiGo fare search request."""
-        # TODO: Implement after endpoint discovery
-        # return RequestSpec(
-        #     url=self.ENDPOINT_URL,
-        #     method="POST",
-        #     headers={...},
-        #     json_body={
-        #         "origin": job.origin,
-        #         "destination": job.destination,
-        #         "departDate": job.depart_date.isoformat(),
-        #         ...
-        #     },
-        # )
-        raise NotImplementedError("Owner: Sourabh/Abhay — fill in endpoint from recon")
+        headers = {
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.9",
+            "cache-control": "no-cache",
+            "content-type": "application/json",
+            "origin": "https://www.goindigo.in",
+            "pragma": "no-cache",
+            "referer": "https://www.goindigo.in/",
+            "user_key": self.USER_KEY,
+            "user-agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+        }
 
-    def parse_ok(self, response) -> bool:
+        if self.session_manager and hasattr(self.session_manager, "get_token"):
+            token = self.session_manager.get_token(self.source)
+            if token:
+                headers["authorization"] = f"Bearer {token}" if not token.startswith("Bearer ") else token
+
+        json_body = {
+            "codes": {
+                "currency": "INR",
+                "promotionCode": "",
+            },
+            "criteria": [
+                {
+                    "dates": {
+                        "beginDate": job.depart_date.isoformat(),
+                    },
+                    "flightFilters": {
+                        "type": "All",
+                    },
+                    "stations": {
+                        "originStationCodes": [job.origin],
+                        "destinationStationCodes": [job.destination],
+                    },
+                }
+            ],
+            "passengers": {
+                "residentCountry": "IN",
+                "types": [
+                    {
+                        "count": 1,
+                        "discountCode": "",
+                        "type": "ADT",
+                    }
+                ],
+            },
+            "taxesAndFees": "TaxesAndFees",
+            "tripCriteria": "oneWay",
+            "isRedeemTransaction": False,
+        }
+
+        return RequestSpec(
+            url=self.ENDPOINT_URL,
+            method="POST",
+            headers=headers,
+            json_body=json_body,
+        )
+
+    def parse_ok(self, response: Any) -> bool:
         """Check if IndiGo response contains valid fare data."""
-        # TODO: Implement after endpoint discovery
-        # return isinstance(response, dict) and "flights" in response
-        raise NotImplementedError("Owner: Sourabh/Abhay")
+        if response is None:
+            return False
+
+        if hasattr(response, "status_code") and response.status_code != 200:
+            return False
+
+        payload = response.json() if hasattr(response, "json") and callable(response.json) else response
+
+        if isinstance(payload, list):
+            return len(payload) > 0 and any(
+                isinstance(item, dict) and ("total_fare" in item or "flight_no" in item or "carrier" in item)
+                for item in payload
+            )
+
+        if isinstance(payload, dict):
+            if payload.get("errors") or payload.get("error"):
+                return False
+
+            if any(k in payload for k in ("trips", "flightFilter", "flights", "fares", "codes", "data")):
+                return True
+
+        return False

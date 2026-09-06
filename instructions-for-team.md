@@ -18,6 +18,8 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | db/queries.py | ✅ Done | Centralised queries. Use these instead of raw SQLAlchemy. |
 | Celery chord workflow | ✅ Done | `run_daily_sweep → scrape_route × N → clean_and_load → compute_daily_index` |
 | POST /admin/trigger-sweep | ✅ Done | Frontend demo button works (mock mode returns simulated response). |
+| GET /admin/status | ✅ Done | System health endpoint: scrape times, quote counts, index, coverage, quality distribution. |
+| MOCK_MODE toggle (all endpoints) | ✅ Done | All 9 endpoints check `settings.MOCK_MODE`; mock branch (demo) + real DB branch wired. |
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
 
@@ -61,7 +63,8 @@ SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA
 `MOCK_MODE=true` is set by default:
 - The API serves **realistic fake data** from `data/mock/`.
 - **No database is required** to see the dashboard working.
-- When real scraping data exists, I will flip to `MOCK_MODE=false`.
+- Every endpoint has a **MOCK_MODE toggle** — when `MOCK_MODE=false`, endpoints call `db/queries.py` for real data.
+- The mock branch stays forever as a demo safety net.
 
 ### 5. Branch Naming
 
