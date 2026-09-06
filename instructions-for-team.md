@@ -2,7 +2,24 @@
 
 **SIH26056 · Real-time Airfare Price Index for India**
 
-> Read this fully before touching any code. If something is unclear, ask me(Yuvraj).
+> Read this fully before touching any code. If something is unclear, ask Yuvraj.
+
+---
+
+## What's Already Done (Infrastructure Complete)
+
+Yuvraj has completed the infrastructure layer. Here's what's ready for you:
+
+| Component | Status | What it means for you |
+|---|---|---|
+| DB migration + hypertable | ✅ Done | `make migrate && make seed` works. `fare_quotes` is a TimescaleDB hypertable. |
+| deps.py single source of truth | ✅ Done | No duplicate engine/session. Import from `db.session`. |
+| Docker (Redis healthcheck) | ✅ Done | `docker compose up -d` is stable. Redis waits for health. |
+| db/queries.py | ✅ Done | Centralised queries. Use these instead of raw SQLAlchemy. |
+| Celery chord workflow | ✅ Done | `run_daily_sweep → scrape_route × N → clean_and_load → compute_daily_index` |
+| POST /admin/trigger-sweep | ✅ Done | Frontend demo button works (mock mode returns simulated response). |
+| IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
+| Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
 
 ---
 
@@ -11,10 +28,10 @@
 ### 1. Clone & Start (takes ~2 minutes)
 
 ```bash
-git clone <repo-url> jetindex && cd jetindex # or just use github desktop
+git clone https://github.com/Yuvraj-Sarathe/JetIndex.git && cd JetIndex
 cp .env.local .env          # ← use this exact file, do NOT create your own .env
 make setup                  # installs python dev deps + pre-commit + npm ci 
-docker compose up -d        # starts db, redis, api, worker, beat, flower, frontend (make sure you ahve docker)
+docker compose up -d        # starts db, redis, api, worker, beat, flower, frontend
 ```
 
 ### 2. Verify Everything Works
@@ -22,10 +39,11 @@ docker compose up -d        # starts db, redis, api, worker, beat, flower, front
 | Check | Command / URL | Expected Result |
 |---|---|---|
 | API health | `curl http://localhost:8000/health` | `{"status":"ok","mock_mode":true,...}` |
-| API docs | http://localhost:8000/docs | Swagger UI with all endpoints listed |
-| Dashboard | http://localhost:5173 | React dashboard with MetricCard showing mock APIx value |
+| API docs | http://localhost:8000/docs | Swagger UI with all endpoints |
+| Dashboard | http://localhost:5173 | React dashboard with MetricCard |
 | Flower (Celery) | http://localhost:5555 | Celery monitoring panel |
-| Test auth | `curl -H "Authorization: Bearer SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA" http://localhost:8000/api/v1/apix/daily` | JSON array of daily index values |
+| DB tables | `make psql` then `\dt+` | 6 tables + hypertable |
+| Test auth | `curl -H "Authorization: Bearer SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA" http://localhost:8000/api/v1/apix/daily` | JSON array |
 
 ### 3. The API Token
 
@@ -35,17 +53,15 @@ SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA
 
 - This is already in `.env` (copied from `.env.local`).
 - **Do NOT share this outside the team.**
-- Every API request needs this header: `Authorization: Bearer <token>`
-- The `/health` and `/docs` endpoints do NOT need the token.
+- Every API request needs: `Authorization: Bearer <token>`
+- `/health` and `/docs` do NOT need the token.
 
 ### 4. Mock Mode
 
-`MOCK_MODE=true` is set by default. This means:
-
+`MOCK_MODE=true` is set by default:
 - The API serves **realistic fake data** from `data/mock/`.
 - **No database is required** to see the dashboard working.
-- You can start frontend/docs work immediately on Day 1.
-- When real scraping data exists, I will flip to `MOCK_MODE=false`.
+- When real scraping data exists, Yuvraj will flip to `MOCK_MODE=false`.
 
 ### 5. Branch Naming
 
@@ -54,54 +70,26 @@ feat/<yourname>/<topic>      # new features
 fix/<yourname>/<topic>       # bug fixes
 ```
 
-Examples:
-- `feat/sourabh/indigo-scraper`
-- `feat/vanshika/indigo-parser`
-- `feat/mehak/heatmap-component`
-- `fix/yuvraj/celery-beat-schedule`
-**NEVER PUSH/COMMIT ON MAIN BRANCH!! We will merge your changes into main after approval, via PRs.**
+**NEVER PUSH/COMMIT ON MAIN BRANCH!!** We will merge your changes into main after approval, via PRs.
 
 ### 6. How to Submit Code
 
-1. Create a branch from `main` (see branch naming above)
+1. Create a branch from `main`
 2. Make your changes
-3. Run tests locally: `make test` (Python) or `cd frontend && npm run lint && npm run build` (frontend)
-4. Push branch and open a Pull Request on GitHub
-5. **CI will run automatically** — lint + tests must pass before merge (check the Actions tab)
+3. Run tests: `make test` (Python) or `cd frontend && npm run lint && npm run build` (frontend)
+4. Push branch and open a Pull Request
+5. **CI runs automatically** — lint + tests must pass
 6. Request review from @Yuvraj-Sarathe
 7. After approval, squash-merge into `main`
-
-> **CI Pipeline:** Every PR triggers GitHub Actions:
-> - **Python:** ruff lint → pytest with coverage
-> - **Frontend:** eslint → build check
-> If CI fails, fix it before asking for review.
 
 ### 7. What NOT to Commit
 
 - `.env` — contains secrets
 - `data/raw/*` — raw scrape payloads
 - `*.har` — network captures
-- `node_modules/` — installed by npm
-- `__pycache__/` — Python bytecode
-- `.venv/` — virtual environment
+- `node_modules/`, `__pycache__/`, `.venv/`
 
-All of these are in `.gitignore` already. If you see a file you're unsure about, ask before committing.
-
-### 8. Testing
-
-```bash
-# Python tests (from repo root)
-make test
-
-# Frontend lint + build check
-cd frontend && npm run lint && npm run build
-```
-
-- Every new function you write needs at least one test.
-- Scraper tests must **never hit the network** — mock HTTP calls.
-- PRs without tests will be sent back.
-
-### 9. Common Commands
+### 8. Common Commands
 
 | What | Command |
 |---|---|
@@ -111,38 +99,44 @@ cd frontend && npm run lint && npm run build
 | Run tests | `make test` |
 | Lint Python | `ruff check .` |
 | Format Python | `ruff format .` |
-| Lint frontend | `cd frontend && npm run lint` |
-| Access database shell | `make psql` |
-| Access API container bash | `make shell` |
+| Access database | `make psql` |
+| Run migration | `make migrate` |
+| Seed database | `make seed` |
 
-### 10. Folder Ownership — Respect Boundaries
+### 9. Folder Ownership — Respect Boundaries
 
 | Folder | Owner | You can edit? |
 |---|---|---|
 | `app/` | Yuvraj | ❌ Ask first |
 | `config/` | Yuvraj | ❌ Ask first |
 | `Dockerfile`, `docker-compose.yml`, `Makefile` | Yuvraj | ❌ Ask first |
-| `scrapers/` | Sourabh + Abhay (+ Yuvraj) | ✅ If you're Sourabh or Abhay |
+| `scrapers/` | Sourabh + Abhay | ✅ If you're Sourabh or Abhay |
 | `pipeline/` | Vanshika | ✅ If you're Vanshika |
-| `db/`, `engine/` | Sourabh + Abhay (+ Yuvraj) | ✅ If you're Sourabh or Abhay |
+| `db/`, `engine/` | Sourabh + Abhay | ✅ If you're Sourabh or Abhay |
 | `frontend/` | Mehak | ✅ If you're Mehak |
 | `docs/`, `slides/`, `demo/` | Sneh | ✅ If you're Sneh |
-| `data/` | Shared (mock = Vanshika, raw = Sourabh/Abhay) | ✅ For your part |
-| `tests/` | Everyone (write tests for YOUR module only) | ✅ For your tests |
 
-### 11. The Data Contract
+### 10. The Data Contract
 
-`pipeline/schemas.py` is the **single source of truth** for all data structures. It is FROZEN after Day 1.
+`pipeline/schemas.py` is the **single source of truth** for all data structures. It is FROZEN.
 
 - If you need to change it, open a PR tagged `data-contract` and ping Yuvraj + Vanshika.
 - All API responses, database models, and frontend types must match this file.
 
-### 12. Daily Sync
+### 11. Database Queries
 
-10 minutes every day:
-1. What did you finish yesterday?
-2. What are you working on today?
-3. What's blocking you? Who do you need something from?
+**Use `db/queries.py`** for all database access. Do NOT write raw SQLAlchemy in your modules.
+
+```python
+# ✅ Correct
+from db.queries import get_active_routes, get_median_fares_by_route
+routes = get_active_routes(session)
+
+# ❌ Wrong
+from sqlalchemy import select
+from db.models import Route
+routes = session.scalars(select(Route).where(Route.active == True)).all()
+```
 
 ---
 
@@ -154,53 +148,69 @@ cd frontend && npm run lint && npm run build
 
 **Your packages:** `scrapers/`, `db/`, `engine/`
 
-#### Day 1 Tasks
+**What Yuvraj already did for you:**
+- IndiGo endpoint recon captured in `scrapers/recon/indigo_endpoint.md`
+- Real Indigo fixture saved in `tests/fixtures/indigo_sample.json` (77 flights, 756 KB)
+- DB migration + hypertable ready (`make migrate && make seed`)
+- `db/queries.py` ready for engine queries
 
-- [x] **Recon — IndiGo endpoint discovery**
-   - Open https://www.goindigo.in in Chrome
-   - DevTools → Network → filter `Fetch/XHR`
-   - Do a DEL → BOM one-way search
-   - Find the response containing fare data
-   - Right-click → "Copy as cURL (bash)"
-   - Paste into `scrapers/recon/indigo_endpoint.md`
-   - Note: URL, method, headers, body, auth token flow, response shape
+#### Your Tasks (Priority Order)
 
-- [ ] **Recon — MakeMyTrip endpoint discovery**
-   - Same process for https://www.makemytrip.com
-   - Document in `scrapers/recon/makemytrip_endpoint.md`
+**1. Implement `indigo.py` (unblocks everything)**
+   - Read `scrapers/recon/indigo_endpoint.md` — the full cURL is there
+   - Fill in `IndigoScraper.build_request()` with the URL, headers, body template
+   - Fill in `IndigoScraper.parse_ok()` to check if response has fare data
+   - Test: `python -m app.tasks.scrape_tasks --route DEL-BOM --lead 7 --source indigo`
+
+**2. Do MakeMyTrip recon**
+   - Same process as IndiGo (DevTools → Network → XHR → Copy as cURL)
+   - Save to `scrapers/recon/makemytrip_endpoint.md`
    - MMT has heavier anti-bot (Akamai) — note any challenge pages
 
-- [x] **Save a sample response**
-   - Get one successful IndiGo response
-   - Save to `tests/fixtures/indigo_sample.json` (strip personal data)
-   - This unblocks Vanshika
+**3. Implement `makemytrip.py`**
+   - Same pattern as IndiGo
 
-#### Day 2+ Tasks
+**4. Implement engine queries**
+   - Replace `compute_daily()` placeholder with real DB queries
+   - Use `db/queries.get_median_fares_by_route()` for prices
+   - Use `db/queries.get_weights()` for DGCA weights
+   - Use `db/queries.get_base_period_prices()` for base prices
+   - Use `db/queries.upsert_apix_daily()` to write results
 
-- [ ] **Implement `indigo.py`**
-   - Fill in endpoint URL, headers, body template from recon
-   - Implement `build_request()` and `parse_ok()`
-   - Test: `make scrape ROUTE=DEL-BOM LEAD=7 SOURCE=indigo`
+**5. Add tests**
+   - `tests/test_scrapers/test_indigo.py` — test build_request, parse_ok
+   - `tests/test_engine/test_compute_daily.py` — test with mock DB
 
-- [ ] **Implement `proxy_manager.py` and `session_manager.py`**
-   - Test 403/429 handling
+#### IndiGo Reconstruct Reference
 
-- [x] **DB setup**
-   - Create first Alembic migration
-   - Run `make migrate && make seed`
-   - Verify `fare_quotes` is a hypertable
+The endpoint is:
+```
+POST https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search
+```
 
-- [ ] **Engine implementation**
-   - Unit test `laspeyres()` with hand-computed example
-   - Implement `compute_daily()` against mock data
+Key headers:
+- `authorization: <JWT token>` (expires ~15 min)
+- `user_key: 31e90be8fff2f5e2eea242c225f21b1a`
+- `content-type: application/json`
+
+Request body shape:
+```json
+{
+  "codes": {"currency": "INR", "promotionCode": ""},
+  "criteria": [{"dates": {"beginDate": "2026-10-13"}, "stations": {"originStationCodes": ["DEL"], "destinationStationCodes": ["BOM"]}}],
+  "passengers": {"residentCountry": "IN", "types": [{"count": 1, "type": "ADT"}]},
+  "tripCriteria": "oneWay"
+}
+```
+
+Response path: `data.trips[0].journeysAvailable[]` — each has `designator` (times) and `passengerFares` (pricing).
 
 #### Your Definition of Done
 
-- `make scrape` works for IndiGo + MakeMyTrip, all 6 routes × 5 lead times
-- Failure rate < 10% per sweep with retries
-- `make migrate && make seed` creates all tables
-- `make index DATE=...` writes `apix_daily`
-- Tests in `tests/test_scrapers/`, `tests/test_db/`, `tests/test_engine/`
+- `python -m app.tasks.scrape_tasks --route DEL-BOM --lead 7 --source indigo` returns OK
+- `python -m app.tasks.scrape_tasks --route DEL-BOM --lead 7 --source makemytrip` returns OK
+- `make index DATE=...` writes real data to `apix_daily`
+- Tests in `tests/test_scrapers/`, `tests/test_engine/`
 
 ---
 
@@ -208,42 +218,43 @@ cd frontend && npm run lint && npm run build
 
 **Your package:** `pipeline/`
 
-#### Day 1 Tasks
+**What Yuvraj already did for you:**
+- Real Indigo fixture in `tests/fixtures/indigo_sample.json` (77 flights)
+- Fixture is a flat array matching `RawQuote` schema — ready to parse
+- `db/queries.py` has `upsert_fare_quotes()` for loading data
 
-1. **Review `pipeline/schemas.py`**
-   - This is the frozen data contract
-   - `RawQuote` = raw scraper output
-   - `CleanQuote` = normalised with unbundled components
-   - Review the fee mapping tables in `unbundler.py`
-   - If anything needs changing, flag it NOW — it freezes after today
+#### Your Tasks
 
-2. **Generate mock data**
+**1. Review the real fixture**
+   - Open `tests/fixtures/indigo_sample.json`
+   - See how IndiGo data is structured (carrier, flight_no, fare_breakdown, etc.)
+   - Compare with `pipeline/schemas.py` — the fixture already maps to `RawQuote`
+
+**2. Implement `indigo_parser.py`**
+   - Parse the flat array from the fixture
+   - Map each item to `RawQuote`:
+     - `source` → `"indigo"`
+     - `route_code` → from fixture
+     - `carrier` → `"6E"` (IndiGo)
+     - `flight_no` → extract from `flight_no` field
+     - `fare_breakdown` → use `fare_breakdown` from fixture
+   - Test: `python -c "from pipeline.parsers.indigo_parser import parse; ..."`
+
+**3. Implement `loader.py`**
+   - Use `db.queries.upsert_fare_quotes()` to load data
+   - Convert Polars DataFrame rows to dicts for upsert
+
+**4. Test the full pipeline**
    ```bash
-   python scripts/generate_mock_data.py
+   python -m pipeline.run --date 2026-10-13
    ```
-   - Verify `data/mock/fare_quotes.json` conforms to your schema
-
-#### Day 2+ Tasks
-
-3. **Write `indigo_parser.py`**
-   - Parse the sample JSON from `tests/fixtures/indigo_sample.json`
-   - Output: `list[RawQuote]` with vendor labels untouched in `fare_breakdown`
-   - Test: parse → N RawQuote objects
-
-4. **Write `unbundler.py` mapping**
-   - Map IndiGo labels → canonical components (base_fare, udf, taxes, etc.)
-   - Test that components sum to total (±₹5)
-
-5. **Write `cleaner.py`**
-   - `dedupe()`, `iqr_filter()`, `flag_sold_out()`
-   - Test with an injected ₹99,999 fare → should be flagged `iqr_outlier`
-
-6. **Repeat for MakeMyTrip** once Sourabh/Abhay provide the sample
+   - Should parse → validate → unbundle → clean → load
+   - Verify data in DB: `make psql` then `SELECT COUNT(*) FROM fare_quotes;`
 
 #### Your Definition of Done
 
-- `make pipeline DATE=<day>` loads ≥ 90% of valid quotes with `quality_flag="ok"`
-- Unit tests in `tests/test_pipeline/` for parser, unbundler, IQR, dedupe
+- `python -m pipeline.run --date 2026-10-13` loads ≥ 90% of valid quotes
+- Unit tests in `tests/test_pipeline/`
 - `docs/data_contract.md` matches `schemas.py`
 
 ---
@@ -252,28 +263,26 @@ cd frontend && npm run lint && npm run build
 
 **Your package:** `frontend/`
 
+**What's ready for you:**
+- All endpoints return realistic mock data from Day 1
+- POST /admin/trigger-sweep is registered (demo button works)
+
 #### Setup
 
 ```bash
 cd frontend
-cp .env.example .env        # VITE_API_BASE=/api/v1  VITE_API_TOKEN=SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA
+cp .env.example .env        # VITE_API_BASE=/api/v1
 npm install
 npm run dev                  # http://localhost:5173
 ```
 
-The API runs in mock mode — **all endpoints return realistic data from Day 1.**
+#### Tasks
 
-#### Day 1 Tasks
-
-1. **Verify dashboard loads**
-   - `npm run dev`
-   - Confirm `MetricCard` shows a mock APIx value
-   - Confirm no console errors
-
+1. **Verify dashboard loads** — MetricCard shows mock APIx value
 2. **Build in order:**
-   - `MetricCard.jsx` ← verify it shows data
-   - `ApixTrend.jsx` + `TimeRangeFilter.jsx` (they share state)
-   - `Heatmap.jsx` (airports from `/routes`, use Leaflet Polyline + CircleMarker)
+   - `MetricCard.jsx`
+   - `ApixTrend.jsx` + `TimeRangeFilter.jsx`
+   - `Heatmap.jsx` (Leaflet Polyline + CircleMarker)
    - `ElasticityCurve.jsx`
    - `UnbundlingInspector.jsx`
    - `BacktestChart.jsx`
@@ -284,8 +293,6 @@ The API runs in mock mode — **all endpoints return realistic data from Day 1.*
 - **Never hard-code data** — always fetch from API via `src/api/client.js`
 - Colors: Tailwind `slate` base, `indigo` accent, `emerald`/`rose` for up/down
 - Format money with `utils/format.js` (`₹4,250`)
-- Dates in IST for display
-- Keep components dumb; data fetching in `hooks/useApix.js`
 - `npm run lint` and `npm run build` must pass (CI checks this)
 
 #### Your Definition of Done
@@ -302,59 +309,42 @@ The API runs in mock mode — **all endpoints return realistic data from Day 1.*
 
 **Your packages:** `docs/`, `slides/`, `demo/`, root `README.md`
 
-#### Day 1 Tasks
+**What's ready for you:**
+- Root `README.md` is comprehensive (architecture, API, team)
+- `PROJECT.md` has full project state
+- Architecture diagram in README
+
+#### Tasks
 
 1. **Read everything**
-   - Read this file (you just did)
-   - Read every folder's `README.md` — they have your step-by-step briefs
-   - Read `PRD.md` for the full picture
+   - This file
+   - `README.md` (root) — already has architecture diagram
+   - `PROJECT.md` — full project state
 
-2. **Draft `docs/architecture.md` skeleton**
-   - Max 2 pages
-   - Structure: Problem → Architecture diagram → Pipeline → Schema → Stealth strategy → Index math → Backtest
-   - Use diagrams from the SIH PDF
-
-#### Day 2+ Tasks
+2. **Draft `docs/architecture.md`** (max 2 pages)
+   - Problem → Architecture → Pipeline → Schema → Index math → Backtest
+   - Use the ASCII diagram from README as starting point
 
 3. **Collect from owners:**
-   - API examples & OpenAPI screenshots (Yuvraj)
+   - API examples & screenshots (Yuvraj)
    - Schema documentation (Vanshika)
    - Formula + backtest numbers (Sourabh/Abhay)
    - Dashboard screenshots (Mehak)
 
-4. **Rewrite root `README.md`**
-   - 30-second pitch for judges
-   - One-command run instructions
-   - Screenshots of the working dashboard
-   - Results (backtest numbers)
-
-5. **Build `slides/pitch_deck.pptx`** (5 slides)
-   1. Problem — manual counters vs 90% online, CPI blind spot
+4. **Build `slides/pitch_deck.pptx`** (5 slides)
+   1. Problem — manual counters vs 90% online
    2. Scraping & Stealth — curl_cffi, XHR interception, ethics
    3. Unbundling & Index Math — base/UDF/tax/fee split, Laspeyres
    4. APIx vs DGCA — backtest chart, MAPE
    5. Impact & Roadmap — MoSPI/RBI API, dashboard screenshot
 
-6. **Write `demo/video_script.md`** (shot list for 2-min video)
-   - 0:00 — Problem + dashboard hero shot
-   - 0:15 — Trigger sweep, scraper logs
-   - 0:45 — Raw JSON → pipeline output
-   - 1:05 — `make index` → APIx value
-   - 1:20 — Dashboard: trend, heatmap, elasticity
-   - 1:45 — Swagger + backtest vs DGCA
-   - 1:55 — Close
-
-7. **Record the demo** (OBS/Loom, captions on, no music)
-
-8. **Export `architecture.md` → PDF**, verify ≤ 2 pages
+5. **Record the demo** (2 min, OBS/Loom, captions on)
 
 #### Your Definition of Done
 
 - `docs/architecture.md` ≤ 2 pages, exported to PDF
-- Root `README.md` rewritten for judges
-- `slides/pitch_deck.pptx` (5 slides) + PDF export
+- `slides/pitch_deck.pptx` (5 slides) + PDF
 - `demo/apix_demo.mp4` ≤ 2 min, 1080p
-- All `docs/` files populated
 
 ---
 
@@ -362,16 +352,12 @@ The API runs in mock mode — **all endpoints return realistic data from Day 1.*
 
 | Service | URL | Auth |
 |---|---|---|
-| API | http://localhost:8000 | Bearer token in header |
-| API Docs (Swagger) | http://localhost:8000/docs | Paste token in authorize box |
+| API | http://localhost:8000 | Bearer token |
+| API Docs | http://localhost:8000/docs | Paste token in authorize box |
 | Dashboard | http://localhost:5173 | None (uses env token) |
-| Flower (Celery) | http://localhost:5555 | None |
+| Flower | http://localhost:5555 | None |
 | Database | `localhost:5432` | `apix` / `apix` |
-
-| Token | Value |
-|---|---|
-| `API_TOKEN` | `SJSSF01-zSIe6SqSVBaVHx1kh7_jBNKUPyVUWtnw6eA` |
 
 ---
 
-*Last updated by Yuvraj. Ping the group if anything is unclear.*
+*Last updated: Sept 6, 2026. Infrastructure complete — team tasks unblocked.*
