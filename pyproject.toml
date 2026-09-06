@@ -32,6 +32,7 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not integration'"
 markers = [
     "integration: tests requiring external services (DB, network)",
 ]
