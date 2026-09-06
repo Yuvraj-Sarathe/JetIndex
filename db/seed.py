@@ -95,9 +95,7 @@ def seed_dgca_benchmarks(session) -> int:
             source = row.get("source", "")
 
             # Upsert: update if month already exists
-            existing = session.execute(
-                select(DgcaBenchmark).where(DgcaBenchmark.month == month)
-            ).scalar_one_or_none()
+            existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
 
             if existing:
                 existing.avg_fare = float(row["avg_fare_inr"])
