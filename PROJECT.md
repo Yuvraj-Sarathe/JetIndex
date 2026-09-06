@@ -112,8 +112,8 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 
 ### Coding stage in one paragraph
 This is a **Day-1+ scaffold** with significant real implementations added:
-- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights).
-- **Still stubbed:** Scraper `fetch()` loops (blocked on endpoint recon), source parsers, `loader.py` DB upsert, engine `compute_daily` DB path, weekly/monthly rollups, backtest real queries.
+- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`).
+- **Still stubbed:** Scraper `fetch()` loops (blocked on endpoint recon), source parsers, `loader.py` DB upsert, engine `compute_daily` DB path.
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -304,11 +304,11 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `api/deps.py` | Imports `SessionLocal` from `db.session` (single source of truth). `get_db()` async generator. |
 | `api/v1/router.py` | Aggregates 6 routers: `/admin`, `/apix`, `/routes`, `/elasticity`, `/quotes`, `/backtest`. |
 | `api/v1/admin.py` | **`POST /admin/trigger-sweep`** — dispatches `run_daily_sweep` Celery task (mock_mode returns simulated response). |
-| `api/v1/apix.py` | `GET /daily`, `/weekly`, `/monthly` — mock branch. |
-| `api/v1/routes.py` | `GET /` (basket+weights), `GET /heatmap` — mock. |
-| `api/v1/elasticity.py` | `GET /?route_id=&route_date=` — mock. |
-| `api/v1/quotes.py` | `GET /?route_id=&route_date=&lead_time=&carrier=&limit=` — mock. |
-| `api/v1/backtest.py` | `GET /` → `{monthly[], summary{mape,rmse,corr}}` — mock. |
+| `api/v1/apix.py` | `GET /daily`, `/weekly`, `/monthly` — MOCK_MODE toggle (mock + DB). |
+| `api/v1/routes.py` | `GET /` (basket+weights), `GET /heatmap` — MOCK_MODE toggle (mock + DB). |
+| `api/v1/elasticity.py` | `GET /?route_id=&route_date=` — MOCK_MODE toggle (mock + DB). |
+| `api/v1/quotes.py` | `GET /?route_id=&route_date=&lead_time=&carrier=&limit=` — MOCK_MODE toggle (mock + DB). |
+| `api/v1/backtest.py` | `GET /` → `{monthly[], summary{mape,rmse,corr}}` — MOCK_MODE toggle (mock + DB). |
 | `schemas/responses.py` | Pydantic response models. |
 | `services/mock_service.py` | `_load_mock(filename)` reads `data/mock/*.json`. |
 | `tasks/scrape_tasks.py` | **Implemented:** `run_daily_sweep()` (chord: group of `scrape_route` → callback clean→index), `scrape_route()` (with retries on 429/503/502). |
@@ -498,7 +498,7 @@ run_daily_sweep
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MOCK_MODE` | `true` | Serve mock data |
+| `MOCK_MODE` | `true` | Serve mock data (toggle: false = real DB via `db/queries.py`) |
 | `API_TOKEN` | `change-me-dev-token` | Bearer auth |
 | `DATABASE_URL` | `postgresql+psycopg://apix:apix@db:5432/apix` | PostgreSQL |
 | `REDIS_URL` | `redis://redis:6379/0` | Celery broker |
@@ -569,7 +569,7 @@ GitHub Actions (push/PR to main)
 ## 18. Implementation Status: Done vs. Stub (Critical)
 
 ### ✅ Fully implemented & working
-- FastAPI app: health, CORS, Bearer auth, all v1 endpoints (mock mode)
+- FastAPI app: health, CORS, Bearer auth, all v1 endpoints (**MOCK_MODE toggle** — mock + real DB branches)
 - **POST /admin/trigger-sweep** endpoint registered
 - Celery chord workflow: sweep → scrape group → clean → index
 - **DB migration** with hypertable + composite indexes
