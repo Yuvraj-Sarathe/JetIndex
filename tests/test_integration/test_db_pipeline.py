@@ -90,7 +90,7 @@ class TestRouteCRUD:
 
     def test_insert_and_query_route(self, db_session):
         db = _import_db()
-        route = _insert_route(db_session, "DEL-BOM", "DEL", "BOM")
+        _insert_route(db_session, "DEL-BOM", "DEL", "BOM")
 
         results = db["get_active_routes"](db_session)
         assert len(results) == 1

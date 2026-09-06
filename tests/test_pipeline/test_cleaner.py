@@ -1,6 +1,6 @@
 import polars as pl
 
-from pipeline.cleaner import dedupe, iqr_filter, flag_sold_out
+from pipeline.cleaner import dedupe, flag_sold_out, iqr_filter
 
 
 def test_dedupe_removes_duplicates():
