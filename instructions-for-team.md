@@ -156,7 +156,7 @@ cd frontend && npm run lint && npm run build
 
 #### Day 1 Tasks
 
-1. **Recon — IndiGo endpoint discovery**
+- [x] **Recon — IndiGo endpoint discovery**
    - Open https://www.goindigo.in in Chrome
    - DevTools → Network → filter `Fetch/XHR`
    - Do a DEL → BOM one-way search
@@ -165,32 +165,32 @@ cd frontend && npm run lint && npm run build
    - Paste into `scrapers/recon/indigo_endpoint.md`
    - Note: URL, method, headers, body, auth token flow, response shape
 
-2. **Recon — MakeMyTrip endpoint discovery**
+- [ ] **Recon — MakeMyTrip endpoint discovery**
    - Same process for https://www.makemytrip.com
    - Document in `scrapers/recon/makemytrip_endpoint.md`
    - MMT has heavier anti-bot (Akamai) — note any challenge pages
 
-3. **Save a sample response**
+- [x] **Save a sample response**
    - Get one successful IndiGo response
    - Save to `tests/fixtures/indigo_sample.json` (strip personal data)
    - This unblocks Vanshika
 
 #### Day 2+ Tasks
 
-4. **Implement `indigo.py`**
+- [ ] **Implement `indigo.py`**
    - Fill in endpoint URL, headers, body template from recon
    - Implement `build_request()` and `parse_ok()`
    - Test: `make scrape ROUTE=DEL-BOM LEAD=7 SOURCE=indigo`
 
-5. **Implement `proxy_manager.py` and `session_manager.py`**
+- [ ] **Implement `proxy_manager.py` and `session_manager.py`**
    - Test 403/429 handling
 
-6. **DB setup**
+- [x] **DB setup**
    - Create first Alembic migration
    - Run `make migrate && make seed`
    - Verify `fare_quotes` is a hypertable
 
-7. **Engine implementation**
+- [ ] **Engine implementation**
    - Unit test `laspeyres()` with hand-computed example
    - Implement `compute_daily()` against mock data
 
