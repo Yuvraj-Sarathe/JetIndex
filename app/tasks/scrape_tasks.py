@@ -37,3 +37,17 @@ def scrape_route(source: str, route_code: str, lead_time: int) -> dict:
     # result = scraper.fetch(job)
     # return {"ok": result.ok, "raw_path": result.raw_path}
     raise NotImplementedError("Owner: Sourabh/Abhay")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Submit a scrape_route task to Celery")
+    parser.add_argument("--route", default="DEL-BOM", help="Route code (e.g. DEL-BOM)")
+    parser.add_argument("--lead", type=int, default=7, help="Lead time in days")
+    parser.add_argument("--source", default="indigo", help="Source name (e.g. indigo)")
+    args = parser.parse_args()
+
+    result = scrape_route.delay(args.source, args.route, args.lead)
+    print(f"Task submitted: {result.id}")
+    print(f"  source={args.source}, route={args.route}, lead={args.lead}")
