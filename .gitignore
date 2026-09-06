@@ -30,8 +30,10 @@ pgdata/
 # IDE
 .vscode/
 .idea/
+PRD.md
+.planning/
+.freebuff/
 
 # OS
 .DS_Store
 Thumbs.db
-PRD.md

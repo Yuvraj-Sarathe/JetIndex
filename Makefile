@@ -1,4 +1,4 @@
-.PHONY: setup up down logs migrate seed mock-data test lint fmt scrape pipeline index backtest shell psql
+.PHONY: setup up down logs migrate revision seed mock-data test lint fmt scrape pipeline index backtest shell psql
 
 setup:
 	cp -n .env.example .env || true
@@ -16,7 +16,10 @@ logs:
 	docker compose logs -f
 
 migrate:
-	docker compose exec api alembic -c db/migrations/env.py upgrade head
+	docker compose exec api alembic -c db/migrations/alembic.ini upgrade head
+
+revision:
+	docker compose exec api alembic -c db/migrations/alembic.ini revision --autogenerate -m $(MSG)
 
 seed:
 	docker compose exec api python -m db.seed
