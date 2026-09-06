@@ -21,7 +21,10 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | GET /admin/status | ✅ Done | System health endpoint: scrape times, quote counts, index, coverage, quality distribution. |
 | MOCK_MODE toggle (all endpoints) | ✅ Done | All 9 endpoints check `settings.MOCK_MODE`; mock branch (demo) + real DB branch wired. |
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
+| IndiGo + MMT build_request/parse_ok | ✅ Done | Implemented by Abhay in `scrapers/indigo.py` and `scrapers/makemytrip.py` |
+| IndiGo parser | ✅ Done | `pipeline/parsers/indigo_parser.py` — parses real fixture (77 flights) |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
+| Integration tests | ✅ Done | 11 DB round-trip tests in `tests/test_integration/` |
 
 ---
 
@@ -99,7 +102,8 @@ fix/<yourname>/<topic>       # bug fixes
 | Start everything | `docker compose up -d` |
 | Stop everything | `docker compose down` |
 | View logs | `docker compose logs -f api` |
-| Run tests | `make test` |
+| Run unit tests | `make test` |
+| Run integration tests | `make test-integration` |
 | Lint Python | `ruff check .` |
 | Format Python | `ruff format .` |
 | Access database | `make psql` |
@@ -172,22 +176,16 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
 - Real Indigo fixture saved in `tests/fixtures/indigo_sample.json` (77 flights, 756 KB)
 - DB migration + hypertable ready (`make migrate && make seed`)
 - `db/queries.py` ready for engine queries
+- IndiGo + MakeMyTrip `build_request()`/`parse_ok()` implemented (by Abhay)
+- IndiGo parser implemented in `pipeline/parsers/indigo_parser.py`
 
 #### Your Tasks (Priority Order)
 
-**1. Implement `indigo.py` (unblocks everything)**
-   - Read `scrapers/recon/indigo_endpoint.md` — the full cURL is there
-   - Fill in `IndigoScraper.build_request()` with the URL, headers, body template
-   - Fill in `IndigoScraper.parse_ok()` to check if response has fare data
-   - Test: `python -m app.tasks.scrape_tasks --route DEL-BOM --lead 7 --source indigo`
+**1. ~~Implement `indigo.py`~~ ✅ DONE** (by Abhay)
 
-**2. Do MakeMyTrip recon**
-   - Same process as IndiGo (DevTools → Network → XHR → Copy as cURL)
-   - Save to `scrapers/recon/makemytrip_endpoint.md`
-   - MMT has heavier anti-bot (Akamai) — note any challenge pages
+**2. ~~Do MakeMyTrip recon~~ ✅ DONE** (in `scrapers/recon/makemytrip_endpoint.md`)
 
-**3. Implement `makemytrip.py`**
-   - Same pattern as IndiGo
+**3. ~~Implement `makemytrip.py`~~ ✅ DONE** (by Abhay)
 
 **4. Implement engine queries**
    - Replace `compute_daily()` placeholder with real DB queries
@@ -379,4 +377,4 @@ npm run dev                  # http://localhost:5173
 
 ---
 
-*Last updated: Sept 6, 2026. Infrastructure complete — team tasks unblocked.*
+*Last updated: Sept 6, 2026. Infrastructure complete, scrapers implemented, integration tests added.*
