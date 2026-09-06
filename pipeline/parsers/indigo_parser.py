@@ -7,7 +7,7 @@ from loguru import logger
 from pipeline.schemas import RawQuote
 
 
-def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
+def parse(payload: list[dict], job_meta: dict) -> list[RawQuote]:
     """
     Parse IndiGo raw API response into a list of RawQuote objects.
 
@@ -44,8 +44,67 @@ def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
     #   }
     # }
 
-    logger.warning("IndiGo parser not yet implemented — returning empty list")
-    return []
+    quotes: list[RawQuote] = []
+    for item in payload:
+       try:
+         fare_breakdown = dict(item.get("fare_breakdown", {}))
+
+         if item.get("base_fare") is not None:
+            has_base_fare = any(
+                "base" in str(label).lower()
+                or str(label).lower() in {"fare", "airfare"}
+                for label in fare_breakdown
+            )
+
+            if not has_base_fare:
+                fare_breakdown["Base Fare"] = float(
+                    item["base_fare"]
+                )
+
+         quote = RawQuote(
+            source=item["source"],
+            route_code=item["route_code"],
+            origin=item["origin"],
+            destination=item["destination"],
+            carrier=item["carrier"],
+            flight_no=item["flight_no"],
+            depart_date=item["depart_date"],
+            depart_time=_parse_depart_time(
+                item.get("depart_time")
+            ),
+            scrape_date=item.get(
+                "scrape_date",
+                job_meta["scrape_date"]
+            ),
+            scraped_at=item["scraped_at"],
+            lead_time=item["lead_time"],
+            fare_class=item.get("fare_class"),
+            stops=item.get("stops", 0),
+            is_refundable=item.get("is_refundable"),
+            currency=item.get("currency", "INR"),
+            total_fare=item["total_fare"],
+            fare_breakdown=fare_breakdown,
+            seats_left=item.get("seats_left"),
+            sold_out=item.get("sold_out", False),
+            raw_ref=job_meta.get(
+                "raw_ref",
+                "indigo"
+            ),
+        )
+
+         quotes.append(quote)
+
+       except (KeyError, TypeError, ValueError) as exc:
+        logger.warning(
+            f"Skipping invalid IndiGo record: {exc}"
+        )
+
+
+        logger.info(
+                f"IndiGo parser: parsed {len(quotes)} quotes"
+        )
+
+       return quotes
 
 
 def _parse_depart_time(dt_str: str | None) -> time | None:
