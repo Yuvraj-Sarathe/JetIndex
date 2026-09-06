@@ -11,13 +11,12 @@ from sqlalchemy.orm import Session
 
 from db.models import ApixDaily, DGCABenchmark, DGCAWeight, FareQuote, RawQuote, Route
 
-
 # ── Routes ──────────────────────────────────────────────────────
 
 
 def get_active_routes(session: Session) -> list[Route]:
     """Return all active routes in the basket."""
-    return session.scalars(select(Route).where(Route.active == True)).all()
+    return session.scalars(select(Route).where(Route.active)).all()
 
 
 def get_route_by_code(session: Session, route_code: str) -> Route | None:
@@ -94,10 +93,17 @@ def get_median_fares_by_route(
           AND quality_flag = 'ok'
         GROUP BY route_id, lead_time
     """)
-    rows = session.execute(stmt, {
-        "scrape_date": scrape_date,
-        "lead_times": list(lead_times),
-    }).mappings().all()
+    rows = (
+        session.execute(
+            stmt,
+            {
+                "scrape_date": scrape_date,
+                "lead_times": list(lead_times),
+            },
+        )
+        .mappings()
+        .all()
+    )
     return [dict(r) for r in rows]
 
 

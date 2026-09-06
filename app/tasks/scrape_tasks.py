@@ -45,10 +45,7 @@ def run_daily_sweep(self):
 
     # Callback fires only when ALL scrape jobs complete.
     # si() = immutable signature — prevents Celery from injecting group results as arg.
-    callback = (
-        clean_and_load.si(str(today))
-        | compute_daily_index.si(str(today))
-    )
+    callback = clean_and_load.si(str(today)) | compute_daily_index.si(str(today))
 
     workflow = chord(scrape_group, callback)
     workflow.apply_async()
