@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from scrapers.session_manager import SessionManager, SESSION_DIR
-
+from scrapers.session_manager import SessionManager
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(autouse=True)
 def _clean_sessions(tmp_path, monkeypatch):
@@ -32,6 +31,7 @@ def mgr():
 # ---------------------------------------------------------------------------
 # Tests — basic persistence
 # ---------------------------------------------------------------------------
+
 
 class TestSaveAndLoad:
     def test_roundtrip(self, mgr):
@@ -65,6 +65,7 @@ class TestClear:
 # Tests — expiry
 # ---------------------------------------------------------------------------
 
+
 class TestIsExpired:
     def test_no_session_is_expired(self, mgr):
         assert mgr.is_expired("nonexistent") is True
@@ -75,33 +76,34 @@ class TestIsExpired:
 
     def test_old_session_expired(self, mgr, tmp_path):
         """Manually set saved_at to the past."""
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        old_time = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
         session_file = tmp_path / ".sessions" / "indigo.json"
         session_file.write_text(json.dumps({"saved_at": old_time}))
         assert mgr.is_expired("indigo", ttl_seconds=3600) is True
 
     def test_valid_till_in_future_not_expired(self, mgr, tmp_path):
-        future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        future = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
         session_file = tmp_path / ".sessions" / "indigo.json"
-        session_file.write_text(json.dumps({"valid_till": future, "saved_at": datetime.now(timezone.utc).isoformat()}))
+        session_file.write_text(json.dumps({"valid_till": future, "saved_at": datetime.now(UTC).isoformat()}))
         assert mgr.is_expired("indigo") is False
 
     def test_valid_till_in_past_is_expired(self, mgr, tmp_path):
-        past = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        past = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
         session_file = tmp_path / ".sessions" / "indigo.json"
-        session_file.write_text(json.dumps({"valid_till": past, "saved_at": datetime.now(timezone.utc).isoformat()}))
+        session_file.write_text(json.dumps({"valid_till": past, "saved_at": datetime.now(UTC).isoformat()}))
         assert mgr.is_expired("indigo") is True
 
     def test_expires_at_field_respected(self, mgr, tmp_path):
-        future = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+        future = (datetime.now(UTC) + timedelta(minutes=30)).isoformat()
         session_file = tmp_path / ".sessions" / "indigo.json"
-        session_file.write_text(json.dumps({"expires_at": future, "saved_at": datetime.now(timezone.utc).isoformat()}))
+        session_file.write_text(json.dumps({"expires_at": future, "saved_at": datetime.now(UTC).isoformat()}))
         assert mgr.is_expired("indigo") is False
 
 
 # ---------------------------------------------------------------------------
 # Tests — get_or_refresh
 # ---------------------------------------------------------------------------
+
 
 class TestGetOrRefresh:
     def test_valid_session_returned(self, mgr):
@@ -110,7 +112,7 @@ class TestGetOrRefresh:
         assert data["token"] == "fresh"
 
     def test_expired_session_cleared(self, mgr, tmp_path):
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        old_time = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
         session_file = tmp_path / ".sessions" / "indigo.json"
         session_file.write_text(json.dumps({"saved_at": old_time, "token": "stale"}))
 

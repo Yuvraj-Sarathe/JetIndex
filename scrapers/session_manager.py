@@ -1,7 +1,7 @@
 """Session manager — cookie/token persistence per source."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
@@ -40,7 +40,7 @@ class SessionManager:
         an explicit TTL.
         """
         session_file = SESSION_DIR / f"{source}.json"
-        data_with_ts = {**data, "saved_at": datetime.now(timezone.utc).isoformat()}
+        data_with_ts = {**data, "saved_at": datetime.now(UTC).isoformat()}
         try:
             with open(session_file, "w") as f:
                 json.dump(data_with_ts, f, indent=2)
@@ -72,7 +72,7 @@ class SessionManager:
         if not data:
             return True
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Check explicit deadline fields
         for key in ("valid_till", "expires_at"):
@@ -82,7 +82,7 @@ class SessionManager:
                     deadline = datetime.fromisoformat(deadline_str)
                     # Ensure timezone-aware comparison
                     if deadline.tzinfo is None:
-                        deadline = deadline.replace(tzinfo=timezone.utc)
+                        deadline = deadline.replace(tzinfo=UTC)
                     return now >= deadline
                 except (ValueError, TypeError):
                     pass  # malformed — fall through to saved_at check
@@ -93,7 +93,7 @@ class SessionManager:
             try:
                 saved_at = datetime.fromisoformat(saved_at_str)
                 if saved_at.tzinfo is None:
-                    saved_at = saved_at.replace(tzinfo=timezone.utc)
+                    saved_at = saved_at.replace(tzinfo=UTC)
                 return (now - saved_at).total_seconds() >= ttl_seconds
             except (ValueError, TypeError):
                 pass

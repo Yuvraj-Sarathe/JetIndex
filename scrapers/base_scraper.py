@@ -41,6 +41,7 @@ class RetryableStatusError(Exception):
 # Dataclasses — DO NOT MODIFY
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ScrapeJob:
     """Describes a single scrape task: source × route × lead time."""
@@ -83,6 +84,7 @@ class RequestSpec:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_source_config(source: str) -> dict:
     """Load config/sources.yaml and return the section for *source*."""
     try:
@@ -101,6 +103,7 @@ def _is_retryable(status_code: int) -> bool:
 # ---------------------------------------------------------------------------
 # BaseScraper
 # ---------------------------------------------------------------------------
+
 
 class BaseScraper(ABC):
     """Abstract base class for all scrapers.
@@ -152,15 +155,11 @@ class BaseScraper(ABC):
                 spec.headers.update(session_data.get("headers", {}))
                 # Cookies are forwarded as a Cookie header value
                 if session_data.get("cookies"):
-                    cookie_str = "; ".join(
-                        f"{k}={v}" for k, v in session_data["cookies"].items()
-                    )
+                    cookie_str = "; ".join(f"{k}={v}" for k, v in session_data["cookies"].items())
                     spec.headers["Cookie"] = cookie_str
 
         # Mutable state shared across retry attempts
-        current_proxy: list[str | None] = [
-            self.proxy_manager.get() if self.proxy_manager else None
-        ]
+        current_proxy: list[str | None] = [self.proxy_manager.get() if self.proxy_manager else None]
         current_profile: list[dict] = [get_random_profile()]
 
         source_cfg = _load_source_config(self.source)
@@ -212,9 +211,7 @@ class BaseScraper(ABC):
                     self.proxy_manager.mark_bad(proxy)
 
                 # Rotate proxy and fingerprint for the next attempt
-                current_proxy[0] = (
-                    self.proxy_manager.get() if self.proxy_manager else None
-                )
+                current_proxy[0] = self.proxy_manager.get() if self.proxy_manager else None
                 current_profile[0] = get_random_profile()
 
                 raise RetryableStatusError(resp.status_code)

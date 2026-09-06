@@ -5,14 +5,12 @@ from __future__ import annotations
 import time
 from unittest.mock import patch
 
-import pytest
-
 from scrapers.proxy_manager import ProxyManager
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_manager(proxies: list[str] | None = None, enabled: bool = True) -> ProxyManager:
     """Build a ProxyManager with overridden settings (no .env needed)."""

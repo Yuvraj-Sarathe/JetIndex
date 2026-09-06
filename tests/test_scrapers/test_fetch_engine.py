@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from datetime import date
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -16,13 +16,12 @@ from scrapers.base_scraper import (
     RequestSpec,
     ScrapeJob,
     ScrapeResult,
-    RetryableStatusError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Stub scraper with deterministic build_request / parse_ok
 # ---------------------------------------------------------------------------
+
 
 class _StubScraper(BaseScraper):
     """Concrete scraper used only in tests."""
@@ -44,6 +43,7 @@ class _StubScraper(BaseScraper):
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def sample_job():
@@ -81,22 +81,26 @@ _TIME_TARGET = "scrapers.base_scraper.time"
 
 
 @patch(_SAVE_TARGET)
-@patch(_FP_TARGET, return_value={
-    "impersonate": "chrome120",
-    "headers": {"User-Agent": "TestAgent"},
-})
-@patch(_CFG_TARGET, return_value={
-    "max_retries": 4,
-    "use_playwright_fallback": True,
-})
+@patch(
+    _FP_TARGET,
+    return_value={
+        "impersonate": "chrome120",
+        "headers": {"User-Agent": "TestAgent"},
+    },
+)
+@patch(
+    _CFG_TARGET,
+    return_value={
+        "max_retries": 4,
+        "use_playwright_fallback": True,
+    },
+)
 @patch(_TIME_TARGET)
 @patch(_CFFI_TARGET)
 class TestFetchSuccess:
     """Successful fetch — 200 OK on first attempt."""
 
-    def test_returns_ok_result(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_returns_ok_result(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.return_value = _fake_response(200, {"fares": [1, 2]})
         mock_cffi.Session.return_value = mock_session
@@ -109,9 +113,7 @@ class TestFetchSuccess:
         assert result.payload == {"fares": [1, 2]}
         assert result.method == "curl_cffi"
 
-    def test_calls_save_raw(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_calls_save_raw(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.return_value = _fake_response(200, {"fares": []})
         mock_cffi.Session.return_value = mock_session
@@ -123,22 +125,26 @@ class TestFetchSuccess:
 
 
 @patch(_SAVE_TARGET)
-@patch(_FP_TARGET, return_value={
-    "impersonate": "chrome120",
-    "headers": {"User-Agent": "TestAgent"},
-})
-@patch(_CFG_TARGET, return_value={
-    "max_retries": 2,
-    "use_playwright_fallback": False,
-})
+@patch(
+    _FP_TARGET,
+    return_value={
+        "impersonate": "chrome120",
+        "headers": {"User-Agent": "TestAgent"},
+    },
+)
+@patch(
+    _CFG_TARGET,
+    return_value={
+        "max_retries": 2,
+        "use_playwright_fallback": False,
+    },
+)
 @patch(_TIME_TARGET)
 @patch(_CFFI_TARGET)
 class TestFetchRetries:
     """Retry behaviour on 403 / 429 / 5xx."""
 
-    def test_403_triggers_retry_and_mark_bad(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_403_triggers_retry_and_mark_bad(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         # First call 403, second call 200
         mock_session.post.side_effect = [
@@ -156,9 +162,7 @@ class TestFetchRetries:
         assert result.ok is True
         pm.mark_bad.assert_called_once_with("http://proxy1:8080")
 
-    def test_429_triggers_retry(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_429_triggers_retry(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.side_effect = [
             _fake_response(429),
@@ -174,9 +178,7 @@ class TestFetchRetries:
 
         assert result.ok is True
 
-    def test_500_triggers_retry(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_500_triggers_retry(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.side_effect = [
             _fake_response(500),
@@ -205,14 +207,20 @@ class TestFetchRetries:
 
 
 @patch(_SAVE_TARGET)
-@patch(_FP_TARGET, return_value={
-    "impersonate": "chrome120",
-    "headers": {"User-Agent": "TestAgent"},
-})
-@patch(_CFG_TARGET, return_value={
-    "max_retries": 1,
-    "use_playwright_fallback": True,
-})
+@patch(
+    _FP_TARGET,
+    return_value={
+        "impersonate": "chrome120",
+        "headers": {"User-Agent": "TestAgent"},
+    },
+)
+@patch(
+    _CFG_TARGET,
+    return_value={
+        "max_retries": 1,
+        "use_playwright_fallback": True,
+    },
+)
 @patch(_TIME_TARGET)
 @patch(_CFFI_TARGET)
 class TestPlaywrightFallback:
@@ -226,8 +234,7 @@ class TestPlaywrightFallback:
         mock_session.post.return_value = _fake_response(403)
         mock_cffi.Session.return_value = mock_session
 
-        pw_result = ScrapeResult(job=sample_job, ok=True, status_code=200,
-                                 payload={"pw": True}, method="playwright")
+        pw_result = ScrapeResult(job=sample_job, ok=True, status_code=200, payload={"pw": True}, method="playwright")
         mock_pw.return_value = pw_result
 
         scraper = _StubScraper()
@@ -238,22 +245,26 @@ class TestPlaywrightFallback:
 
 
 @patch(_SAVE_TARGET)
-@patch(_FP_TARGET, return_value={
-    "impersonate": "chrome120",
-    "headers": {"User-Agent": "TestAgent"},
-})
-@patch(_CFG_TARGET, return_value={
-    "max_retries": 4,
-    "use_playwright_fallback": False,
-})
+@patch(
+    _FP_TARGET,
+    return_value={
+        "impersonate": "chrome120",
+        "headers": {"User-Agent": "TestAgent"},
+    },
+)
+@patch(
+    _CFG_TARGET,
+    return_value={
+        "max_retries": 4,
+        "use_playwright_fallback": False,
+    },
+)
 @patch(_CFFI_TARGET)
 class TestRateLimiting:
     """Rate limiting jitter: time.sleep called with 1–4 s."""
 
     @patch(_TIME_TARGET)
-    def test_sleep_called_after_request(
-        self, mock_time, mock_cffi, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_sleep_called_after_request(self, mock_time, mock_cffi, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.return_value = _fake_response(200)
         mock_cffi.Session.return_value = mock_session
@@ -270,19 +281,23 @@ class TestFetchNoProxy:
     """When no proxy_manager is passed, fetch uses direct connection."""
 
     @patch(_SAVE_TARGET)
-    @patch(_FP_TARGET, return_value={
-        "impersonate": "chrome120",
-        "headers": {"User-Agent": "TestAgent"},
-    })
-    @patch(_CFG_TARGET, return_value={
-        "max_retries": 4,
-        "use_playwright_fallback": False,
-    })
+    @patch(
+        _FP_TARGET,
+        return_value={
+            "impersonate": "chrome120",
+            "headers": {"User-Agent": "TestAgent"},
+        },
+    )
+    @patch(
+        _CFG_TARGET,
+        return_value={
+            "max_retries": 4,
+            "use_playwright_fallback": False,
+        },
+    )
     @patch(_TIME_TARGET)
     @patch(_CFFI_TARGET)
-    def test_no_proxy_dict_passed(
-        self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job
-    ):
+    def test_no_proxy_dict_passed(self, mock_cffi, mock_time, mock_cfg, mock_fp, mock_save, sample_job):
         mock_session = MagicMock()
         mock_session.post.return_value = _fake_response(200)
         mock_cffi.Session.return_value = mock_session

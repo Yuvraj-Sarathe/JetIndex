@@ -39,10 +39,7 @@ class ProxyManager:
         self.cleanup_expired()
 
         now = time.time()
-        available = [
-            p for p in self.proxies
-            if p not in self._bad_proxies or self._bad_proxies[p] < now
-        ]
+        available = [p for p in self.proxies if p not in self._bad_proxies or self._bad_proxies[p] < now]
 
         if not available:
             logger.warning("All proxies in cooldown, using direct connection")
@@ -66,8 +63,7 @@ class ProxyManager:
         if count >= self.ESCALATION_THRESHOLD:
             effective_cooldown = max(cooldown_seconds, self.ESCALATED_COOLDOWN)
             logger.warning(
-                f"Proxy {proxy} has {count} consecutive failures — "
-                f"escalating cooldown to {effective_cooldown}s"
+                f"Proxy {proxy} has {count} consecutive failures — escalating cooldown to {effective_cooldown}s"
             )
 
         self._bad_proxies[proxy] = time.time() + effective_cooldown

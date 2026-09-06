@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from datetime import datetime
 
 from loguru import logger
@@ -21,10 +22,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
 
     This is triggered only after curl_cffi retries fail.
     """
-    logger.info(
-        f"Playwright fallback triggered for {job.source} "
-        f"{job.origin}-{job.destination} T+{job.lead_time}"
-    )
+    logger.info(f"Playwright fallback triggered for {job.source} {job.origin}-{job.destination} T+{job.lead_time}")
 
     try:
         from playwright.async_api import async_playwright
@@ -93,7 +91,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
             # Wait for the intercepted fare response (max 30s)
             try:
                 await asyncio.wait_for(capture_event.wait(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Playwright: timed out waiting for fare response")
 
             await browser.close()
@@ -129,7 +127,5 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
         )
     finally:
         if browser:
-            try:
+            with contextlib.suppress(Exception):
                 await browser.close()
-            except Exception:
-                pass
