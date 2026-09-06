@@ -1129,7 +1129,7 @@ INFRASTRUCTURE
 API ENDPOINTS  
   [x] Wire MOCK_MODE toggle in all 9 endpoints
   [x] Register POST /admin/trigger-sweep
-  [ ] Add GET /admin/status monitoring endpoint
+  [x] Add GET /admin/status monitoring endpoint
   [ ] Verify response schemas match real DB output
 
 CELERY ORCHESTRATION

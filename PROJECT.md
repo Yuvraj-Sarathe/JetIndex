@@ -303,7 +303,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `core/logging.py` | loguru: colorized stdout + `logs/app.log`. |
 | `api/deps.py` | Imports `SessionLocal` from `db.session` (single source of truth). `get_db()` async generator. |
 | `api/v1/router.py` | Aggregates 6 routers: `/admin`, `/apix`, `/routes`, `/elasticity`, `/quotes`, `/backtest`. |
-| `api/v1/admin.py` | **`POST /admin/trigger-sweep`** — dispatches `run_daily_sweep` Celery task (mock_mode returns simulated response). |
+| `api/v1/admin.py` | **`POST /admin/trigger-sweep`** — dispatches `run_daily_sweep` Celery task. **`GET /admin/status`** — system health: scrape times, quote counts, index, coverage, quality distribution (MOCK_MODE toggle). |
 | `api/v1/apix.py` | `GET /daily`, `/weekly`, `/monthly` — MOCK_MODE toggle (mock + DB). |
 | `api/v1/routes.py` | `GET /` (basket+weights), `GET /heatmap` — MOCK_MODE toggle (mock + DB). |
 | `api/v1/elasticity.py` | `GET /?route_id=&route_date=` — MOCK_MODE toggle (mock + DB). |
@@ -571,6 +571,7 @@ GitHub Actions (push/PR to main)
 ### ✅ Fully implemented & working
 - FastAPI app: health, CORS, Bearer auth, all v1 endpoints (**MOCK_MODE toggle** — mock + real DB branches)
 - **POST /admin/trigger-sweep** endpoint registered
+- **GET /admin/status** monitoring endpoint (scrape stats, coverage, quality distribution)
 - Celery chord workflow: sweep → scrape group → clean → index
 - **DB migration** with hypertable + composite indexes
 - **deps.py single source of truth** (no duplication)
@@ -613,7 +614,7 @@ GitHub Actions (push/PR to main)
 | DB migration + hypertable | **Done** |
 | Celery task chain | **Done** (chord workflow implemented) |
 | Centralised query layer | **Done** (db/queries.py) |
-| Admin endpoint | **Done** (POST /admin/trigger-sweep) |
+| Admin endpoints | **Done** (POST /admin/trigger-sweep + GET /admin/status) |
 | 30+ day backtest vs DGCA | In progress |
 | Architecture doc, demo video, slides | Not started |
 

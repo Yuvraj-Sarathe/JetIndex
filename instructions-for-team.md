@@ -18,6 +18,7 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | db/queries.py | ✅ Done | Centralised queries. Use these instead of raw SQLAlchemy. |
 | Celery chord workflow | ✅ Done | `run_daily_sweep → scrape_route × N → clean_and_load → compute_daily_index` |
 | POST /admin/trigger-sweep | ✅ Done | Frontend demo button works (mock mode returns simulated response). |
+| GET /admin/status | ✅ Done | System health endpoint: scrape times, quote counts, index, coverage, quality distribution. |
 | MOCK_MODE toggle (all endpoints) | ✅ Done | All 9 endpoints check `settings.MOCK_MODE`; mock branch (demo) + real DB branch wired. |
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
