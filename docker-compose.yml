@@ -20,6 +20,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   api:
     build: .
@@ -33,6 +38,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -40,7 +47,10 @@ services:
       retries: 3
 
   worker:
-    build: .
+    build:
+      context: .
+      args:
+        INSTALL_PLAYWRIGHT: "true"
     command: celery -A app.core.celery_app worker -l info -Q default,scrape
     env_file: .env
     volumes:
@@ -50,7 +60,7 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   beat:
     build: .
@@ -60,7 +70,7 @@ services:
       - .:/app
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
 
   flower:
     build: .
@@ -70,7 +80,7 @@ services:
       - "5555:5555"
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
 
   frontend:
     image: node:20-alpine

@@ -1,7 +1,7 @@
 # JetIndex (APIx) — Complete Project Documentation (A–Z)
 
 > **One file, every fact.** This document captures the *entire* state of the repository as of
-> **September 5, 2026** (branch `main`, HEAD `5bcb2f7`): vision, architecture, tech stack,
+> **September 6, 2026** (branch `main`, HEAD `23420f5`): vision, architecture, tech stack,
 > every module and file, the data contract, the index math, the API, the frontend, tests,
 > CI/CD, team, current coding stage (what is done vs. stubbed), and what comes next.
 >
@@ -105,49 +105,15 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 
 ## 3. Repository Snapshot & Current Coding Stage
 
-### Git state (local checkout, Sept 5, 2026)
-- **Branch:** `main` (single branch; remote `origin/main` exists).
-- **Local HEAD:** `5bcb2f7` — *"fix(db): use class-based DeclarativeBase, fix test imports"*.
-- **Remote ahead:** local is **behind `origin/main` by 3 commits** (README-only revisions by a
-  teammate: `d487cf0`, `05b11bc`, `05b40f1` — README rewording / removal of branch-protection
-  mention). No conflicts; a `git pull` fast-forwards.
-- **Total commits:** 19, all dated 2026-09-04 (single-day scaffold blitz by the team).
-- **1 human contributor detected in the local history** (commit author), though the team is 6 people.
-- **Untracked:** `.freebuff/` (tooling dir, ignore it).
-- No tags, no merged PRs detected locally.
-
-### Commit history (local, newest → oldest)
-```
-5bcb2f7 fix(db): use class-based DeclarativeBase, fix test imports
-2f2d278 fix(ci): exclude markdown/json from ruff, fix README code example
-8c08c4a docs: rewrite README with architecture, API reference, and team info
-a9c54e1 fix(ci): add PYTHONPATH and fix Node.js caching
-7408ec8 docs: add documentation, slides, demo templates, and team guide
-4d41c5a ci: add GitHub Actions workflows and PR/issue templates
-14f7522 chore(scripts): add mock data generator and helper scripts
-9edd203 test: add pytest suite with 15 tests
-c0bf531 chore(data): add mock data and reference datasets
-cb35c74 feat(frontend): add React + Vite + Tailwind dashboard scaffold
-a47bd2f feat(engine): add index math, elasticity, and DGCA backtest
-7c4bee8 feat(db): add TimescaleDB models, migrations, and seeds
-9619d57 feat(pipeline): add data contract and cleaning pipeline
-68d621c feat(scrapers): add stealth scraping engine scaffold
-4b38576 feat(app): add FastAPI app with Celery orchestration
-682b597 chore: add config files for routes, sources, and DGCA weights
-23c9d0a chore: add Docker setup for all services
-476b0c3 chore: add root config, env, and project metadata
-d1cd8ea Initial commit
-```
+### Git state (Sept 6, 2026)
+- **Branch:** `main`
+- **HEAD:** `23420f5` — *"fix: remove redundant .github/README.md"*
+- **Recent commits:** DB migrations, deps.py fix, Docker improvements, Celery tasks, admin endpoint, queries layer, real Indigo fixture
 
 ### Coding stage in one paragraph
-This is a **Day-0/Day-1 scaffold**: the full skeleton, contracts, mock mode, and demo path are
-complete and testable end-to-end, but the **real implementations are deliberately stubbed**.
-What works today: the FastAPI app serving realistic mock data, the Celery/beat/flower wiring,
-the complete DB model layer, the pure index-math functions, the unbundler + validators +
-cleaner, the scraper framework (registry, dataclasses, proxy/session/fingerprint managers),
-and the full frontend. What is **not** wired to reality yet: actual scraper endpoints (recon
-pending), real parsers, DB-backed engine queries, the Alembic first migration, and the
-`run_daily_sweep` → `scrape_route` → `clean_and_load` → `compute_daily_index` Celery chord.
+This is a **Day-1+ scaffold** with significant real implementations added:
+- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights).
+- **Still stubbed:** Scraper `fetch()` loops (blocked on endpoint recon), source parsers, `loader.py` DB upsert, engine `compute_daily` DB path, weekly/monthly rollups, backtest real queries.
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -164,45 +130,38 @@ See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inve
 | **Alembic** | DB migrations | `db/migrations/` |
 | **Celery[redis] + Redis** | Distributed task queue + beat scheduler | `app/core/celery_app.py` |
 | **Flower** | Celery monitoring UI | compose service |
-| **curl_cffi** | TLS-fingerprint-impersonating HTTP client (e.g. `impersonate="chrome124"`) | `scrapers/` |
-| **Playwright + playwright-stealth** | Stealth browser fallback (XHR interception) | `scrapers/playwright_fallback.py` |
-| **fake-useragent** | UA generation (listed in requirements; fingerprints module has its own literal UA list) | `scrapers/fingerprints.py` |
+| **curl_cffi** | TLS-fingerprint-impersonating HTTP client | `scrapers/` |
+| **Playwright + playwright-stealth** | Stealth browser fallback | `scrapers/playwright_fallback.py` |
 | **Polars** | High-speed data cleaning (dedupe, IQR) | `pipeline/cleaner.py` |
 | **NumPy / SciPy / Pandas** | Stats: linregress, MAPE/RMSE/correlation | `engine/` |
 | **PyYAML** | Config files | `config/`, `db/seed.py`, `scrapers/registry.py` |
-| **httpx** | HTTP client (declared; unused so far) | — |
-| **python-dotenv** | `.env` loading | — |
-| **loguru** | Structured logging (console + rotating file) | `app/core/logging.py` |
-| **tenacity** | Retry/backoff for the scraper fetch loop (declared; to be used in `BaseScraper.fetch`) | `scrapers/base_scraper.py` |
-| **minio** (compose) | Optional S3-compatible object storage for audit payloads (`audit` profile) | `docker-compose.yml` |
+| **loguru** | Structured logging | `app/core/logging.py` |
+| **tenacity** | Retry/backoff for scraper fetch loop | `scrapers/base_scraper.py` |
 
 ### Frontend (Node 20)
 | Technology | Purpose |
 |---|---|
 | **React 18.3** (JSX) | SPA |
-| **Vite 5** | Dev server (port 5173) + build, `/api` proxy → :8000 |
-| **TailwindCSS 3.4** | Styling (`slate` base, `indigo` accent, `emerald`/`rose` up/down) |
+| **Vite 5** | Dev server (port 5173) + build |
+| **TailwindCSS 3.4** | Styling |
 | **Recharts 2.12** | Line/Scatter charts |
 | **react-leaflet 4 + Leaflet 1.9** | Route heatmap map |
-| **date-fns 3** | Date helpers (declared) |
 | **papaparse 5** | CSV export |
-| **ESLint 8 + Prettier 3** | Lint/format (`--max-warnings 0`) |
+| **ESLint 8 + Prettier 3** | Lint/format |
 
 ### Dev / QA
 | Technology | Purpose |
 |---|---|
-| **pytest + pytest-asyncio + pytest-cov** | Test runner & coverage |
-| **respx** | Mock httpx for scraper tests (declared) |
-| **factory-boy** | Test factories (declared) |
-| **ruff** (v0.4.4 pre-commit) | Python lint (`E,F,I,N,UP,B,SIM`, line-length 120, ignores `B008`) + format |
-| **pre-commit** | Hooks: ruff, ruff-format, end-of-file, trailing-whitespace, large files > 5 MB, private-key detection |
+| **pytest + pytest-cov** | Test runner & coverage |
+| **ruff** | Python lint + format |
+| **pre-commit** | Hooks: ruff, ruff-format, end-of-file, trailing-whitespace |
 
 ### Infrastructure
 | Technology | Purpose |
 |---|---|
 | **Docker Compose** | 8-service dev stack |
 | **TimescaleDB `latest-pg16`** | Time-series DB with hypertables |
-| **Redis 7-alpine** | Celery broker/backend |
+| **Redis 7-alpine** | Celery broker/backend (with healthcheck) |
 | **GitHub Actions** | Backend CI (ruff + pytest), Frontend CI (eslint + build) |
 
 ---
@@ -263,17 +222,13 @@ See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inve
 
 **Data flow, step by step:**
 1. **Celery Beat** fires `run_daily_sweep` daily at **02:00 IST**.
-2. The sweep builds ~60 jobs (`6 routes × 5 lead times × 2 enabled sources`) and each
-   `scrape_route` job fetches the fare-search XHR response of IndiGo / MakeMyTrip using
-   `curl_cffi` with impersonated TLS, retrying with proxy rotation, then falling back to a
-   stealth Playwright browser.
+2. The sweep builds ~60 jobs (`6 routes × 5 lead times × 2 enabled sources`) and fans out
+   `scrape_route` tasks as a Celery group (parallel execution).
 3. Raw payloads are saved to `data/raw/{source}/{scrape_date}/{ORIGIN}-{DEST}_T{lead}.json`
-   **and** mirrored into the `raw_quotes` audit table (never parsed at this layer).
-4. `clean_and_load` runs the pipeline: source parsers → `RawQuote` → validators → unbundler →
-   dedupe + IQR + sold-out flags → upsert into the `fare_quotes` hypertable.
-5. `compute_daily_index` computes the DGCA-weighted Laspeyres index and writes `apix_daily`;
-   `aggregator` produces weekly/monthly rollups; `elasticity` builds the lead-time matrix;
-   `backtest` compares against DGCA benchmarks.
+   **and** mirrored into the `raw_quotes` audit table.
+4. When ALL scrape jobs complete, the chord callback fires: `clean_and_load` runs the pipeline
+   (source parsers → validators → unbundler → dedupe + IQR → upsert into `fare_quotes`).
+5. `compute_daily_index` computes the DGCA-weighted Laspeyres index and writes `apix_daily`.
 6. FastAPI serves everything to the React dashboard, all behind a single Bearer token.
 
 ---
@@ -333,10 +288,6 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `convenience fee`, `service fee`, `platform fee` | `convenience_fee` |
 | `fuel surcharge`, `yq`, `seat`, `meal`, `insurance` | `other_fees` |
 
-`INDIGO_FEE_MAP` and `MMT_FEE_MAP` are identical today; `airindia`/`akasa` default to the
-IndiGo map, `easemytrip` to the MMT map. Unknown labels fall through a keyword heuristic
-("base/fare/ticket" → base; "tax/gst/surcharge/fee" → taxes; else `other_fees` + warning log).
-
 ---
 
 ## 7. Directory-by-Directory Deep Dive
@@ -345,200 +296,126 @@ IndiGo map, `easemytrip` to the MMT map. Unknown labels fall through a keyword h
 
 | File | Contents |
 |---|---|
-| `main.py` | `create_app()` factory: title *"APIx – Airfare Price Index API"* v0.1.0; CORS for `http://localhost:5173`; `GET /health` → `{status, mock_mode, version}`; mounts v1 router at `/api/v1`. Module-level `app = create_app()` for uvicorn. |
-| `core/config.py` | `Settings(BaseSettings)` reading `.env` — all env vars (see §12). Exported singleton `settings` used by **every** package. |
-| `core/security.py` | `HTTPBearer` + `require_token` dependency: rejects anything ≠ `settings.API_TOKEN` with 401. |
-| `core/celery_app.py` | Celery `"apix"` app (Redis broker+backend, `Asia/Kolkata` tz, JSON serializers); `beat_schedule` with `daily-sweep` at `crontab(hour=SCRAPE_HOUR_IST, minute=0)`; `autodiscover_tasks(["app.tasks"])`. |
-| `core/logging.py` | loguru: colorized stdout + `logs/app.log` (rotation 10 MB, retention 7 days); runs on import. |
-| `api/deps.py` | Lazy SQLAlchemy engine (`pool_pre_ping=True`) + `SessionLocal` + `get_db()` async generator. Note: `app/api/deps.py` duplicates `db/session.py` — a known redundancy. |
-| `api/v1/router.py` | Aggregates 5 routers: `/apix`, `/routes`, `/elasticity`, `/quotes`, `/backtest`. |
-| `api/v1/apix.py` | `GET /daily`, `/weekly`, `/monthly` — `from_date`/`to_date` filters; **mock branch only** (TODO: real DB). |
-| `api/v1/routes.py` | `GET /` (basket+weights), `GET /heatmap?route_date=` — mock. |
+| `main.py` | `create_app()` factory; `GET /health`; mounts v1 router at `/api/v1`. |
+| `core/config.py` | `Settings(BaseSettings)` reading `.env`. Exported singleton `settings`. |
+| `core/security.py` | `HTTPBearer` + `require_token` dependency. |
+| `core/celery_app.py` | Celery `"apix"` app (Redis broker+backend, `Asia/Kolkata` tz); `beat_schedule` with `daily-sweep`; `autodiscover_tasks(["app.tasks"])`. |
+| `core/logging.py` | loguru: colorized stdout + `logs/app.log`. |
+| `api/deps.py` | Imports `SessionLocal` from `db.session` (single source of truth). `get_db()` async generator. |
+| `api/v1/router.py` | Aggregates 6 routers: `/admin`, `/apix`, `/routes`, `/elasticity`, `/quotes`, `/backtest`. |
+| `api/v1/admin.py` | **`POST /admin/trigger-sweep`** — dispatches `run_daily_sweep` Celery task (mock_mode returns simulated response). |
+| `api/v1/apix.py` | `GET /daily`, `/weekly`, `/monthly` — mock branch. |
+| `api/v1/routes.py` | `GET /` (basket+weights), `GET /heatmap` — mock. |
 | `api/v1/elasticity.py` | `GET /?route_id=&route_date=` — mock. |
-| `api/v1/quotes.py` | `GET /?route_id=&route_date=&lead_time=&carrier=&limit=` (limit 1–500, default 50) — mock. |
+| `api/v1/quotes.py` | `GET /?route_id=&route_date=&lead_time=&carrier=&limit=` — mock. |
 | `api/v1/backtest.py` | `GET /` → `{monthly[], summary{mape,rmse,corr}}` — mock. |
-| `schemas/responses.py` | Pydantic response models: `ApixDailyResponse`, `RouteResponse`, `HeatmapResponse`, `ElasticityResponse`, `QuoteResponse`, `BacktestSummary`, `BacktestResponse` (kept in sync with `docs/api_reference.md`). |
-| `services/mock_service.py` | `_load_mock(filename)` reads `data/mock/*.json`; getters per endpoint with light filtering (`get_mock_apix_daily` filters by date; `get_mock_quotes` truncates to limit; weekly/monthly currently just return daily; routes/heatmap share `heatmap.json`; backtest returns dict or empty defaults). |
-| `tasks/scrape_tasks.py` | `run_daily_sweep()` (beat entry; currently `raise NotImplementedError("Owner: Sourabh/Abhay")`), `scrape_route(source, route_code, lead_time)` (stub). |
-| `tasks/pipeline_tasks.py` | `clean_and_load(scrape_date)` (stub, Owner: Vanshika). |
-| `tasks/index_tasks.py` | `compute_daily_index(compute_date)` (stub, Owner: Sourabh/Abhay). |
+| `schemas/responses.py` | Pydantic response models. |
+| `services/mock_service.py` | `_load_mock(filename)` reads `data/mock/*.json`. |
+| `tasks/scrape_tasks.py` | **Implemented:** `run_daily_sweep()` (chord: group of `scrape_route` → callback clean→index), `scrape_route()` (with retries on 429/503/502). |
+| `tasks/pipeline_tasks.py` | **Implemented:** `clean_and_load(scrape_date)` — calls `pipeline.run.run_pipeline()`. |
+| `tasks/index_tasks.py` | **Implemented:** `compute_daily_index(compute_date)` — calls `engine.index_calculator.compute_daily()`. |
 
-Conventions (from `app/README.md`): never query DB directly in routers; ISO-8601 dates; INR
-floats rounded to 2 dp; FastAPI-style `{"detail": ...}` errors; keep `MOCK_MODE` working
-forever as the demo safety net.
-
-### 7.2 `scrapers/` — Stealth scraping engine **(Owners: Sourabh + Abhay, Yuvraj supports)**
+### 7.2 `scrapers/` — Stealth scraping engine **(Owners: Sourabh + Abhay)**
 
 | File | Contents |
 |---|---|
-| `base_scraper.py` | Dataclasses: `ScrapeJob(source, origin, destination, depart_date, lead_time, scrape_date)`, `ScrapeResult(job, ok, status_code, payload, error, fetched_at, method="curl_cffi"\|"playwright", proxy_used, raw_path)`, `RequestSpec(url, method, headers, json_body, params)`. `BaseScraper(ABC)` with `rate_limit_rps = 0.33` (1 req/3 s), abstract `build_request()` / `parse_ok()`, **stub** `fetch()` (planned loop: build → curl_cffi → tenacity retries max 4 on 403/429/5xx with new proxy → Playwright fallback → `storage.save_raw`), and working `run_jobs()` (sequential execution with per-job exception capture). |
-| `indigo.py` | `IndigoScraper` — endpoint/headers/body **TODO after recon**; `build_request`/`parse_ok` raise `NotImplementedError`. Module docstring is a recon how-to (DevTools → XHR → Copy as cURL). |
-| `makemytrip.py` | `MakeMyTripScraper` — same state; notes heavier Akamai anti-bot; strategy: Playwright token bootstrap then reuse cookies with curl_cffi. |
+| `base_scraper.py` | Dataclasses: `ScrapeJob`, `ScrapeResult`, `RequestSpec`. `BaseScraper(ABC)` with **stub** `fetch()`. |
+| `indigo.py` | `IndigoScraper` — **TODO after recon**. |
+| `makemytrip.py` | `MakeMyTripScraper` — **TODO after recon**. |
 | `airindia.py` | Stub class, post-MVP. |
-| `registry.py` | `SCRAPERS` dict (`indigo`, `makemytrip`, `airindia`; Akasa/EaseMyTrip commented out); `get_scraper(name)`; **working** `build_jobs_for_date()` — reads `config/routes.yaml` + `config/sources.yaml`, yields 6×5×enabled-sources jobs. |
-| `proxy_manager.py` | **Working** `ProxyManager`: parses comma-separated `PROXY_URL`; `get()` round-robin skipping proxies in cooldown (falls back to direct); `mark_bad(proxy, cooldown=60s)`; `backoff(status)` → 429: 30 s, 403/401: 60 s, 5xx: 10 s. |
-| `session_manager.py` | **Working** `SessionManager`: JSON cookie/token persistence per source at `data/raw/.sessions/{source}.json`; `load`/`save`/`clear` with error tolerance. |
-| `fingerprints.py` | **Working** `IMPERSONATE_PROFILES = [chrome120, chrome124, safari17_0, edge101]`, literal UA list, `STANDARD_HEADERS` (Accept, Sec-Fetch-*, etc.); `get_random_profile()`, `get_headers_for_profile()`. |
-| `playwright_fallback.py` | **Stub** `async fetch_with_browser(job, scraper_instance)` — plan: headless Chromium + `stealth_async`, intercept XHR responses via `page.on("response")` (never DOM-scrape). |
-| `storage.py` | **Working** `save_raw(result)` → `data/raw/{source}/{scrape_date}/{ORIGIN}-{DEST}_T{lead}.json`; sets `result.raw_path`; DB insert into `raw_quotes` is commented-out TODO (must never crash scrape if DB is down). |
-| `recon/` | Endpoint reconnaissance notes (`.gitkeep` + `README.md` template for `indigo_endpoint.md`, `makemytrip_endpoint.md`; `*.har`/`*.json` gitignored). |
-
-Priority order: **IndiGo → MakeMyTrip → Air India → Akasa → EaseMyTrip**; two working sources
-is MVP. Rate-limit rule: ≤ 1 req/3 s per source per IP with 1–4 s jitter.
+| `registry.py` | `SCRAPERS` dict; `get_scraper(name)`; **working** `build_jobs_for_date()`. |
+| `proxy_manager.py` | **Working** `ProxyManager`: rotation, cooldown, backoff. |
+| `session_manager.py` | **Working** `SessionManager`: JSON cookie/token persistence. |
+| `fingerprints.py` | **Working** TLS profiles + UA rotation. |
+| `playwright_fallback.py` | **Stub** `fetch_with_browser()`. |
+| `storage.py` | **Working** `save_raw(result)` → `data/raw/`. DB insert commented TODO. |
+| `recon/indigo_endpoint.md` | **Captured:** Full cURL command with headers, auth token, request body shape. |
 
 ### 7.3 `pipeline/` — Cleaning, validation & unbundling **(Owner: Vanshika)**
 
 | File | Contents |
 |---|---|
 | `schemas.py` | **The frozen data contract** (see §6). |
-| `parsers/indigo_parser.py` | **Stub** `parse(payload, job_meta) -> list[RawQuote]`; documented expected response shape; returns `[]` with warning. Has a helper `_parse_depart_time`. |
-| `parsers/makemytrip_parser.py` | **Stub**; same pattern, documented `searchResult.flightOffers` shape. |
-| `validators.py` | **Working** `validate_raw(q)`: rejects non-positive fare, `depart_date <= scrape_date`, lead-time mismatch vs `(depart - scrape).days`, carrier not in `ALLOWED_CARRIERS = {"6E","AI","QP","SG","UK","G8","I5"}`, non-INR currency. Returns `None` + warning log. |
-| `unbundler.py` | **Working** `unbundle(RawQuote) -> CleanQuote` (mapping tables + regex fallback + sum check, see §6). |
-| `cleaner.py` | **Working** Polars functions: `dedupe()` on `(source, route_code, carrier, flight_no, depart_date, scrape_date, fare_class)` keep-first; `iqr_filter()` grouped by `(route_code, lead_time, scrape_date)`, k=1.5 on `total_fare`, groups < 4 rows never flagged, sets `quality_flag="iqr_outlier"`; `flag_sold_out()`; `clean_batch()` orchestrates all three with a quality-flag distribution log. |
-| `loader.py` | **Stub** `load(df) -> int` — PostgreSQL upsert into `fare_quotes` (SQLAlchemy `insert ... on_conflict_do_update`) is commented TODO; currently logs "would insert N" and returns N. |
-| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD [--source X] [--dry-run]`: walks `data/raw/{source}/{date}/*.json`, applies parser → validate → unbundle → clean_batch → load; prints counts for parsed / valid / unbundled / outliers / loaded. |
-
-Definition of done: ≥ 90 % of valid quotes load with `quality_flag="ok"`.
+| `parsers/indigo_parser.py` | **Stub** `parse(payload, job_meta) -> list[RawQuote]`. |
+| `parsers/makemytrip_parser.py` | **Stub**. |
+| `validators.py` | **Working** `validate_raw(q)`. |
+| `unbundler.py` | **Working** `unbundle(RawQuote) -> CleanQuote`. |
+| `cleaner.py` | **Working** Polars: `dedupe()`, `iqr_filter()`, `flag_sold_out()`, `clean_batch()`. |
+| `loader.py` | **Stub** `load(df) -> int` — PostgreSQL upsert commented TODO. |
+| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD`. |
 
 ### 7.4 `db/` — TimescaleDB models, migrations, seeds **(Owners: Sourabh + Abhay)**
 
 | File | Contents |
 |---|---|
-| `session.py` | `Base(DeclarativeBase)` (**class-based** — the latest fix commit), engine from `settings.DATABASE_URL` (`pool_pre_ping=True`), `SessionLocal`, `get_db()`. |
-| `models.py` | Six SQLAlchemy 2 models (details below). |
-| `init.sql` | `CREATE EXTENSION IF NOT EXISTS timescaledb;` mounted into the db container's init dir. Hypertable conversion deferred to the first Alembic migration. |
-| `migrations/env.py` | Alembic env wired to `settings.DATABASE_URL`, imports all models into `target_metadata`. |
-| `migrations/script.py.mako` | Alembic template. |
-| `migrations/versions/` | **Empty** (only `.gitkeep`) — the first migration (create tables + `create_hypertable('fare_quotes','scraped_at')`) has **not** been generated yet. |
-| `seed.py` | **Working** `seed()`: `Base.metadata.create_all` (also used by scripts) + `seed_routes()` from `config/routes.yaml` (idempotent) + `seed_dgca_weights()` from `config/dgca_weights.csv`. |
+| `session.py` | `Base(DeclarativeBase)`, engine, `SessionLocal`, `get_db()`. Single source of truth. |
+| `models.py` | Six SQLAlchemy 2 models. |
+| `queries.py` | **Implemented:** Centralised query layer — `get_active_routes`, `upsert_fare_quotes`, `get_median_fares_by_route`, `get_apix_daily/weekly/monthly`, `get_quotes`, `get_heatmap_data`, `get_elasticity_data`, `get_dgca_benchmarks`. |
+| `init.sql` | `CREATE EXTENSION IF NOT EXISTS timescaledb;` |
+| `seed.py` | **Working** `seed()` + `seed_routes()` + `seed_dgca_weights()`. |
+| `migrations/versions/0001_initial_schema.py` | **Created:** All 6 tables + hypertable on `fare_quotes(scraped_at)` + composite PK + indexes. |
 
-**Table schemas:**
-
-- **`routes`** — `id PK, route_code (unique, indexed), origin, destination, o_lat, o_lon, d_lat, d_lon, active`; relationships to raw_quotes/fare_quotes/dgca_weights.
-- **`raw_quotes`** (audit/landing) — `id PK, source, route_id FK, scrape_date, depart_date, lead_time, fetched_at, status_code, method ("curl_cffi"/"playwright"), proxy_used, raw_path, payload JSONB`.
-- **`fare_quotes`** — **hypertable on `scraped_at`** — `id PK, route_id FK (idx), carrier (idx), flight_no, depart_date, depart_time, lead_time (idx), fare_class, base_fare, udf, taxes, convenience_fee, other_fees, total_fare, currency="INR", is_refundable, stops, source, scraped_at (idx), raw_quote_id FK, quality_flag="ok"`.
-- **`apix_daily`** — `date PK, apix, apix_base_only, n_quotes, n_routes, method="laspeyres", base_period`.
-- **`dgca_weights`** — `id PK, route_id FK, period ("2025-01"), passengers, weight`.
-- **`dgca_benchmark`** — `month PK ("2025-01"), avg_fare, source_url`.
-
-Rules: schema changes go through Alembic migrations (never hand-edit); **UTC everywhere** —
-convert to IST only in the frontend.
+**Tables created:** `routes`, `raw_quotes`, `fare_quotes` (hypertable), `apix_daily`, `dgca_weights`, `dgca_benchmark`.
 
 ### 7.5 `engine/` — Index math, elasticity & backtest **(Owners: Sourabh + Abhay)**
 
 | File | Contents |
 |---|---|
-| `index_calculator.py` | **Working** `laspeyres(p_t, p_0, q_0)` (guards zero denominator → 100), **working** `geometric_young(...)` (log-form), **stub** `compute_daily(date, session, lead_times=(1,7,15,30,45), price_agg="median")` — placeholder returns `apix=100.0, n_quotes=0, n_routes=6, base_period="placeholder"`; real DB path (median via `percentile_cont(0.5)`, weights, base prices, `session.merge` into `apix_daily`) is commented out. |
-| `weights.py` | **Working** `load_weights(csv)` — reads `config/dgca_weights.csv`, normalises to sum 1, logs; **stub** `get_base_period_prices(session, n_days=7)` — placeholder equal prices per route. |
-| `aggregator.py` | **Working** `pct_change()`, `daily_with_pct()` (day-over-day series); **stubs** `weekly_rollup()`, `monthly_rollup()` (SQL with `date_trunc` commented out; return `[]`). |
-| `elasticity.py` | **Working** `compute_elasticity_coefficient(fares, lead_times)` — log-log `scipy.stats.linregress` slope; **stub** `compute_elasticity(session, route_id, route_date)` — placeholder linear values (fares rise as lead time shrinks). |
-| `backtest.py` | **Working** metric helpers `compute_mape`, `compute_rmse`, `compute_correlation` (numpy); **stub** `run_backtest(session)` — placeholder 3-month series (MAPE 0.5, RMSE 25, r 0.98) written to `data/backtest_results.json`. |
-| `run.py` | **Working CLI**: `--date` → `compute_daily`; `--backtest` → `run_backtest`; `--rebuild` flag accepted (unused). |
+| `index_calculator.py` | **Working** `laspeyres()`, `geometric_young()`. **Stub** `compute_daily()` (placeholder returns 100.0). |
+| `weights.py` | **Working** `load_weights(csv)`. **Stub** `get_base_period_prices()`. |
+| `aggregator.py` | **Working** `pct_change()`, `daily_with_pct()`. **Stubs** `weekly_rollup()`, `monthly_rollup()`. |
+| `elasticity.py` | **Working** `compute_elasticity_coefficient()`. **Stub** `compute_elasticity()`. |
+| `backtest.py` | **Working** metric helpers. **Stub** `run_backtest()`. |
 
 ### 7.6 `config/` — Static configuration **(Owner: Yuvraj)**
 
-- **`routes.yaml`** — 6-route basket with airport lat/lon and `lead_times: [1,7,15,30,45]`:
-
-  | Route | Origin → Destination | DGCA weight (csv) |
-  |---|---|---|
-  | DEL-BOM | Delhi → Mumbai | 0.25 |
-  | DEL-BLR | Delhi → Bengaluru | 0.20 |
-  | BOM-BLR | Mumbai → Bengaluru | 0.16 |
-  | DEL-CCU | Delhi → Kolkata | 0.14 |
-  | BLR-HYD | Bengaluru → Hyderabad | 0.12 |
-  | MAA-DEL | Chennai → Delhi | 0.14 |
-
-- **`sources.yaml`** — per-source `enabled / rate_limit_rps=0.33 / max_retries=4 / use_playwright_fallback / robots_paths_checked`. Currently enabled: **indigo**, **makemytrip**; disabled: airindia, akasa, easemytrip.
-- **`dgca_weights.csv`** — `route_code, period=2025-01, passengers (1.2M…550K), weight` — **placeholder values**; replace with real DGCA monthly traffic.
-- Principle: *everything that is "a list of things we track" lives here, never hard-coded.*
+- **`routes.yaml`** — 6-route basket with airport lat/lon and `lead_times: [1,7,15,30,45]`.
+- **`sources.yaml`** — per-source config. Enabled: **indigo**, **makemytrip**.
+- **`dgca_weights.csv`** — placeholder values.
 
 ### 7.7 `frontend/` — APIx Dashboard **(Owner: Mehak)**
 
-**Setup:** Vite dev server on :5173 proxying `/api` → `http://localhost:8000`; env via
-`frontend/.env.example` → `VITE_API_BASE=/api/v1`, `VITE_API_TOKEN=...` (default fallback
-`change-me-dev-token` in code).
+**Setup:** Vite dev server on :5173 proxying `/api` → `http://localhost:8000`.
 
-**File map:**
-| File | Role |
-|---|---|
-| `index.html` | Shell; loads Leaflet CSS from unpkg; title "APIx — Airfare Price Index Dashboard". |
-| `src/main.jsx` | React 18 StrictMode root. |
-| `src/App.jsx` | Header (APIx + SIH26056 + MoSPI/NSO) + `<Dashboard/>`. |
-| `src/pages/Dashboard.jsx` | State `timeRange`; `useApixDaily`; 4 `MetricCard`s (APIx Today, Routes Tracked, Quotes Processed, Last Updated); chart grid (ApixTrend, Heatmap, ElasticityCurve, BacktestChart); UnbundlingInspector; loading/error states. |
-| `src/api/client.js` | `apiFetch` wrapper adding `Authorization: Bearer`; 9 functions: `getApixDaily/Weekly/Monthly`, `getRoutes`, `getHeatmap`, `getElasticity`, `getQuotes`, `getBacktest`, `triggerSweep`. |
-| `src/hooks/useApix.js` | 4 hooks (`useApixDaily`, `useHeatmap`, `useElasticity`, `useBacktest`) — fetch + loading + error with cancellation guards. |
-| `src/components/MetricCard.jsx` | Headline metric + ↑/↓ % change (emerald/rose). |
-| `src/components/ApixTrend.jsx` | Recharts LineChart; daily/weekly/monthly granularity toggle (state-local; only daily data is fed today); overlays `apix_base_only` dashed line when present. |
-| `src/components/Heatmap.jsx` | react-leaflet map of India (zoom 5); `CircleMarker` airports + `Polyline` colored by volatility (green/amber/red), width ∝ `index_contrib`; popups with avg fare + volatility. |
-| `src/components/ElasticityCurve.jsx` | Recharts ScatterChart fare vs lead time (total + base). |
-| `src/components/BacktestChart.jsx` | LineChart APIx(rebased) vs DGCA avg fare; MAPE badge; RMSE + correlation footer. |
-| `src/components/UnbundlingInspector.jsx` | Fetches 50 quotes, aggregates averages by carrier, renders a table of base/udf/taxes/convenience/other/total. |
-| `src/components/TimeRangeFilter.jsx` | Presets 7d/30d/90d + custom date inputs. |
-| `src/components/ExportButton.jsx` | CSV (papaparse) + JSON downloads of current data. |
-| `src/utils/format.js` | `formatINR` (en-IN currency), `formatDateIST` (Asia/Kolkata tz), `formatPercent`, `formatNumber`. |
-| `src/index.css` | Tailwind base/components/utilities + Inter font stack. |
-| `src/mock/README.md` | Rule: **no JSON in the frontend** — mock data only from backend `data/mock/`. |
-
-Conventions: never hard-code data; components stay dumb (hooks fetch); `npm run lint` and
-`npm run build` must pass (CI).
+**Components:** MetricCard, ApixTrend, Heatmap, ElasticityCurve, BacktestChart, UnbundlingInspector, TimeRangeFilter, ExportButton.
 
 ### 7.8 `data/` — Datasets
 
 | Folder | Contents | Git? |
 |---|---|---|
-| `raw/` | Scrape payloads `{source}/{date}/{ROUTE}_T{lead}.json` + `.sessions/` | **No** (gitignored, `.gitkeep` only) |
-| `mock/` | Realistic fake API responses (**committed**): `apix_daily.json` (45 days, 361 lines), `fare_quotes.json` (90 quotes, 1711 lines, generated 2026-09-04), `heatmap.json` (6 routes), `elasticity.json` (5 lead times), `backtest.json` (3 months: MAPE 1.61 %, RMSE 36.46, r 0.9502) | Yes |
-| `reference/` | `airports.csv` (6 IATA coords), `dgca_monthly_avg_fare.csv` (placeholder weights) | Yes (small only) |
-
-Mock shapes must match `pipeline/schemas.py` + `app/schemas/responses.py`; regenerated
-deterministically (seed 42) by `make mock-data`.
+| `raw/` | Scrape payloads | **No** (gitignored) |
+| `mock/` | Realistic fake API responses | Yes |
+| `reference/` | `airports.csv`, `dgca_monthly_avg_fare.csv` | Yes |
 
 ### 7.9 `tests/` — pytest suite (15 tests)
 
 | File | Tests | What they cover |
 |---|---|---|
-| `test_app/test_health.py` | 4 | `/health` 200 + fields; no-auth required for health; API 401 without token; 200 with token |
-| `test_db/test_models.py` | 2 | All 6 models importable; correct `__tablename__`s |
-| `test_engine/test_index_calculator.py` | 4 | Laspeyres = 100 at base; >100 on +10 % prices (≈110); <100 on −10 % (≈90); Geometric Young = 100 at base |
-| `test_pipeline/test_unbundler.py` | 4 | `validate_raw` accepts valid; rejects negative fare; `unbundle` maps labels correctly |
-| `test_scrapers/test_base.py` | 4 | ScrapeJob/ScrapeResult creation; registry has indigo + makemytrip |
-| `tests/conftest.py` | — | Fixtures: `sample_raw_quote`, `sample_clean_quote`, `sample_indigo_fixture`, `sample_makemytrip_fixture` |
-| `tests/fixtures/` | — | `indigo_sample.json` / `makemytrip_sample.json` — **placeholders** (docstring only), awaiting real recon captures |
-
-Marker: `integration` (excluded in CI). Rules: mirror package layout; scraper tests never hit
-the network (respx/monkeypatch); ≥1 test per public function; PRs without tests bounce.
+| `test_app/test_health.py` | 4 | Health endpoint, auth |
+| `test_db/test_models.py` | 2 | Model imports, table names |
+| `test_engine/test_index_calculator.py` | 4 | Laspeyres, Geometric Young |
+| `test_pipeline/test_unbundler.py` | 4 | Validation, unbundling |
+| `test_scrapers/test_base.py` | 4 | Job/result creation, registry |
+| `tests/fixtures/indigo_sample.json` | — | **Real:** 77 flights DEL→BOM (756 KB) |
 
 ### 7.10 `scripts/`
 
-- `generate_mock_data.py` — deterministic (seed 42) generator for the 5 mock JSON files;
-  models lead-time fare decay (T+1 ≈ 1.8× T+45) and daily index drift.
-- `run_local_sweep.sh` — one-off scrape wrapper: `bash scripts/run_local_sweep.sh DEL-BOM 7 indigo`.
-- `wait_for_db.sh` — pg_isready poller (used by compose flows).
+- `generate_mock_data.py` — deterministic mock data generator.
+- `run_local_sweep.sh` — one-off scrape wrapper.
+- `wait_for_db.sh` — pg_isready poller.
 
 ### 7.11 `docs/`, `slides/`, `demo/` **(Owner: Sneh)**
 
-- `docs/README.md` — plan for `architecture.md` (≤ 2 pages), `api_reference.md`,
-  `data_contract.md`, `index_methodology.md`, `ethics_and_compliance.md`, `img/`.
-  **All content files are still to be written.**
-- `slides/README.md` — 5-slide pitch deck plan (`pitch_deck.pptx` + PDF): Problem → Scraping
-  & Stealth → Unbundling & Index Math → APIx vs DGCA → Impact & Roadmap. Not yet created.
-- `demo/README.md` — 2-minute video shot list (`apix_demo.mp4`): hero → trigger sweep →
-  pipeline → index → dashboard → Swagger/backtest → close. Not yet recorded.
+- `docs/` — content files still to be written.
+- `slides/` — pitch deck not yet created.
+- `demo/` — video not yet recorded.
 
 ### 7.12 `.github/` — CI/CD & templates
 
-- `workflows/backend-ci.yml` — on push/PR to `main`: **Lint** job (Python 3.11, `ruff check`
-  + `ruff format --check`) → **Test** job (`pytest -m "not integration"` with coverage,
-  `PYTHONPATH=.`, artifacts `coverage.xml` + `report.xml`, 7-day retention).
-- `workflows/frontend-ci.yml` — path-filtered to `frontend/**`: **Lint** (`npm ci` + `npm run
-  lint`) → **Build** (`npm run build`, artifact `frontend-dist`, 1-day retention).
-- `PULL_REQUEST_TEMPLATE.md` — What/Why/Module-Owner/How-Tested/Screenshots/Type-of-Change/
-  Checklist (incl. "does NOT modify `pipeline/schemas.py`"; data-contract ping rule).
-- `ISSUE_TEMPLATE/bug.md`, `ISSUE_TEMPLATE/task.md` — structured issue templates (module,
-  assignee, priority P0–P3, acceptance criteria, blocked-by).
-- `README.md` — notes; branch protection on `main`: PR required, 1 approval, CI green
-  (recent remote commits removed this claim from the root README).
+- `workflows/backend-ci.yml` — ruff + pytest on push/PR.
+- `workflows/frontend-ci.yml` — eslint + build on `frontend/**` changes.
+- `PULL_REQUEST_TEMPLATE.md` — structured PR template.
+- `ISSUE_TEMPLATE/` — bug and task templates.
 
 ---
 
@@ -548,31 +425,14 @@ the network (respx/monkeypatch); ≥1 test per public function; PRs without test
 ```
 I_t = Σ_i (P_i,t × Q_i,0) / Σ_i (P_i,0 × Q_i,0) × 100
 ```
-- `i` — route in the 6-route basket
-- `P_i,t` — representative price of route i on day t = **median `total_fare`** across
-  carriers & non-stop flights per lead time, then aggregated across lead times (default:
-  simple mean of the 5 lead-time medians; optional lead-time weights from config)
-- `Q_i,0` — **DGCA passenger volume weight** (base period), normalised to sum 1
-- `P_i,0` — base-period price = mean over the **first 7 days** of collected data → index = 100
-- `apix_base_only` — same index computed on `base_fare` only (isolates tax/fee inflation)
-
-### Geometric Young (comparison/optional)
-```
-I_t = Π_i (P_i,t / P_i,0)^(Q_i,0) × 100
-```
-
-### Elasticity
-`elasticity = d ln(P) / d ln(lead_time)` via `scipy.stats.linregress` on the
-(lead_time, median fare) points — negative slope ⇒ advance-purchase discount (T+1 ≈ 1.8× T+45).
+- `P_i,t` — median `total_fare` across carriers & lead times
+- `Q_i,0` — DGCA passenger volume weight (normalised to sum 1)
+- `P_i,0` — base-period price (first 7 days of data → index = 100)
 
 ### Backtest metrics
-- **MAPE** — Mean Absolute Percentage Error (`|actual−predicted|/actual × 100`)
+- **MAPE** — Mean Absolute Percentage Error
 - **RMSE** — Root Mean Square Error
-- **Pearson r** — correlation between APIx-implied monthly fares and DGCA monthly average fares
-
-Backtest strategy (from `engine/README.md`): since the past can't be scraped, combine 30+
-days of live collection with synthetic back-fill from public historical fare datasets, and be
-explicit about which in `docs/index_methodology.md`.
+- **Pearson r** — correlation coefficient
 
 ---
 
@@ -583,91 +443,67 @@ Base URL `http://localhost:8000`, all endpoints under `/api/v1` require
 
 | Method | Endpoint | Description | Params |
 |---|---|---|---|
-| GET | `/health` | Health check → `{status:"ok", mock_mode:true, version:"0.1.0"}` | — |
+| GET | `/health` | Health check | — |
 | GET | `/api/v1/apix/daily` | Daily APIx | `from_date`, `to_date` |
 | GET | `/api/v1/apix/weekly` | Weekly rollup | `from_date`, `to_date` |
 | GET | `/api/v1/apix/monthly` | Monthly rollup | `from_date`, `to_date` |
 | GET | `/api/v1/routes` | Sector basket + weights | — |
-| GET | `/api/v1/routes/heatmap` | Per-route heatmap (avg fare, volatility, lat/lon) | `route_date` |
-| GET | `/api/v1/elasticity` | Lead-time elasticity matrix | `route_id`, `route_date` |
-| GET | `/api/v1/quotes` | Clean quotes (paginated) | `route_id`, `route_date`, `lead_time`, `carrier`, `limit` (1–500, default 50) |
-| GET | `/api/v1/backtest` | APIx vs DGCA + MAPE/RMSE/r | — |
-| POST | `/api/v1/admin/trigger-sweep` | Enqueue `run_daily_sweep` (planned demo button) | — |
-
-*Note: `trigger-sweep` exists in the frontend client (`triggerSweep()`) and README but is
-**not yet registered** in `router.py`.*
-
-Example daily response:
-```json
-[
-  {
-    "date": "2025-01-15",
-    "apix": 102.3456,
-    "apix_base_only": 101.8923,
-    "pct_change_dod": 0.23,
-    "n_quotes": 24,
-    "n_routes": 6
-  }
-]
-```
-Swagger UI: `http://localhost:8000/docs`. Frontend dev proxy: `localhost:5173/api/*` → `:8000`.
+| GET | `/api/v1/routes/heatmap` | Per-route heatmap | `route_date` |
+| GET | `/api/v1/elasticity` | Lead-time elasticity | `route_id`, `route_date` |
+| GET | `/api/v1/quotes` | Clean quotes | `route_id`, `route_date`, `lead_time`, `carrier`, `limit` |
+| GET | `/api/v1/backtest` | APIx vs DGCA | — |
+| **POST** | **`/api/v1/admin/trigger-sweep`** | **Trigger scrape sweep** | — |
 
 ---
 
 ## 10. Celery Task Orchestration
 
-- **App:** `app.core.celery_app.celery` — name `"apix"`, Redis broker + backend, JSON
-  serialization, timezone `Asia/Kolkata`.
-- **Beat:** single entry `daily-sweep` → `app.tasks.scrape_tasks.run_daily_sweep` at
-  `crontab(hour=settings.SCRAPE_HOUR_IST=2, minute=0)` (02:00 IST nightly).
-- **Planned chord:** `build_jobs_for_date()` → group of `scrape_route` tasks → callback
-  `clean_and_load` → `compute_daily_index`. All three tasks are currently stubs.
+- **Beat:** `daily-sweep` → `run_daily_sweep` at 02:00 IST.
+- **Chord workflow:** `group(scrape_route × 60)` → callback: `clean_and_load | compute_daily_index`.
 - **Queues:** worker starts with `-Q default,scrape`.
 - **Monitoring:** Flower at `:5555`.
+
+```
+run_daily_sweep
+  ├─ build_jobs_for_date() → 60 jobs
+  ├─ chord(group([scrape_route, ...]), callback)
+  │    └─ scrape_route × 60 (parallel, acks_late, retry on 429/503/502)
+  └─ callback:
+       ├─ clean_and_load(date) → parse → validate → unbundle → IQR → load
+       └─ compute_daily_index(date) → Laspeyres → apix_daily
+```
 
 ---
 
 ## 11. Docker Infrastructure
 
-`docker-compose.yml` — 8 services (7 default + MinIO behind the `audit` profile):
+`docker-compose.yml` — 8 services:
 
-| Service | Image / build | Command | Ports | Notes |
-|---|---|---|---|---|
-| `db` | `timescale/timescaledb:latest-pg16` | — | 5432 | mounts `db/init.sql`; volume `pgdata`; pg_isready healthcheck; creds `apix/apix` |
-| `redis` | `redis:7-alpine` | — | 6379 | |
-| `api` | `build: .` | `uvicorn app.main:app --reload` | 8000 | `env_file: .env`; mounts repo + `data/`; depends on healthy db; `/health` curl healthcheck |
-| `worker` | `build: .` | `celery -A app.core.celery_app worker -l info -Q default,scrape` | — | |
-| `beat` | `build: .` | `celery -A app.core.celery_app beat -l info` | — | |
-| `flower` | `build: .` | `celery -A app.core.celery_app flower --port=5555` | 5555 | |
-| `frontend` | `node:20-alpine` | `npm install && npm run dev -- --host` | 5173 | |
-| `minio` | `minio/minio` | `server /data --console-address ":9001"` | 9000/9001 | **profile `audit`** — optional object storage for raw payloads; creds `minio/minio123` |
+| Service | Build | Notes |
+|---|---|---|
+| `db` | `timescale/timescaledb:latest-pg16` | Healthcheck: pg_isready |
+| `redis` | `redis:7-alpine` | **Healthcheck: redis-cli ping** |
+| `api` | `.` (INSTALL_PLAYWRIGHT=false) | Depends on db+redis healthy |
+| `worker` | `. (INSTALL_PLAYWRIGHT=true)` | Depends on db+redis healthy |
+| `beat` | `.` | Depends on redis healthy |
+| `flower` | `.` | Port 5555 |
+| `frontend` | `node:20-alpine` | Port 5173 |
+| `minio` | `minio/minio` | Profile: audit |
 
-`Dockerfile` (python:3.11-slim): `PYTHONDONTWRITEBYTECODE`/`PYTHONUNBUFFERED`/`PYTHONPATH=/app`;
-curl/wget/gnupg for Playwright; `pip install -r requirements.txt`; optional
-`playwright install --with-deps chromium` behind build-arg `INSTALL_PLAYWRIGHT=true` (default
-on — heavy image); CMD uvicorn on 8000.
+**Dockerfile:** `INSTALL_PLAYWRIGHT` defaults to `false` (~600MB). Worker overrides to `true`.
 
 ---
 
 ## 12. Configuration & Environment Variables
 
-Loaded by pydantic-settings from `.env` (template in `.env.example`; team workflow copies
-`.env.local` → `.env`). `frontend/.env` holds `VITE_API_BASE` / `VITE_API_TOKEN`.
-
 | Variable | Default | Purpose |
 |---|---|---|
-| `APP_ENV` | `dev` | Environment label |
-| `MOCK_MODE` | `true` | Serve `data/mock/*` instead of DB |
-| `API_TOKEN` | `change-me-dev-token` | Bearer auth (real token in `.env.local`) |
-| `POSTGRES_USER/PASSWORD/DB` | `apix` | DB credentials |
-| `DATABASE_URL` | `postgresql+psycopg://apix:apix@db:5432/apix` | SQLAlchemy URL |
-| `REDIS_URL` | `redis://redis:6379/0` | Celery broker/backend |
-| `PROXY_ENABLED` | `false` | Toggle proxy rotation |
-| `PROXY_URL` | *(empty)* | Comma-separated proxy list |
-| `RAW_DATA_DIR` | `data/raw` | Raw payload storage root |
+| `MOCK_MODE` | `true` | Serve mock data |
+| `API_TOKEN` | `change-me-dev-token` | Bearer auth |
+| `DATABASE_URL` | `postgresql+psycopg://apix:apix@db:5432/apix` | PostgreSQL |
+| `REDIS_URL` | `redis://redis:6379/0` | Celery broker |
+| `PROXY_ENABLED` | `false` | Proxy rotation |
 | `SCRAPE_HOUR_IST` | `2` | Nightly sweep hour |
-| `LOG_LEVEL` | `INFO` | loguru level |
-| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | `minio:9000` / `minio` / `minio123` | Audit object storage |
 
 ---
 
@@ -675,33 +511,21 @@ Loaded by pydantic-settings from `.env` (template in `.env.example`; team workfl
 
 | Target | Runs |
 |---|---|
-| `make setup` | `cp -n .env.example .env`; pip install dev deps; pre-commit install; `cd frontend && npm install` |
-| `make up` / `make down` / `make logs` | docker compose up -d / down / logs -f |
-| `make migrate` | `alembic -c db/migrations/env.py upgrade head` (inside api container) |
+| `make setup` | Install deps, pre-commit, frontend |
+| `make up` / `make down` | Docker compose up/down |
+| `make migrate` | `alembic -c db/migrations/alembic.ini upgrade head` |
 | `make seed` | `python -m db.seed` |
-| `make mock-data` | `python scripts/generate_mock_data.py` |
-| `make test` / `make test-cov` | pytest / pytest --cov |
-| `make lint` | ruff check + frontend eslint |
-| `make fmt` | ruff format + prettier |
-| `make scrape ROUTE=… LEAD=… SOURCE=…` | `python -m app.tasks.scrape_tasks` |
-| `make pipeline DATE=…` | `python -m pipeline.run --date …` |
-| `make index DATE=…` / `make backtest` | `python -m engine.run` |
-| `make shell` / `make psql` | api container bash / psql into db |
-
-Local run without Docker: `uvicorn app.main:app --reload` + `celery -A app.core.celery_app
-worker` + `celery ... beat`.
+| `make test` | pytest |
+| `make lint` | ruff check + eslint |
+| `make scrape ROUTE=… LEAD=… SOURCE=…` | Submit Celery scrape task |
 
 ---
 
 ## 14. Testing Landscape
 
-- `pytest` with `testpaths=["tests"]`; markers: `integration` (excluded by CI).
-- 15 unit tests pass (verifiable with `make test`); CI additionally reports coverage with
-  `--cov-report=term-missing`.
-- Fixtures in `conftest.py`; placeholder vendor fixtures awaiting real recon captures.
-- Planned additions per module READMEs: scraper retry/storage tests (mocked HTTP), parser
-  tests, IQR outlier-injection test (₹99,999 fare), in-memory SQLite model tests, and the
-  3-route hand-computed Laspeyres example (already partially covered).
+- 15 unit tests pass (verifiable with `make test`).
+- Fixtures include real Indigo sample (77 flights, 756 KB).
+- CI runs `pytest -m "not integration"` with coverage.
 
 ---
 
@@ -710,87 +534,69 @@ worker` + `celery ... beat`.
 ```
 GitHub Actions (push/PR to main)
 ├─ Backend CI            └─ Frontend CI (paths: frontend/**)
-│  ├─ Lint: ruff check + │  ├─ Lint: npm ci + eslint (max-warnings 0)
-│  │     ruff format     │  └─ Build: npm run build → artifact frontend-dist
-│  └─ Test: pytest -m    │
-│       "not integration"│
-│       + coverage →     │
-│       coverage.xml,    │
-│       report.xml       │
+│  ├─ Lint: ruff check + │  ├─ Lint: eslint
+│  │     ruff format     │  └─ Build: vite
+│  └─ Test: pytest       │
 └────────────────────────┘
 ```
-Branch protection on `main`: PR required, 1 approval, CI green (per `.github/README.md`;
-recent remote README commits removed that claim from the root README).
 
 ---
 
 ## 16. Team, Ownership & Workflow
 
-| Member | Role | Packages (per `CODEOWNERS`) |
+| Member | Role | Packages |
 |---|---|---|
-| **Yuvraj** | Team Lead, Backend/DevOps | `app/`, `config/`, Docker/compose/Makefile, `.github/` |
-| **Sourabh** | Scraping & DB | `scrapers/`, `db/`, `engine/` (+Yuvraj) |
-| **Abhay** | Scraping & DB | `scrapers/`, `db/`, `engine/` (+Yuvraj) |
+| **Yuvraj** | Team Lead, Backend/DevOps | `app/`, `config/`, Docker, CI |
+| **Sourabh** | Scraping & DB | `scrapers/`, `db/`, `engine/` |
+| **Abhay** | Scraping & DB | `scrapers/`, `db/`, `engine/` |
 | **Vanshika** | Data Pipeline | `pipeline/` |
 | **Mehak** | Frontend | `frontend/` |
-| **Sneh** | Documentation | `docs/`, `slides/`, `demo/`, `README.md` |
-
-Workflow rules (from `instructions-for-team.md`):
-- Branch naming `feat/<name>/<topic>` / `fix/<name>/<topic>`; **never push/commit to main**.
-- PR → CI green → review by Yuvraj → squash-merge.
-- Folder ownership is strict (ask before touching another member's package).
-- Daily 10-minute sync: done / doing / blocked.
-- The API token in `.env.local` must not be shared outside the team.
+| **Sneh** | Documentation | `docs/`, `slides/`, `demo/` |
 
 ---
 
 ## 17. Ethics & Compliance
 
-- **Rate limiting:** ≤ 1 request / 3 s per source per IP (`rate_limit_rps = 0.33`), 1–4 s jitter.
-- **robots.txt:** respected for all scraped paths; `robots_paths_checked` flag per source.
-- **Off-peak:** scraping scheduled at 02:00 IST only.
-- **No login / no booking:** anonymous search flows only — never books or holds seats.
-- **Audit trail:** raw payloads retained (`data/raw/` + `raw_quotes` table + optional MinIO).
-- **Privacy:** no personal data collected.
-- Details destined for `docs/ethics_and_compliance.md` (not yet written).
+- Rate limiting: ≤1 req/3s per source per IP
+- robots.txt respected
+- Off-peak scraping (02:00 IST)
+- No login/booking — anonymous search only
+- Audit trail: raw payloads retained
+- No personal data collected
 
 ---
 
 ## 18. Implementation Status: Done vs. Stub (Critical)
 
 ### ✅ Fully implemented & working
-- FastAPI app: health, CORS, router mount, Bearer auth, all v1 endpoints serving mock data
-- Mock service + deterministic mock data generator (seed 42)
-- Celery app config + beat schedule (02:00 IST) + Flower
-- Loguru logging setup
-- Full DB model layer (6 tables) + session + seed script
-- `laspeyres()` / `geometric_young()` math + their unit tests
-- `load_weights()` / `pct_change()` / `daily_with_pct()` / `compute_elasticity_coefficient()` /
-  `compute_mape` / `compute_rmse` / `compute_correlation`
-- Pipeline: validators, unbundler (fee maps + regex fallback + sum check), cleaner
-  (dedupe/IQR/sold-out), `run.py` CLI, `schemas.py` contract
-- Scrapers: registry, job builder (6×5×enabled), proxy manager (rotation/cooldown/backoff),
-  session manager, fingerprints, storage `save_raw`, `run_jobs`
-- Entire frontend (7 components + hooks + client + utils)
-- GitHub Actions (backend + frontend), PR/issue templates, pre-commit, Makefile, Docker stack
+- FastAPI app: health, CORS, Bearer auth, all v1 endpoints (mock mode)
+- **POST /admin/trigger-sweep** endpoint registered
+- Celery chord workflow: sweep → scrape group → clean → index
+- **DB migration** with hypertable + composite indexes
+- **deps.py single source of truth** (no duplication)
+- **db/queries.py** — centralised query layer (15+ functions)
+- **Redis healthcheck** + proper startup ordering
+- **Dockerfile** — Playwright conditional (default off)
+- **Real Indigo fixture** (77 flights, 756 KB)
+- Mock service + deterministic data generator
+- Loguru logging, full DB model layer, seed script
+- `laspeyres()` / `geometric_young()` math + tests
+- Pipeline: validators, unbundler, cleaner, `run.py` CLI
+- Scrapers: registry, job builder, proxy/session managers, fingerprints, storage
+- Entire frontend (7 components + hooks + client)
+- GitHub Actions CI/CD, PR/issue templates
 
-### ⚠️ Stubbed / not yet implemented (owner)
-- `BaseScraper.fetch()` retry loop, `build_request()`/`parse_ok()` for IndiGo & MakeMyTrip
-  (**Sourabh/Abhay**) — blocked on **endpoint recon** (DevTools capture → `scrapers/recon/*.md`
-  → real fixtures)
+### ⚠️ Stubbed / not yet implemented
+- `BaseScraper.fetch()` retry loop (**Sourabh/Abhay**) — blocked on endpoint recon
+- `build_request()`/`parse_ok()` for IndiGo & MakeMyTrip (**Sourabh/Abhay**)
 - `playwright_fallback.fetch_with_browser()` (**Sourabh/Abhay**)
 - `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
-- Source parsers `indigo_parser` / `makemytrip_parser` (**Vanshika**) — blocked on real fixtures
-- `loader.load()` DB upsert (**Vanshika**) — blocked on models (models exist now)
-- `compute_daily` / `get_base_period_prices` / weekly & monthly rollups / elasticity matrix /
-  `run_backtest` real DB queries (**Sourabh/Abhay**)
-- Celery tasks `run_daily_sweep`, `scrape_route`, `clean_and_load`, `compute_daily_index`
-  (**Yuvraj wires with owners**)
-- First Alembic migration incl. hypertable creation (**Sourabh/Abhay**)
-- `POST /api/v1/admin/trigger-sweep` endpoint registration (client-side exists only)
-- `db/queries.py` helper module (planned)
+- Source parsers `indigo_parser` / `makemytrip_parser` (**Vanshika**)
+- `loader.load()` DB upsert (**Vanshika**)
+- `compute_daily` real DB path (**Sourabh/Abhay**)
+- `get_base_period_prices` real DB path (**Sourabh/Abhay**)
+- Weekly/monthly rollups, elasticity matrix, backtest real queries (**Sourabh/Abhay**)
 - `docs/*` content, slides deck, demo video (**Sneh**)
-- 30+ day DGCA backtest with real data (in progress by design)
 
 ---
 
@@ -798,48 +604,35 @@ Workflow rules (from `instructions-for-team.md`):
 
 | Deliverable | Status |
 |---|---|
-| Working prototype: scrape → clean → index → dashboard | **Partial** — demo path works via mock; real scrape chain stubbed |
-| Cleaned, de-duplicated fare DB with unbundled fields | Models + cleaner done; loader/upsert pending |
-| Laspeyres index module (daily; weekly/monthly rollups) | Math done; DB-backed daily/rollups pending |
-| Interactive dashboard with 7 components | **Done** (mock-fed) |
-| README + Docker setup + config docs | **Done** |
-| Tests + CI/CD (GitHub Actions) | **Done** (15 tests, both pipelines) |
+| Working prototype: scrape → clean → index → dashboard | **Partial** — mock demo works; real scrape chain needs fetch() implementation |
+| Cleaned, de-duplicated fare DB with unbundled fields | Models + cleaner done; loader pending |
+| Laspeyres index module | Math done; DB-backed daily pending |
+| Interactive dashboard | **Done** (mock-fed) |
+| README + Docker + config docs | **Done** |
+| Tests + CI/CD | **Done** (15 tests, both pipelines) |
+| DB migration + hypertable | **Done** |
+| Celery task chain | **Done** (chord workflow implemented) |
+| Centralised query layer | **Done** (db/queries.py) |
+| Admin endpoint | **Done** (POST /admin/trigger-sweep) |
 | 30+ day backtest vs DGCA | In progress |
-| 2-page `docs/architecture.md` | Not started |
-| 2-min demo video, 5-slide deck | Not started |
+| Architecture doc, demo video, slides | Not started |
 
 ---
 
 ## 20. Known Gaps, TODOs & Roadmap
 
-**Immediate next steps (Day-1 plan):**
-1. Endpoint recon for IndiGo → MakeMyTrip (DevTools XHR capture, document in `recon/`,
-   produce real `tests/fixtures/*.json`) — unblocks scrapers **and** parsers.
-2. Generate the first Alembic migration + hypertable; `make migrate && make seed`; add
-   `db/queries.py`.
-3. Wire the Celery chord (sweep → scrape group → clean_and_load → compute_daily_index) and
-   register `POST /admin/trigger-sweep`.
-4. Implement `loader.py` against `FareQuote` and DB-backed `compute_daily`.
+**Remaining blockers:**
+1. **Scraper fetch()** — IndiGo recon captured; need to implement `build_request()` + `fetch()` loop.
+2. **Parsers** — blocked on real fixtures (IndiGo fixture now captured; parser can proceed).
+3. **loader.py** — DB upsert commented TODO; models exist, queries layer ready.
+4. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
 
-**Known wrinkles worth flagging:**
-- `app/api/deps.py` duplicates `db/session.py` (engine/session) — consolidate later.
-- `get_mock_apix_weekly/monthly` just echo daily data; `get_mock_quotes` ignores filters;
-  `get_mock_routes` reuses `heatmap.json` (which lacks `weight`/`active` fields) — acceptable
-  for demo, but the response schemas (`RouteResponse` requires `weight`, `active`) don't
-  fully match mock shapes.
-- `scripts/run_local_sweep.sh` invokes `python -m app.tasks.scrape_tasks` with CLI args, but
-  `scrape_tasks.py` has **no argparse main** — the script will fail until tasks are built.
-- The Docker image installs Playwright + Chromium by default (heavy); `INSTALL_PLAYWRIGHT=false`
-  build-arg can slim it while it's unused.
-- Frontend `ApixTrend` granularity toggle doesn't fetch weekly/monthly endpoints yet; the
-  Heatmap falls back to hard-coded `AIRPORT_COORDS` (permitted fallback, API is source of truth).
-- `engine/index_calculator.compute_daily` returns `n_routes=6` hard-coded in placeholder.
+**Known wrinkles:**
+- `get_mock_apix_weekly/monthly` echo daily data; mock shapes don't fully match response schemas.
+- Frontend `ApixTrend` granularity toggle doesn't fetch weekly/monthly yet.
 
-**Roadmap beyond MVP:** Air India/Akasa/EaseMyTrip scrapers; MinIO audit archive (compose
-`audit` profile already exists); rate limiting + `X-Request-ID` + `generated_at` audit tags
-on responses; continuous aggregates on the hypertable; scaling to the full DGCA basket;
-public MoSPI/RBI-facing API.
+**Roadmap beyond MVP:** Air India/Akasa/EaseMyTrip scrapers; MinIO audit archive; rate limiting + audit tags; continuous aggregates; full DGCA basket; public MoSPI/RBI-facing API.
 
 ---
 
-*Document generated from a full repository audit — commit `5bcb2f7`, branch `main`, Sept 5, 2026.*
+*Document updated — commit `23420f5`, branch `main`, Sept 6, 2026.*

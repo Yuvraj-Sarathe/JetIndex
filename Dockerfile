@@ -6,8 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System deps for Playwright
-ARG INSTALL_PLAYWRIGHT=true
+# System deps for Playwright (disabled by default, enabled for worker only)
+ARG INSTALL_PLAYWRIGHT=false
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget gnupg \
     && rm -rf /var/lib/apt/lists/*
