@@ -80,7 +80,7 @@ A fully automated pipeline replacing manual collection:
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Scrape    │───▶│   Clean     │───▶│   Store     │───▶│   Compute   │───▶│   Serve     │
+│   Scrape    │───▶│   Clean     │───▶│   Store     │───▶│   Compute   │───▶│   Serve   │
 │  (IndiGo,   │    │  (Unbundle, │    │ (TimescaleDB│    │ (Laspeyres  │    │ (FastAPI +  │
 │  MakeMyTrip)│    │   IQR, etc) │    │  hypertable)│    │   Index)    │    │  Dashboard) │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
