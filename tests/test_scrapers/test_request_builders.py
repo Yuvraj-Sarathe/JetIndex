@@ -43,14 +43,15 @@ def mmt_scrape_job() -> ScrapeJob:
 # ==============================================================================
 
 
-def test_indigo_build_request(sample_scrape_job):
+def test_indigo_build_request(sample_scrape_job, monkeypatch):
+    monkeypatch.setenv("INDIGO_USER_KEY", "test_indigo_user_key_456")
     scraper = IndigoScraper()
     req = scraper.build_request(sample_scrape_job)
 
     assert req.method == "POST"
     assert req.url == "https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search"
     assert req.headers["content-type"] == "application/json"
-    assert req.headers["user_key"] == "31e90be8fff2f5e2eea242c225f21b1a"
+    assert req.headers["user_key"] == "test_indigo_user_key_456"
     assert "origin" in req.headers
     assert "referer" in req.headers
 
@@ -64,7 +65,8 @@ def test_indigo_build_request(sample_scrape_job):
     assert body["passengers"]["types"][0]["count"] == 1
 
 
-def test_indigo_build_request_with_session_manager(sample_scrape_job):
+def test_indigo_build_request_with_session_manager(sample_scrape_job, monkeypatch):
+    monkeypatch.setenv("INDIGO_USER_KEY", "test_indigo_user_key_456")
     session_mgr = MagicMock()
     session_mgr.get_token.return_value = "mock_jwt_token_123"
 
@@ -72,6 +74,15 @@ def test_indigo_build_request_with_session_manager(sample_scrape_job):
     req = scraper.build_request(sample_scrape_job)
 
     assert req.headers["authorization"] == "Bearer mock_jwt_token_123"
+    assert req.headers["user_key"] == "test_indigo_user_key_456"
+
+
+def test_indigo_build_request_missing_user_key_raises_error(sample_scrape_job, monkeypatch):
+    monkeypatch.delenv("INDIGO_USER_KEY", raising=False)
+    scraper = IndigoScraper(user_key="")
+    scraper.USER_KEY = ""
+    with pytest.raises(ValueError, match="INDIGO_USER_KEY"):
+        scraper.build_request(sample_scrape_job)
 
 
 def test_indigo_parse_ok_with_fixture():

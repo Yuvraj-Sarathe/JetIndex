@@ -18,10 +18,20 @@ class IndigoScraper(BaseScraper):
     rate_limit_rps = 0.33  # 1 req / 3s
 
     ENDPOINT_URL = "https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search"
-    USER_KEY = os.getenv("INDIGO_USER_KEY", "31e90be8fff2f5e2eea242c225f21b1a")
+    USER_KEY: str = os.getenv("INDIGO_USER_KEY", "")
+
+    def __init__(self, proxy_manager=None, session_manager=None, user_key: str | None = None):
+        super().__init__(proxy_manager=proxy_manager, session_manager=session_manager)
+        self.user_key = user_key or os.getenv("INDIGO_USER_KEY", "") or self.USER_KEY
 
     def build_request(self, job: ScrapeJob) -> RequestSpec:
         """Build the IndiGo fare search request."""
+        user_key = self.user_key or self.USER_KEY or os.getenv("INDIGO_USER_KEY", "")
+        if not user_key:
+            raise ValueError(
+                "INDIGO_USER_KEY environment variable is required but not set. Please configure INDIGO_USER_KEY."
+            )
+
         headers = {
             "accept": "*/*",
             "accept-language": "en-US,en;q=0.9",
@@ -30,7 +40,7 @@ class IndigoScraper(BaseScraper):
             "origin": "https://www.goindigo.in",
             "pragma": "no-cache",
             "referer": "https://www.goindigo.in/",
-            "user_key": self.USER_KEY,  # os.getenv("INDIGO_USER_KEY")
+            "user_key": user_key,
             "user-agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "

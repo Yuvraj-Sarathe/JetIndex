@@ -61,8 +61,11 @@ def save_raw(result: ScrapeResult) -> Path:
                 "payload": result.payload,
             }
             insert_raw_quote(db, raw_quote_data)
+    except ValueError:
+        # Re-raise explicit data/route configuration errors so callers can detect audit row failure
+        raise
     except Exception as e:
-        # Broad catch: DB failure must not crash scrape
-        logger.error("Failed to insert raw_quotes audit row: {}", e)
+        # Broad catch for operational DB outages: disk write succeeded, scrape remains unblocked
+        logger.error("Operational DB failure while inserting raw_quotes audit row: {}", e)
 
     return filepath
