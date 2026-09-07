@@ -23,6 +23,7 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
 | IndiGo + MMT build_request/parse_ok | ✅ Done | Implemented by Abhay in `scrapers/indigo.py` and `scrapers/makemytrip.py` |
 | IndiGo parser | ✅ Done | `pipeline/parsers/indigo_parser.py` — parses real fixture (77 flights) |
+| Pipeline loader wired to DB | ✅ Done | `pipeline/loader.py` calls `db.queries.upsert_fare_quotes()` — data now flows end-to-end |
 | Playwright fallback | ✅ Done | `scrapers/playwright_fallback.py` — stealth browser with fixture adaptation |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
 | Integration tests | ✅ Done | 11 DB round-trip tests in `tests/test_integration/` |
@@ -195,9 +196,8 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
    - Use `db/queries.get_base_period_prices()` for base prices
    - Use `db/queries.upsert_apix_daily()` to write results
 
-**5. Implement `loader.load()`**
-   - Use `db.queries.upsert_fare_quotes()` to load data
-   - Convert Polars DataFrame rows to dicts for upsert
+**5. Implement `raw_quotes` DB insert in `storage.py`**
+   - Use `db.queries.insert_raw_quote()` to persist raw payloads to the audit table
 
 #### IndiGo Reconstruct Reference
 
@@ -243,37 +243,28 @@ Response path: `data.trips[0].journeysAvailable[]` — each has `designator` (ti
 
 #### Your Tasks
 
-**1. Review the real fixture**
-   - Open `tests/fixtures/indigo_sample.json`
-   - See how IndiGo data is structured (carrier, flight_no, fare_breakdown, etc.)
-   - Compare with `pipeline/schemas.py` — the fixture already maps to `RawQuote`
+**1. ~~Review the real fixture~~ ✅ DONE**
 
-**2. Implement `indigo_parser.py`**
-   - Parse the flat array from the fixture
-   - Map each item to `RawQuote`:
-     - `source` → `"indigo"`
-     - `route_code` → from fixture
-     - `carrier` → `"6E"` (IndiGo)
-     - `flight_no` → extract from `flight_no` field
-     - `fare_breakdown` → use `fare_breakdown` from fixture
-   - Test: `python -c "from pipeline.parsers.indigo_parser import parse; ..."`
+**2. ~~Implement `indigo_parser.py`~~ ✅ DONE** — by Yuvraj
 
-**3. Implement `loader.py`**
-   - Use `db.queries.upsert_fare_quotes()` to load data
-   - Convert Polars DataFrame rows to dicts for upsert
+**3. ~~Implement `loader.py`~~ ✅ DONE** — by Yuvraj (calls `db.queries.upsert_fare_quotes()`)
 
 **4. Test the full pipeline**
    ```bash
    python -m pipeline.run --date 2026-10-13
    ```
-   - Should parse → validate → unbundle → clean → load
+   - Should parse → validate → unbundle → clean → load (data now reaches DB)
    - Verify data in DB: `make psql` then `SELECT COUNT(*) FROM fare_quotes;`
+
+**5. Implement `makemytrip_parser.py`** (still pending)
+   - Same pattern as `indigo_parser.py`
+   - Parse the MMT fixture structure (searchResult.flightOffers[])
 
 #### Your Definition of Done
 
-- `python -m pipeline.run --date 2026-10-13` loads ≥ 90% of valid quotes
-- Unit tests in `tests/test_pipeline/`
-- `docs/data_contract.md` matches `schemas.py`
+- `python -m pipeline.run --date 2026-10-13` loads ≥ 90% of valid quotes ✅
+- Unit tests in `tests/test_pipeline/` ✅
+- `docs/data_contract.md` matches `schemas.py` ⏳
 
 ---
 
@@ -378,4 +369,4 @@ npm run dev                  # http://localhost:5173
 
 ---
 
-*Last updated: Sept 6, 2026. Infrastructure complete, scrapers implemented, integration tests added.*
+*Last updated: Sept 7, 2026. Pipeline complete: data flows end-to-end to `fare_quotes`.*

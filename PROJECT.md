@@ -1,7 +1,7 @@
 # JetIndex (APIx) — Complete Project Documentation (A–Z)
 
 > **One file, every fact.** This document captures the *entire* state of the repository as of
-> **September 6, 2026** (branch `main`, HEAD `693f1bb`): vision, architecture, tech stack,
+> **September 7, 2026** (branch `main`, HEAD `d8a3324`): vision, architecture, tech stack,
 > every module and file, the data contract, the index math, the API, the frontend, tests,
 > CI/CD, team, current coding stage (what is done vs. stubbed), and what comes next.
 >
@@ -112,8 +112,8 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 
 ### Coding stage in one paragraph
 This is a **Day-1+ scaffold** with significant real implementations added:
-- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`).
-- **Still stubbed:** `raw_quotes` DB insert in `storage.py`, `loader.load()` DB upsert, engine `compute_daily`/`get_base_period_prices` DB paths, `makemytrip_parser.py`.
+- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`), **pipeline loader wired to DB** (data now actually reaches `fare_quotes`), `indigo_parser.py` implemented.
+- **Still stubbed:** `raw_quotes` DB insert in `storage.py`, engine `compute_daily`/`get_base_period_prices` DB paths, `makemytrip_parser.py`.
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -336,13 +336,13 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | File | Contents |
 |---|---|
 | `schemas.py` | **The frozen data contract** (see §6). |
-| `parsers/indigo_parser.py` | **Implemented** `parse(payload, job_meta) -> list[RawQuote]`. |
+| `parsers/indigo_parser.py` | **Implemented** `parse(payload, job_meta) -> list[RawQuote]`. Includes `_parse_depart_time()` with multi-format support (HH:MM, HH:MM:SS, 12-hour AM/PM). |
 | `parsers/makemytrip_parser.py` | **Stub**. |
 | `validators.py` | **Working** `validate_raw(q)`. |
 | `unbundler.py` | **Working** `unbundle(RawQuote) -> CleanQuote`. |
 | `cleaner.py` | **Working** Polars: `dedupe()`, `iqr_filter()`, `flag_sold_out()`, `clean_batch()`. |
-| `loader.py` | **Stub** `load(df) -> int` — PostgreSQL upsert commented TODO. |
-| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD`. |
+| `loader.py` | **Implemented** `load(df) -> int` — bulk upsert into `fare_quotes` via `db.queries.upsert_fare_quotes()`. |
+| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD` — full parse→validate→unbundle→clean→load chain. |
 
 ### 7.4 `db/` — TimescaleDB models, migrations, seeds **(Owners: Sourabh + Abhay)**
 
@@ -612,7 +612,7 @@ GitHub Actions (push/PR to main)
 - Mock service + deterministic data generator
 - Loguru logging, full DB model layer, seed script
 - `laspeyres()` / `geometric_young()` math + tests
-- Pipeline: validators, unbundler, cleaner, `run.py` CLI
+- Pipeline: validators, unbundler, cleaner, `run.py` CLI, **loader wired to DB** (`upsert_fare_quotes` from `db/queries.py`)
 - Scrapers: registry, job builder, proxy/session managers, fingerprints, storage
 - Entire frontend (7 components + hooks + client)
 - GitHub Actions CI/CD, PR/issue templates
@@ -621,7 +621,6 @@ GitHub Actions (push/PR to main)
 
 ### ⚠️ Stubbed / not yet implemented
 - `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
-- `loader.load()` DB upsert (**Vanshika**)
 - `compute_daily` real DB path (**Sourabh/Abhay**)
 - `get_base_period_prices` real DB path (**Sourabh/Abhay**)
 - `makemytrip_parser.py` (**Vanshika**)
@@ -634,11 +633,11 @@ GitHub Actions (push/PR to main)
 | Deliverable | Status |
 |---|---|
 | Working prototype: scrape → clean → index → dashboard | **Partial** — mock demo works; real scrape chain needs fetch() implementation |
-| Cleaned, de-duplicated fare DB with unbundled fields | Models + cleaner **done**; loader **pending** |
+| Cleaned, de-duplicated fare DB with unbundled fields | **Done** — parser + cleaner + loader all wired; data flows to `fare_quotes` |
 | Laspeyres index module | Math **done**; DB-backed daily **pending** |
 | Interactive dashboard | **Done** (mock-fed) |
 | README + Docker + config docs | **Done** |
-| Tests + CI/CD | **Done** (15 tests, both pipelines) |
+| Tests + CI/CD | **Done** (26+ unit + 11 integration, both pipelines) |
 | DB migration + hypertable | **Done** |
 | Celery task chain | **Done** (chord workflow implemented) |
 | Centralised query layer | **Done** (db/queries.py) |
@@ -651,9 +650,9 @@ GitHub Actions (push/PR to main)
 ## 20. Known Gaps, TODOs & Roadmap
 
 **Remaining blockers:**
-1. **loader.py** — DB upsert commented TODO; models exist, queries layer ready.
-2. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
-3. **MakemyTrip parser** — stub; needs real fixture parsing once MMT scraping is live.
+1. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
+2. **MakemyTrip parser** — stub; needs real fixture parsing once MMT scraping is live.
+3. **raw_quotes DB insert** — `storage.py` has the call commented out; needs implementation.
 
 **Known wrinkles:**
 - `get_mock_apix_weekly/monthly` echo daily data; mock shapes don't fully match response schemas.
@@ -663,4 +662,4 @@ GitHub Actions (push/PR to main)
 
 ---
 
-*Document updated — commit `693f1bb`, branch `main`, Sept 6, 2026.*
+*Document updated — commit `d8a3324`, branch `main`, Sept 7, 2026.*
