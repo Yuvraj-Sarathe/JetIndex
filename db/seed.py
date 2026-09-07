@@ -23,9 +23,7 @@ def seed_routes(session) -> int:
     for route_data in routes:
         route_code = f"{route_data['origin']}-{route_data['destination']}"
 
-        existing = session.execute(
-            select(Route).where(Route.route_code == route_code)
-        ).scalar_one_or_none()
+        existing = session.execute(select(Route).where(Route.route_code == route_code)).scalar_one_or_none()
 
         if existing:
             continue

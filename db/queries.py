@@ -45,11 +45,7 @@ def upsert_fare_quotes(session: Session, records: list[dict]) -> int:
 
         record["route_id"] = route.id
 
-        normalized_record = {
-            key: value
-            for key, value in record.items()
-            if key in allowed_columns
-        }
+        normalized_record = {key: value for key, value in record.items() if key in allowed_columns}
 
         normalized_records.append(normalized_record)
 
@@ -60,16 +56,14 @@ def upsert_fare_quotes(session: Session, records: list[dict]) -> int:
         depart_date = record.get("depart_date")
 
         if isinstance(depart_time, time) and depart_date:
-            record["depart_time"] = datetime.combine(
-                depart_date,
-                depart_time
-            )
+            record["depart_time"] = datetime.combine(depart_date, depart_time)
 
     stmt = pg_insert(FareQuote).values(records)
-    
+
     result = session.execute(stmt)
     session.commit()
     return result.rowcount
+
 
 def get_median_fares_by_route(
     session: Session,

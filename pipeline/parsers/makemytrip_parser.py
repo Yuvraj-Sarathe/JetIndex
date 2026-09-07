@@ -32,9 +32,7 @@ def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
             depart_time = None
 
             if departure:
-                dt = datetime.fromisoformat(
-                    departure.replace("Z", "+00:00")
-                )
+                dt = datetime.fromisoformat(departure.replace("Z", "+00:00"))
                 depart_date = dt.date()
                 depart_time = dt.time()
 
@@ -43,9 +41,7 @@ def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
 
             if base_fare is not None:
                 has_base_fare = any(
-                    "base" in str(label).lower()
-                    or str(label).lower() in {"fare", "airfare"}
-                    for label in breakdown
+                    "base" in str(label).lower() or str(label).lower() in {"fare", "airfare"} for label in breakdown
                 )
 
                 if not has_base_fare:
@@ -77,13 +73,9 @@ def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
             quotes.append(quote)
 
         except (KeyError, TypeError, ValueError) as exc:
-            logger.warning(
-                f"Skipping invalid MakeMyTrip record: {exc}"
-            )
+            logger.warning(f"Skipping invalid MakeMyTrip record: {exc}")
 
-    logger.info(
-        f"MakeMyTrip parser: parsed {len(quotes)} quotes"
-    )
+    logger.info(f"MakeMyTrip parser: parsed {len(quotes)} quotes")
 
     return quotes
 
@@ -95,9 +87,7 @@ def _parse_depart_time(dt_str: str | None) -> time | None:
         return None
 
     try:
-        dt = datetime.fromisoformat(
-            dt_str.replace("Z", "+00:00")
-        )
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
         return dt.time()
     except (ValueError, TypeError):
         return None
