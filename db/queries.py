@@ -9,7 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, Route
+from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, RawQuote, Route
 
 # ── Routes ──────────────────────────────────────────────────────
 
@@ -63,6 +63,14 @@ def upsert_fare_quotes(session: Session, records: list[dict]) -> int:
     result = session.execute(stmt)
     session.commit()
     return result.rowcount
+
+
+def insert_raw_quote(session: Session, record: dict) -> int:
+    """Insert into raw_quotes audit table. Returns the new row ID."""
+    rq = RawQuote(**record)
+    session.add(rq)
+    session.commit()
+    return rq.id
 
 
 def get_median_fares_by_route(

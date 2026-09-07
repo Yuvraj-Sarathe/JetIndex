@@ -34,27 +34,29 @@ def save_raw(result: ScrapeResult) -> Path:
 
     # Try to insert into raw_quotes table (non-critical)
     try:
-        # TODO: Uncomment when db models are ready
-        # from db.session import SessionLocal
-        # from db.models import RawQuote
-        # db = SessionLocal()
-        # raw_quote = RawQuote(
-        #     source=result.job.source,
-        #     route_code=f"{result.job.origin}-{result.job.destination}",
-        #     scrape_date=result.job.scrape_date,
-        #     depart_date=result.job.depart_date,
-        #     lead_time=result.job.lead_time,
-        #     fetched_at=result.fetched_at,
-        #     status_code=result.status_code,
-        #     method=result.method,
-        #     proxy_used=result.proxy_used,
-        #     raw_path=str(filepath),
-        #     payload=result.payload,
-        # )
-        # db.add(raw_quote)
-        # db.commit()
-        # db.close()
-        pass
+        from db.queries import get_route_by_code, insert_raw_quote
+        from db.session import SessionLocal
+
+        route_code = f"{result.job.origin}-{result.job.destination}"
+        with SessionLocal() as db:
+            route = get_route_by_code(db, route_code)
+            if route:
+                raw_record = {
+                    "source": result.job.source,
+                    "route_id": route.id,
+                    "scrape_date": result.job.scrape_date,
+                    "depart_date": result.job.depart_date,
+                    "lead_time": result.job.lead_time,
+                    "fetched_at": result.fetched_at,
+                    "status_code": result.status_code,
+                    "method": result.method,
+                    "proxy_used": result.proxy_used,
+                    "raw_path": str(filepath),
+                    "payload": result.payload,
+                }
+                insert_raw_quote(db, raw_record)
+            else:
+                logger.warning(f"Cannot insert raw_quote: route {route_code} not found in DB")
     except Exception as e:
         logger.warning(f"Failed to insert raw_quotes row (DB may be down): {e}")
 
