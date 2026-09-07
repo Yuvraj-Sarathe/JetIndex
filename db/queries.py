@@ -3,14 +3,16 @@ Centralised database queries. Every SELECT/INSERT that touches
 fare_quotes, apix_daily, routes, or dgca_weights lives here.
 """
 
-from datetime import date
+from datetime import datetime, date, time
+from turtle import st
+from turtle import st
 
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from db.models import ApixDaily, DGCABenchmark, DGCAWeight, FareQuote, RawQuote, Route
-
+from db import session
+from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, RawQuote, Route
 # ── Routes ──────────────────────────────────────────────────────
 
 
@@ -25,50 +27,51 @@ def get_route_by_code(session: Session, route_code: str) -> Route | None:
 
 
 # ── Fare Quotes ─────────────────────────────────────────────────
-
-
 def upsert_fare_quotes(session: Session, records: list[dict]) -> int:
-    """
-    Bulk upsert into fare_quotes.  Uses ON CONFLICT DO UPDATE
-    on (source, route_id, carrier, flight_no, depart_date, scraped_at, fare_class).
-    Returns number of rows affected.
-    """
     if not records:
         return 0
 
+    allowed_columns = set(FareQuote.__table__.columns.keys())
+
+    normalized_records = []
+    for record in records:
+        route_code = record.get("route_code")
+
+        if not route_code:
+            continue
+
+        route = get_route_by_code(session, route_code)
+
+        if not route:
+            raise ValueError(f"Route not found: {route_code}")
+
+        record["route_id"] = route.id
+
+        normalized_record = {
+            key: value
+            for key, value in record.items()
+            if key in allowed_columns
+        }
+
+        normalized_records.append(normalized_record)
+
+    records = normalized_records
+
+    for record in records:
+        depart_time = record.get("depart_time")
+        depart_date = record.get("depart_date")
+
+        if isinstance(depart_time, time) and depart_date:
+            record["depart_time"] = datetime.combine(
+                depart_date,
+                depart_time
+            )
+
     stmt = pg_insert(FareQuote).values(records)
-    stmt = stmt.on_conflict_do_update(
-        index_elements=[
-            "source",
-            "route_id",
-            "carrier",
-            "flight_no",
-            "depart_date",
-            "scraped_at",
-            "fare_class",
-        ],
-        set_={
-            "total_fare": stmt.excluded.total_fare,
-            "base_fare": stmt.excluded.base_fare,
-            "udf": stmt.excluded.udf,
-            "taxes": stmt.excluded.taxes,
-            "convenience_fee": stmt.excluded.convenience_fee,
-            "other_fees": stmt.excluded.other_fees,
-            "quality_flag": stmt.excluded.quality_flag,
-        },
-    )
+    
     result = session.execute(stmt)
     session.commit()
     return result.rowcount
-
-
-def insert_raw_quote(session: Session, record: dict) -> int:
-    """Insert into raw_quotes audit table.  Returns the new row ID."""
-    rq = RawQuote(**record)
-    session.add(rq)
-    session.commit()
-    return rq.id
-
 
 def get_median_fares_by_route(
     session: Session,
@@ -136,7 +139,7 @@ def get_base_period_prices(
 
 def get_weights(session: Session) -> dict[int, float]:
     """Returns {route_id: normalised_weight}."""
-    rows = session.scalars(select(DGCAWeight)).all()
+    rows = session.scalars(select(DgcaWeight)).all()
     total = sum(r.weight for r in rows)
     if total == 0:
         return {}
@@ -334,5 +337,5 @@ def get_elasticity_data(
 
 def get_dgca_benchmarks(session: Session) -> list[dict]:
     """Return all DGCA monthly average fare benchmarks."""
-    rows = session.scalars(select(DGCABenchmark).order_by(DGCABenchmark.month)).all()
+    rows = session.scalars(select(DgcaBenchmark).order_by(DgcaBenchmark.month)).all()
     return [{"month": r.month, "avg_fare": r.avg_fare} for r in rows]

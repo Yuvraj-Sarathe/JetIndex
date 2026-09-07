@@ -7,6 +7,7 @@ import yaml
 from loguru import logger
 from sqlalchemy import select
 
+from app.api.v1 import routes
 from db.models import DgcaWeight, Route
 from db.session import Base, SessionLocal, engine
 
@@ -16,12 +17,16 @@ def seed_routes(session) -> int:
     with open("config/routes.yaml") as f:
         config = yaml.safe_load(f)
 
+    routes = config["routes"]
+
     count = 0
-    for route_data in config.get("routes", []):
+
+    for route_data in routes:
         route_code = f"{route_data['origin']}-{route_data['destination']}"
 
-        # Check if route already exists
-        existing = session.execute(select(Route).where(Route.route_code == route_code)).scalar_one_or_none()
+        existing = session.execute(
+            select(Route).where(Route.route_code == route_code)
+        ).scalar_one_or_none()
 
         if existing:
             continue
@@ -36,6 +41,7 @@ def seed_routes(session) -> int:
             d_lon=route_data.get("d_lon"),
             active=True,
         )
+
         session.add(route)
         count += 1
 
