@@ -39,8 +39,6 @@ def parse(payload: dict, job_meta: dict) -> list[RawQuote]:
                 depart_time = dt.time()
 
             base_fare = breakdown.get("baseFare")
-            taxes = breakdown.get("taxes")
-            convenience_fee = breakdown.get("convenienceFee")
             total_fare = fare.get("totalFare")
 
             if base_fare is not None:

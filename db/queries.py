@@ -3,16 +3,14 @@ Centralised database queries. Every SELECT/INSERT that touches
 fare_quotes, apix_daily, routes, or dgca_weights lives here.
 """
 
-from datetime import datetime, date, time
-from turtle import st
-from turtle import st
+from datetime import date, datetime, time
 
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from db import session
-from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, RawQuote, Route
+from db.models import ApixDaily, DgcaBenchmark, DgcaWeight, FareQuote, Route
+
 # ── Routes ──────────────────────────────────────────────────────
 
 

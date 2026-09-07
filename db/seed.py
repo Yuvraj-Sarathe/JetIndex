@@ -7,8 +7,6 @@ import yaml
 from loguru import logger
 from sqlalchemy import select
 
-from app.api.v1 import routes
-from db.models import DgcaWeight, Route
 from db.models import DgcaBenchmark, DgcaWeight, Route
 from db.session import Base, SessionLocal, engine
 

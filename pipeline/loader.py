@@ -1,16 +1,11 @@
-from db.session import SessionLocal
-from db.queries import upsert_fare_quotes
+"""Pipeline loader — bulk-upsert fare quotes into the database."""
+
+from loguru import logger
 
 
 def load(df):
-    records = df.to_dicts()
+    """Load fare quotes from a DataFrame into the database.
 
-    session = SessionLocal()
-
-    try:
-        return upsert_fare_quotes(session, records)
-    finally:
-        session.close()
     Resolves route_code → route_id via the routes table, strips columns
     that don't exist on FareQuote, and bulk-upserts via ON CONFLICT DO UPDATE.
 

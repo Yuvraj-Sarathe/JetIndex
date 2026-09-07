@@ -1,5 +1,4 @@
-import json
-from datetime import date, time
+from datetime import date
 
 from pipeline.parsers.makemytrip_parser import parse
 
