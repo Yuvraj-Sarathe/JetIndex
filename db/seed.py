@@ -90,27 +90,37 @@ def seed_dgca_benchmarks(session) -> int:
         logger.warning("dgca_monthly_avg_fare.csv not found, skipping")
         return 0
 
-    count = 0
+    # Aggregate by month (CSV has multiple routes per month, model expects one avg per month)
+    monthly_data = {}
     with open(csv_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             month = row["month"]
+            avg_fare = float(row["avg_fare_inr"])
             source = row.get("source", "")
+            
+            if month not in monthly_data:
+                monthly_data[month] = {"fares": [], "source": source}
+            monthly_data[month]["fares"].append(avg_fare)
 
-            # Upsert: update if month already exists
-            existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
+    count = 0
+    for month, data in monthly_data.items():
+        avg_fare = sum(data["fares"]) / len(data["fares"])
+        
+        # Upsert: update if month already exists
+        existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
 
-            if existing:
-                existing.avg_fare = float(row["avg_fare_inr"])
-                existing.source_url = source
-            else:
-                benchmark = DgcaBenchmark(
-                    month=month,
-                    avg_fare=float(row["avg_fare_inr"]),
-                    source_url=source,
-                )
-                session.add(benchmark)
-            count += 1
+        if existing:
+            existing.avg_fare = avg_fare
+            existing.source_url = data["source"]
+        else:
+            benchmark = DgcaBenchmark(
+                month=month,
+                avg_fare=avg_fare,
+                source_url=data["source"],
+            )
+            session.add(benchmark)
+        count += 1
 
     session.commit()
     logger.info(f"Seeded {count} DGCA benchmarks")
