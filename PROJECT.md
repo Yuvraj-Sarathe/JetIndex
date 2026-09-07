@@ -1,12 +1,11 @@
 # JetIndex (APIx) — Complete Project Documentation (A–Z)
 
 > **One file, every fact.** This document captures the *entire* state of the repository as of
-> **September 7, 2026** (branch `main`, HEAD `d8a3324`): vision, architecture, tech stack,
+> **September 7, 2026** (branch `main`, HEAD `17b64de`): vision, architecture, tech stack,
 > every module and file, the data contract, the index math, the API, the frontend, tests,
 > CI/CD, team, current coding stage (what is done vs. stubbed), and what comes next.
 >
-> **Security note:** a live API token exists in `.env.local` and `instructions-for-team.md`.
-> It is intentionally **not** reproduced in this document.
+> **Security note:** a live API token exists in `.env.local`. It is intentionally **not** reproduced in this document.
 
 ---
 
@@ -107,13 +106,13 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 
 ### Git state (Sept 6, 2026)
 - **Branch:** `main`
-- **HEAD:** `23420f5` — *"fix: remove redundant .github/README.md"*
-- **Recent commits:** DB migrations, deps.py fix, Docker improvements, Celery tasks, admin endpoint, queries layer, real Indigo fixture
+- **HEAD:** `17b64de` — *"docs: update PROJECT.md — engine fully wired, parsers implemented"*
+- **Recent commits:** engine fully wired to DB queries, makemytrip parser implemented, loader fix, integration tests, real DGCA data, MOCK_MODE toggle, admin endpoints
 
 ### Coding stage in one paragraph
-This is a **Day-1+ scaffold** with significant real implementations added:
-- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`), **pipeline loader wired to DB** (data now actually reaches `fare_quotes`), `indigo_parser.py` implemented.
-- **Still stubbed:** `raw_quotes` DB insert in `storage.py`, engine `compute_daily`/`get_base_period_prices` DB paths, `makemytrip_parser.py`.
+This is a **Day-1+ scaffold** with all core components now implemented:
+- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoints (trigger-sweep + status), Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints**, **pipeline loader wired to DB** (data actually reaches `fare_quotes` with `route_code → route_id` resolution), **engine fully wired** (`compute_daily`, `get_base_period_prices`, `weekly_rollup`/`monthly_rollup`, `run_backtest` all call `db/queries`), **IndiGo + MakeMyTrip parsers** implemented.
+- **Still stubbed:** `raw_quotes` DB insert in `storage.py` (disk-only for now, non-critical).
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -337,7 +336,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 |---|---|
 | `schemas.py` | **The frozen data contract** (see §6). |
 | `parsers/indigo_parser.py` | **Implemented** `parse(payload, job_meta) -> list[RawQuote]`. Includes `_parse_depart_time()` with multi-format support (HH:MM, HH:MM:SS, 12-hour AM/PM). |
-| `parsers/makemytrip_parser.py` | **Stub**. |
+| `parsers/makemytrip_parser.py` | **Implemented** `parse(payload, job_meta) -> list[RawQuote]` — parses `searchResult.flightOffers[]` from MMT payload. |
 | `validators.py` | **Working** `validate_raw(q)`. |
 | `unbundler.py` | **Working** `unbundle(RawQuote) -> CleanQuote`. |
 | `cleaner.py` | **Working** Polars: `dedupe()`, `iqr_filter()`, `flag_sold_out()`, `clean_batch()`. |
@@ -398,6 +397,8 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `test_pipeline/test_unbundler.py` | 4 | Validation, unbundling |
 | `test_pipeline/test_cleaner.py` | — | Dedup, IQR, sold-out flagging |
 | `test_pipeline/test_indigo_parser.py` | — | IndiGo parser validation |
+| `test_pipeline/test_makemytrip_parser.py` | — | MMT parser validation |
+| `test_engine/test_compute_daily.py` | — | `compute_daily` with DB queries |
 | `test_scrapers/test_base.py` | 4 | Job/result creation, registry |
 | `test_scrapers/test_request_builders.py` | 8 | IndiGo + MMT build_request/parse_ok |
 | `test_scrapers/test_fetch_engine.py` | — | Fetch loop, retry logic |
@@ -664,4 +665,4 @@ GitHub Actions (push/PR to main)
 
 ---
 
-*Document updated — commit `3e463ba`, branch `main`, Sept 8, 2026.*
+*Document updated — commit `17b64de`, branch `main`, Sept 8, 2026.*
