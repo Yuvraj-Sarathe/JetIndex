@@ -1,7 +1,7 @@
 # End-to-End Smoke Test Report
 
 **Date:** September 7, 2026
-**Commit:** `076f924`
+**Commit:** `b64051c`
 **Branch:** `main`
 
 ---
@@ -16,7 +16,8 @@ The full data pipeline was verified end-to-end against a real TimescaleDB instan
 | Quotes loaded to DB | 28 (after dedup + IQR) |
 | APIx index computed | 99.40 |
 | API endpoints tested | ✓ Returning real data |
-| Total time | ~30 min (including bug fixes) |
+| DGCA benchmarks seeded | 32 (per-route, per-month) |
+| Backtest | Ran successfully (no overlapping months with 1-day data) |
 
 ---
 
@@ -31,7 +32,7 @@ docker compose run --rm api alembic -c db/migrations/alembic.ini upgrade head
 docker compose run --rm api python -m db.seed
 ```
 
-**Result:** ✓ All containers started, migration applied, seed completed (6 routes, 6 weights, 20 benchmarks).
+**Result:** ✓ All containers started, migration applied, seed completed (6 routes, 6 weights, 32 benchmarks per-route).
 
 ### 2. Data Loading
 
@@ -110,27 +111,23 @@ if depart_time and depart_date:
 
 ---
 
-### Bug 3: `dgca_monthly_avg_fare.csv` has multiple routes per month
+### Bug 3: `DgcaBenchmark` model needed per-route granularity
 
 **Symptom:** `duplicate key value violates unique constraint "dgca_benchmark_pkey"`
 
-**Root Cause:** CSV contains multiple routes per month (e.g., BLR-HYD and BOM-BLR both have 2024-12), but `DgcaBenchmark` model expects one row per month.
+**Root Cause:** CSV contains multiple routes per month, but `DgcaBenchmark` model had only `month` as PK.
 
-**Fix:** Aggregate fares by month before upsert:
+**Fix:** Changed model to composite key `(route_code, month)`:
 ```python
-monthly_data = {}
-for row in reader:
-    month = row["month"]
-    if month not in monthly_data:
-        monthly_data[month] = {"fares": [], "source": source}
-    monthly_data[month]["fares"].append(avg_fare)
-
-for month, data in monthly_data.items():
-    avg_fare = sum(data["fares"]) / len(data["fares"])
-    # upsert with averaged fare
+class DgcaBenchmark(Base):
+    route_code = Column(String(10), primary_key=True)
+    month = Column(String(7), primary_key=True)
+    avg_fare = Column(Float, nullable=False)
 ```
 
-**Files modified:** `db/seed.py`
+Updated seed to insert per-route rows (32 rows from CSV).
+
+**Files modified:** `db/models.py`, `db/seed.py`, `db/migrations/versions/0001_initial_schema.py`
 
 ---
 
@@ -198,6 +195,42 @@ fare_quotes     | 1              | scraped_at
 
 ---
 
+### Bug 6: SQLAlchemy `None` parameters in SQL queries
+
+**Symptom:** `could not determine data type of parameter $1`
+
+**Root Cause:** PostgreSQL can't handle `None` in prepared statements with `IS NULL` pattern.
+
+**Fix:** Build WHERE clauses dynamically based on whether parameters are None:
+```python
+where_clauses = []
+params = {}
+if from_date is not None:
+    where_clauses.append("date >= :from_date")
+    params["from_date"] = from_date
+where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+```
+
+**Files modified:** `db/queries.py`
+
+---
+
+### Bug 7: `fare_quotes.id` had no auto-increment sequence
+
+**Symptom:** `null value in column "id" violates not-null constraint`
+
+**Root Cause:** The `id` column was defined as `integer NOT NULL` without a sequence.
+
+**Fix:** Added PostgreSQL sequence in migration:
+```sql
+CREATE SEQUENCE IF NOT EXISTS fare_quotes_id_seq OWNED BY fare_quotes.id;
+ALTER TABLE fare_quotes ALTER COLUMN id SET DEFAULT nextval('fare_quotes_id_seq');
+```
+
+**Files modified:** `db/migrations/versions/0001_initial_schema.py`
+
+---
+
 ## Lessons Learned
 
 1. **TimescaleDB hypertables have strict requirements:**
@@ -209,13 +242,22 @@ fare_quotes     | 1              | scraped_at
    - `CleanQuote.depart_time: time` vs `FareQuote.depart_time: DateTime`
    - Need explicit conversion in the loader
 
-3. **CSV data aggregation:**
+3. **Per-route benchmark data:**
    - `dgca_monthly_avg_fare.csv` has multiple routes per month
-   - Model expects one row per month — aggregate before upsert
+   - Model needs composite key `(route_code, month)` to preserve route-level granularity
+   - Index formula requires per-route benchmark fares for weight calculations
 
-4. **Bulk insert limitations:**
+4. **SQLAlchemy `None` parameter handling:**
+   - PostgreSQL can't handle `None` in prepared statements with `IS NULL` pattern
+   - Build WHERE clauses dynamically based on whether parameters are None
+
+5. **Bulk insert limitations:**
    - SQLAlchemy's `executemany` with `RETURNING` doesn't work on hypertables
    - Raw SQL INSERT with explicit `id` column works
+
+6. **Date filtering:**
+   - Use `datetime.now()` for `scraped_at` to ensure consistent date filtering
+   - Add fallback windows for date matching when exact dates don't align
 
 ---
 
@@ -229,4 +271,4 @@ fare_quotes     | 1              | scraped_at
 
 ---
 
-*Report generated from end-to-end smoke test on September 7, 2026.*
+*Report generated from end-to-end smoke test on September 7, 2026. Updated with fixes for 7 bugs found during review.*
