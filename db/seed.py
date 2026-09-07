@@ -98,7 +98,7 @@ def seed_dgca_benchmarks(session) -> int:
             month = row["month"]
             avg_fare = float(row["avg_fare_inr"])
             source = row.get("source", "")
-            
+
             if month not in monthly_data:
                 monthly_data[month] = {"fares": [], "source": source}
             monthly_data[month]["fares"].append(avg_fare)
@@ -106,7 +106,7 @@ def seed_dgca_benchmarks(session) -> int:
     count = 0
     for month, data in monthly_data.items():
         avg_fare = sum(data["fares"]) / len(data["fares"])
-        
+
         # Upsert: update if month already exists
         existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
 

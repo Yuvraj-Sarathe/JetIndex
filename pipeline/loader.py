@@ -17,9 +17,10 @@ def load(df):
 
     from datetime import datetime
 
+    from sqlalchemy import text
+
     from db.queries import get_route_by_code
     from db.session import SessionLocal
-    from sqlalchemy import text
 
     records = df.to_dicts()
     session = SessionLocal()
