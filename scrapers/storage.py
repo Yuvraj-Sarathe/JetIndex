@@ -56,8 +56,11 @@ def save_raw(result: ScrapeResult) -> Path:
                 }
                 insert_raw_quote(db, raw_record)
             else:
-                logger.warning(f"Cannot insert raw_quote: route {route_code} not found in DB")
+                raise ValueError(
+                    f"Route '{route_code}' not found in DB — "
+                    f"raw_quotes audit row was NOT created (disk file: {filepath})"
+                )
     except Exception as e:
-        logger.warning(f"Failed to insert raw_quotes row (DB may be down): {e}")
+        logger.error(f"Failed to insert raw_quotes audit row: {e}")
 
     return filepath
