@@ -34,27 +34,36 @@ def save_raw(result: ScrapeResult) -> Path:
 
     # Try to insert into raw_quotes table (non-critical)
     try:
-        # TODO: Uncomment when db models are ready
-        # from db.session import SessionLocal
-        # from db.models import RawQuote
-        # db = SessionLocal()
-        # raw_quote = RawQuote(
-        #     source=result.job.source,
-        #     route_code=f"{result.job.origin}-{result.job.destination}",
-        #     scrape_date=result.job.scrape_date,
-        #     depart_date=result.job.depart_date,
-        #     lead_time=result.job.lead_time,
-        #     fetched_at=result.fetched_at,
-        #     status_code=result.status_code,
-        #     method=result.method,
-        #     proxy_used=result.proxy_used,
-        #     raw_path=str(filepath),
-        #     payload=result.payload,
-        # )
-        # db.add(raw_quote)
-        # db.commit()
-        # db.close()
-        pass
+        from datetime import datetime
+
+        from sqlalchemy import select
+
+        from db.models import RawQuote, Route
+        from db.session import SessionLocal
+
+        db = SessionLocal()
+        route_code = f"{result.job.origin}-{result.job.destination}"
+        route = db.execute(select(Route).where(Route.route_code == route_code)).scalar_one_or_none()
+        if not route:
+            logger.warning(f"Route {route_code} not found in DB, skipping raw_quotes insert")
+            db.close()
+        else:
+            raw_quote = RawQuote(
+                source=result.job.source,
+                route_id=route.id,
+                scrape_date=result.job.scrape_date,
+                depart_date=result.job.depart_date,
+                lead_time=result.job.lead_time,
+                fetched_at=result.fetched_at or datetime.utcnow(),
+                status_code=result.status_code,
+                method=result.method,
+                proxy_used=result.proxy_used,
+                raw_path=str(filepath),
+                payload=result.payload,
+            )
+            db.add(raw_quote)
+            db.commit()
+            db.close()
     except Exception as e:
         logger.warning(f"Failed to insert raw_quotes row (DB may be down): {e}")
 

@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -120,10 +121,15 @@ class DgcaWeight(Base):
 
 
 class DgcaBenchmark(Base):
-    """DGCA monthly average fares for backtesting."""
+    """DGCA monthly average fares for backtesting, per route."""
 
     __tablename__ = "dgca_benchmark"
 
+    route_code = Column(String(10), primary_key=True)  # "DEL-BOM"
     month = Column(String(7), primary_key=True)  # "2025-01"
     avg_fare = Column(Float, nullable=False)
     source_url = Column(String(500))
+
+    __table_args__ = (
+        UniqueConstraint("route_code", "month", name="uq_dgca_benchmark_route_month"),
+    )

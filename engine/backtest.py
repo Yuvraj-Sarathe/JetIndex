@@ -33,7 +33,15 @@ def run_backtest(session=None) -> dict:
         benchmarks = db_queries.get_dgca_benchmarks(session)
         apix_monthly = db_queries.get_apix_monthly(session)
 
-        bench_map = {b["month"]: float(b["avg_fare"]) for b in benchmarks if b.get("month")}
+        # Average DGCA benchmarks across routes per month to get a single benchmark per month
+        from collections import defaultdict
+
+        bench_by_month: dict[str, list[float]] = defaultdict(list)
+        for b in benchmarks:
+            if b.get("month") and b.get("avg_fare"):
+                bench_by_month[b["month"]].append(float(b["avg_fare"]))
+
+        bench_map = {m: sum(fares) / len(fares) for m, fares in bench_by_month.items() if fares}
         apix_map = {}
         for row in apix_monthly:
             if "month_start" in row and row["month_start"]:

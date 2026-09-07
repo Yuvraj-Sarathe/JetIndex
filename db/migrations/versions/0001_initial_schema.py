@@ -94,6 +94,10 @@ def upgrade() -> None:
         sa.Index("ix_fare_quotes_scraped_at", "scraped_at"),
     )
 
+    # Create sequence for auto-incrementing id (required for TimescaleDB hypertable)
+    op.execute("CREATE SEQUENCE IF NOT EXISTS fare_quotes_id_seq OWNED BY fare_quotes.id")
+    op.execute("ALTER TABLE fare_quotes ALTER COLUMN id SET DEFAULT nextval('fare_quotes_id_seq')")
+
     # --- apix_daily ------------------------------------------------------
     op.create_table(
         "apix_daily",
@@ -119,13 +123,14 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
 
-    # --- dgca_benchmark ----------------------------------------------------
+    # --- dgca_benchmark (per-route monthly avg fares) ----------------------
     op.create_table(
         "dgca_benchmark",
+        sa.Column("route_code", sa.String(length=10), nullable=False),
         sa.Column("month", sa.String(length=7), nullable=False),
         sa.Column("avg_fare", sa.Float(), nullable=False),
         sa.Column("source_url", sa.String(length=500), nullable=True),
-        sa.PrimaryKeyConstraint("month"),
+        sa.PrimaryKeyConstraint("route_code", "month"),
     )
 
     # --- Convert fare_quotes into a TimescaleDB hypertable ---------------
