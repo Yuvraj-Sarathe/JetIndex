@@ -14,20 +14,13 @@ def load(df: pl.DataFrame) -> int:
         logger.info("Nothing to load — empty DataFrame")
         return 0
 
-    # TODO: Implement when db models are ready
-    # from db.session import SessionLocal
-    # from db.models import FareQuote
-    # from sqlalchemy.dialects.postgresql import insert
-    #
-    # session = SessionLocal()
-    # count = 0
-    # for row in df.iter_rows(named=True):
-    #     stmt = insert(FareQuote).values(**row).on_conflict_do_update(...)
-    #     session.execute(stmt)
-    #     count += 1
-    # session.commit()
-    # session.close()
-    # return count
+    from db.queries import upsert_fare_quotes
+    from db.session import SessionLocal
 
-    logger.info(f"Loader: would insert {len(df)} rows into fare_quotes (not yet implemented)")
-    return len(df)
+    records = df.to_dicts()
+    session = SessionLocal()
+    try:
+        count = upsert_fare_quotes(session, records)
+        return count
+    finally:
+        session.close()

@@ -1,6 +1,6 @@
 """IndiGo raw JSON parser — converts scraper output to RawQuote list."""
 
-from datetime import date, time
+from datetime import date, datetime, time
 
 from loguru import logger
 
@@ -104,13 +104,9 @@ def _parse_depart_time(dt_str: str | None) -> time | None:
     """Parse departure time string to time object."""
     if not dt_str:
         return None
-    try:
-        # Handle various formats
-        for _fmt in ("%H:%M", "%H:%M:%S", "%I:%M %p"):
-            try:
-                return time.fromisoformat(dt_str)
-            except ValueError:
-                continue
-    except Exception:
-        pass
+    for _fmt in ("%H:%M", "%H:%M:%S", "%I:%M %p"):
+        try:
+            return datetime.strptime(dt_str, _fmt).time()
+        except ValueError:
+            continue
     return None
