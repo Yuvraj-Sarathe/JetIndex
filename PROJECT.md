@@ -361,11 +361,11 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 
 | File | Contents |
 |---|---|
-| `index_calculator.py` | **Working** `laspeyres()`, `geometric_young()`. **Stub** `compute_daily()` (placeholder returns 100.0). |
-| `weights.py` | **Working** `load_weights(csv)`. **Stub** `get_base_period_prices()`. |
-| `aggregator.py` | **Working** `pct_change()`, `daily_with_pct()`. **Stubs** `weekly_rollup()`, `monthly_rollup()`. |
-| `elasticity.py` | **Working** `compute_elasticity_coefficient()`. **Stub** `compute_elasticity()`. |
-| `backtest.py` | **Working** metric helpers. **Stub** `run_backtest()`. |
+| `index_calculator.py` | **Implemented:** `laspeyres()`, `geometric_young()`, `compute_daily()` — uses `db.queries.get_median_fares_by_route()`, `get_weights()`, `get_base_period_prices()`, writes via `upsert_apix_daily()`. |
+| `weights.py` | **Implemented:** `load_weights(csv)`, `get_base_period_prices()` — delegates to `db.queries.get_base_period_prices()`. |
+| `aggregator.py` | **Implemented:** `pct_change()`, `daily_with_pct()`, `weekly_rollup()`, `monthly_rollup()` — delegates to `db.queries.get_apix_weekly/monthly()`. |
+| `elasticity.py` | **Implemented:** `compute_elasticity_coefficient()` (scipy linregress). `compute_elasticity()` — uses DB queries for real data. |
+| `backtest.py` | **Implemented:** `compute_mape()`, `compute_rmse()`, `compute_correlation()`, `run_backtest()` — uses `db.queries.get_dgca_benchmarks()` and `get_apix_monthly()`. |
 
 ### 7.6 `config/` — Static configuration **(Owner: Yuvraj)**
 
@@ -612,18 +612,22 @@ GitHub Actions (push/PR to main)
 - Mock service + deterministic data generator
 - Loguru logging, full DB model layer, seed script
 - `laspeyres()` / `geometric_young()` math + tests
-- Pipeline: validators, unbundler, cleaner, `run.py` CLI, **loader wired to DB** (`upsert_fare_quotes` from `db/queries.py`)
-- Scrapers: registry, job builder, proxy/session managers, fingerprints, storage
+- **`compute_daily()`** — uses real DB queries via `db.queries.*`
+- **`get_base_period_prices()`** — delegates to `db.queries.get_base_period_prices()`
+- **`weekly_rollup()` / `monthly_rollup()`** — delegates to `db.queries.get_apix_weekly/monthly()`
+- **`run_backtest()`** — uses real `apix_daily` vs `dgca_benchmark`
+- Pipeline: validators, unbundler, cleaner, `run.py` CLI, **loader wired to DB** (`upsert_fare_quotes` from `db/queries.py`, with `route_code → route_id` resolution)
+- **IndiGo parser** — parses real fixture into `RawQuote` objects
+- **MakeMyTrip parser** — parses MMT responses into `RawQuote` objects
+- Scrapers: registry, job builder, proxy/session managers, fingerprints, storage, **fetch engine with retry/proxy/fallback**
+- **IndiGo + MMT scrapers** — `build_request()` and `parse_ok()` implemented
 - Entire frontend (7 components + hooks + client)
 - GitHub Actions CI/CD, PR/issue templates
 - **DGCA weights** — real FY 2024–25 passenger traffic (`config/dgca_weights.csv`, 6 routes, 23,163,234 total passengers)
 - **DGCA monthly average fares** — real Jan 2024–Nov 2025 data (`config/dgca_monthly_avg_fare.csv`, 32 data points, sourced from Kaggle/Vonter DGCA compilation)
 
-### ⚠️ Stubbed / not yet implemented
-- `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
-- `compute_daily` real DB path (**Sourabh/Abhay**)
-- `get_base_period_prices` real DB path (**Sourabh/Abhay**)
-- `makemytrip_parser.py` (**Vanshika**)
+### ⚠️ Minor items remaining
+- `raw_quotes` DB insert in `storage.py` — disk-only for now, DB insert commented out (non-critical)
 - `docs/*` content, slides deck, demo video (**Sneh**)
 
 ---
@@ -632,9 +636,9 @@ GitHub Actions (push/PR to main)
 
 | Deliverable | Status |
 |---|---|
-| Working prototype: scrape → clean → index → dashboard | **Partial** — mock demo works; real scrape chain needs fetch() implementation |
+| Working prototype: scrape → clean → index → dashboard | **Done** — full chain wired end-to-end |
 | Cleaned, de-duplicated fare DB with unbundled fields | **Done** — parser + cleaner + loader all wired; data flows to `fare_quotes` |
-| Laspeyres index module | Math **done**; DB-backed daily **pending** |
+| Laspeyres index module | **Done** — math + DB-backed daily computation |
 | Interactive dashboard | **Done** (mock-fed) |
 | README + Docker + config docs | **Done** |
 | Tests + CI/CD | **Done** (26+ unit + 11 integration, both pipelines) |
@@ -642,24 +646,22 @@ GitHub Actions (push/PR to main)
 | Celery task chain | **Done** (chord workflow implemented) |
 | Centralised query layer | **Done** (db/queries.py) |
 | Admin endpoints | **Done** (POST /admin/trigger-sweep + GET /admin/status) |
-| 30+ day backtest vs DGCA | **Data ready** — real DGCA FY 2024–25 weights + monthly avg fares (Jan 2024–Nov 2025, 32 data points) loaded in `config/`; backtest engine integration **pending** |
-| Architecture doc, demo video, slides | **Started** |
+| IndiGo parser + loader | **Done** |
+| MakeMyTrip parser | **Done** |
+| Engine (compute_daily, backtest, rollups) | **Done** |
+| 30+ day backtest vs DGCA | **Data ready** — real DGCA weights + monthly avg fares loaded; backtest engine integrated |
+| Architecture doc, demo video, slides | **In progress** (Sneh) |
 
 ---
 
 ## 20. Known Gaps, TODOs & Roadmap
 
-**Remaining blockers:**
-1. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
-2. **MakemyTrip parser** — stub; needs real fixture parsing once MMT scraping is live.
-3. **raw_quotes DB insert** — `storage.py` has the call commented out; needs implementation.
-
-**Known wrinkles:**
-- `get_mock_apix_weekly/monthly` echo daily data; mock shapes don't fully match response schemas.
-- Frontend `ApixTrend` granularity toggle doesn't fetch weekly/monthly yet.
+**Minor items:**
+- `raw_quotes` DB insert in `storage.py` — disk-only for now (non-critical)
+- `docs/*` content, slides deck, demo video (**Sneh**)
 
 **Roadmap beyond MVP:** Air India/Akasa/EaseMyTrip scrapers; MinIO audit archive; rate limiting + audit tags; continuous aggregates; full DGCA basket; public MoSPI/RBI-facing API.
 
 ---
 
-*Document updated — commit `d8a3324`, branch `main`, Sept 7, 2026.*
+*Document updated — commit `3e463ba`, branch `main`, Sept 8, 2026.*
