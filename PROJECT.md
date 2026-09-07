@@ -1,7 +1,7 @@
 # JetIndex (APIx) — Complete Project Documentation (A–Z)
 
 > **One file, every fact.** This document captures the *entire* state of the repository as of
-> **September 7, 2026** (branch `main`, HEAD `17b64de`): vision, architecture, tech stack,
+> **September 7, 2026** (branch `main`, HEAD `49b045a`): vision, architecture, tech stack,
 > every module and file, the data contract, the index math, the API, the frontend, tests,
 > CI/CD, team, current coding stage (what is done vs. stubbed), and what comes next.
 >
@@ -556,6 +556,7 @@ run_daily_sweep
 - 11 integration tests for DB round-trip (run with `make test-integration` inside Docker).
 - Fixtures include real Indigo sample (77 flights, 756 KB).
 - CI runs `pytest -m "not integration"` with coverage.
+- **End-to-end smoke test verified** — full pipeline works: Parse → Validate → Unbundle → Clean → Load → DB → Index → API (see `docs/smoke-test-report.md`).
 
 ---
 
@@ -665,4 +666,4 @@ GitHub Actions (push/PR to main)
 
 ---
 
-*Document updated — commit `17b64de`, branch `main`, Sept 8, 2026.*
+*Document updated — commit `49b045a`, branch `main`, Sept 8, 2026.*
