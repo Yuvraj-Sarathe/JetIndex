@@ -195,7 +195,18 @@ def get_apix_weekly(
     to_date: date | None = None,
 ) -> list[dict]:
     """Weekly rollup of the daily index."""
-    stmt = text("""
+    where_clauses = []
+    params = {}
+    if from_date is not None:
+        where_clauses.append("date >= :from_date")
+        params["from_date"] = from_date
+    if to_date is not None:
+        where_clauses.append("date <= :to_date")
+        params["to_date"] = to_date
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    stmt = text(f"""
         SELECT
             date_trunc('week', date)::date AS week_start,
             ROUND(AVG(apix)::numeric, 4) AS apix,
@@ -203,12 +214,11 @@ def get_apix_weekly(
             SUM(n_quotes) AS n_quotes,
             MAX(n_routes) AS n_routes
         FROM apix_daily
-        WHERE (:from_date IS NULL OR date >= :from_date)
-          AND (:to_date IS NULL OR date <= :to_date)
+        {where_sql}
         GROUP BY date_trunc('week', date)
         ORDER BY week_start
     """)
-    rows = session.execute(stmt, {"from_date": from_date, "to_date": to_date}).mappings().all()
+    rows = session.execute(stmt, params).mappings().all()
     return [dict(r) for r in rows]
 
 
@@ -218,7 +228,18 @@ def get_apix_monthly(
     to_date: date | None = None,
 ) -> list[dict]:
     """Monthly rollup of the daily index."""
-    stmt = text("""
+    where_clauses = []
+    params = {}
+    if from_date is not None:
+        where_clauses.append("date >= :from_date")
+        params["from_date"] = from_date
+    if to_date is not None:
+        where_clauses.append("date <= :to_date")
+        params["to_date"] = to_date
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    stmt = text(f"""
         SELECT
             date_trunc('month', date)::date AS month_start,
             ROUND(AVG(apix)::numeric, 4) AS apix,
@@ -226,12 +247,11 @@ def get_apix_monthly(
             SUM(n_quotes) AS n_quotes,
             MAX(n_routes) AS n_routes
         FROM apix_daily
-        WHERE (:from_date IS NULL OR date >= :from_date)
-          AND (:to_date IS NULL OR date <= :to_date)
+        {where_sql}
         GROUP BY date_trunc('month', date)
         ORDER BY month_start
     """)
-    rows = session.execute(stmt, {"from_date": from_date, "to_date": to_date}).mappings().all()
+    rows = session.execute(stmt, params).mappings().all()
     return [dict(r) for r in rows]
 
 
@@ -336,6 +356,6 @@ def get_elasticity_data(
 
 
 def get_dgca_benchmarks(session: Session) -> list[dict]:
-    """Return all DGCA monthly average fare benchmarks."""
-    rows = session.scalars(select(DgcaBenchmark).order_by(DgcaBenchmark.month)).all()
-    return [{"month": r.month, "avg_fare": r.avg_fare} for r in rows]
+    """Return all DGCA monthly average fare benchmarks (per route)."""
+    rows = session.scalars(select(DgcaBenchmark).order_by(DgcaBenchmark.route_code, DgcaBenchmark.month)).all()
+    return [{"route_code": r.route_code, "month": r.month, "avg_fare": r.avg_fare} for r in rows]

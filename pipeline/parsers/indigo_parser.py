@@ -77,7 +77,7 @@ def parse(payload: list[dict], job_meta: dict) -> list[RawQuote]:
                 depart_date=item["depart_date"],
                 depart_time=_parse_depart_time(item.get("depart_time")),
                 scrape_date=record_scrape_date,
-                scraped_at=item["scraped_at"],
+                scraped_at=datetime.now(),  # Use actual processing time, not stale scraper timestamp
                 lead_time=item["lead_time"],
                 fare_class=item.get("fare_class"),
                 stops=item.get("stops", 0),

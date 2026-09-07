@@ -110,6 +110,27 @@ def compute_daily(
             lead_times=lead_times,
         )
 
+        # Fallback: if no data for exact date, try ±3 day window
+        if not fare_rows:
+            logger.info(f"No fare data for exact date {compute_date}, trying ±3 day window")
+            from datetime import timedelta
+
+            for offset in range(1, 4):
+                for sign in (1, -1):
+                    alt_date = compute_date + timedelta(days=sign * offset)
+                    fare_rows = db_queries.get_median_fares_by_route(
+                        session=session,
+                        scrape_date=alt_date,
+                        lead_times=lead_times,
+                    )
+                    if fare_rows:
+                        logger.info(f"Found fare data for {alt_date} ({len(fare_rows)} route×lead_time groups)")
+                        break
+                if fare_rows:
+                    break
+
+        logger.info(f"compute_daily: got {len(fare_rows)} route×lead_time groups for {compute_date}")
+
         # 2. Fetch DGCA weights
         weights = db_queries.get_weights(session)
 
@@ -140,6 +161,12 @@ def compute_daily(
         for r_id, b_fares in route_base_fares.items():
             if b_fares:
                 prices_base_today[r_id] = float(agg_fn(b_fares))
+
+        logger.info(
+            f"compute_daily: {len(prices_today)} routes with prices, "
+            f"{len(weights)} routes with weights, "
+            f"{len(base_prices)} routes with base prices"
+        )
 
         # 4. Compute Laspeyres index
         if prices_today and base_prices and weights:

@@ -84,7 +84,10 @@ def seed_dgca_weights(session) -> int:
 
 
 def seed_dgca_benchmarks(session) -> int:
-    """Load monthly average fares from config/dgca_monthly_avg_fare.csv into dgca_benchmark table."""
+    """Load monthly average fares from config/dgca_monthly_avg_fare.csv into dgca_benchmark table.
+
+    Inserts one row per (route_code, month) combination from the CSV.
+    """
     csv_path = Path("config/dgca_monthly_avg_fare.csv")
     if not csv_path.exists():
         logger.warning("dgca_monthly_avg_fare.csv not found, skipping")
@@ -94,26 +97,37 @@ def seed_dgca_benchmarks(session) -> int:
     with open(csv_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
+            route_code = row["route_code"]
             month = row["month"]
+            avg_fare = float(row["avg_fare_inr"])
             source = row.get("source", "")
 
-            # Upsert: update if month already exists
-            existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
+            # Upsert: update if (route_code, month) already exists
+            existing = (
+                session.execute(
+                    select(DgcaBenchmark).where(
+                        DgcaBenchmark.route_code == route_code,
+                        DgcaBenchmark.month == month,
+                    )
+                )
+                .scalar_one_or_none()
+            )
 
             if existing:
-                existing.avg_fare = float(row["avg_fare_inr"])
+                existing.avg_fare = avg_fare
                 existing.source_url = source
             else:
                 benchmark = DgcaBenchmark(
+                    route_code=route_code,
                     month=month,
-                    avg_fare=float(row["avg_fare_inr"]),
+                    avg_fare=avg_fare,
                     source_url=source,
                 )
                 session.add(benchmark)
             count += 1
 
     session.commit()
-    logger.info(f"Seeded {count} DGCA benchmarks")
+    logger.info(f"Seeded {count} DGCA benchmarks (per route)")
     return count
 
 
