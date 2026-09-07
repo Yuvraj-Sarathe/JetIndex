@@ -7,60 +7,100 @@ import numpy as np
 from loguru import logger
 
 
-def run_backtest(session) -> dict:
+def run_backtest(session=None) -> dict:
     """
     Run backtest: compare APIx-implied fares vs DGCA monthly average fares.
 
     Steps:
     1. Get DGCA benchmark data (monthly avg fares)
-    2. Convert APIx to implied fares using base period
-    3. Compute MAPE, RMSE, Pearson r
-    4. Write results to data/backtest_results.json
+    2. Get APIx monthly rollups
+    3. Convert APIx to implied fares using base period
+    4. Compute MAPE, RMSE, Pearson r
+    5. Write results to data/backtest_results.json
 
     Returns:
         Dict with monthly data and summary statistics.
     """
-    # TODO: Implement with real DB queries
-    # from db.models import ApixDaily, DgcaBenchmark
-    #
-    # # Get DGCA benchmarks
-    # benchmarks = session.query(DgcaBenchmark).all()
-    #
-    # # Get APIx monthly averages
-    # apix_monthly = session.query(...).all()
-    #
-    # # Convert APIx to implied fares
-    # base_price = 5000.0  # average base period fare
-    # for month, apix in apix_monthly:
-    #     implied_fare = (apix / 100) * base_price
-    #     ...
-    #
-    # # Compute metrics
-    # mape = np.mean(np.abs((actual - predicted) / actual)) * 100
-    # rmse = np.sqrt(np.mean((actual - predicted) ** 2))
-    # corr = np.corrcoef(actual, predicted)[0, 1]
+    from db import queries as db_queries
+    from db.session import SessionLocal
 
-    logger.warning("run_backtest: using placeholder values")
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
 
-    # Placeholder data
-    monthly = [
-        {"month": "2025-01", "apix_avg": 100.0, "dgca_avg_fare": 5000, "apix_rebased": 100.0, "error_pct": 0.0},
-        {"month": "2025-02", "apix_avg": 102.5, "dgca_avg_fare": 5100, "apix_rebased": 102.5, "error_pct": 0.5},
-        {"month": "2025-03", "apix_avg": 105.0, "dgca_avg_fare": 5200, "apix_rebased": 105.0, "error_pct": 1.0},
-    ]
+    try:
+        benchmarks = db_queries.get_dgca_benchmarks(session)
+        apix_monthly = db_queries.get_apix_monthly(session)
 
-    summary = {"mape": 0.5, "rmse": 25.0, "corr": 0.98}
+        bench_map = {b["month"]: float(b["avg_fare"]) for b in benchmarks if b.get("month")}
+        apix_map = {}
+        for row in apix_monthly:
+            if "month_start" in row and row["month_start"]:
+                ms = row["month_start"]
+                m_str = ms.strftime("%Y-%m") if hasattr(ms, "strftime") else str(ms)[:7]
+                apix_map[m_str] = float(row.get("apix") or 0.0)
 
-    result = {"monthly": monthly, "summary": summary}
+        common_months = sorted(set(bench_map.keys()) & set(apix_map.keys()))
 
-    # Write to file
-    output_path = Path("data/backtest_results.json")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
+        monthly = []
+        if common_months:
+            # Base price reference from the first common month or benchmark average
+            base_bench = bench_map[common_months[0]] if bench_map[common_months[0]] > 0 else 5000.0
 
-    logger.info(f"Backtest complete: MAPE={summary['mape']:.2f}%, RMSE={summary['rmse']:.2f}, r={summary['corr']:.4f}")
-    return result
+            actual_fares = []
+            implied_fares = []
+
+            for month in common_months:
+                apix_val = apix_map[month]
+                dgca_val = bench_map[month]
+                implied = (apix_val / 100.0) * base_bench
+                error_pct = abs(implied - dgca_val) / dgca_val * 100.0 if dgca_val > 0 else 0.0
+
+                actual_fares.append(dgca_val)
+                implied_fares.append(implied)
+
+                monthly.append(
+                    {
+                        "month": month,
+                        "apix_avg": round(apix_val, 4),
+                        "dgca_avg_fare": round(dgca_val, 2),
+                        "apix_rebased": round(apix_val, 4),
+                        "implied_fare": round(implied, 2),
+                        "error_pct": round(error_pct, 2),
+                    }
+                )
+
+            actual_arr = np.array(actual_fares, dtype=float)
+            implied_arr = np.array(implied_fares, dtype=float)
+
+            mape = compute_mape(actual_arr, implied_arr)
+            rmse = compute_rmse(actual_arr, implied_arr)
+            corr = compute_correlation(actual_arr, implied_arr)
+
+            summary = {
+                "mape": round(mape, 2),
+                "rmse": round(rmse, 2),
+                "corr": round(corr, 4),
+            }
+        else:
+            logger.warning("run_backtest: no overlapping months found between apix_daily and dgca_benchmark")
+            summary = {"mape": 0.0, "rmse": 0.0, "corr": 0.0}
+
+        result = {"monthly": monthly, "summary": summary}
+
+        output_path = Path("data/backtest_results.json")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w") as f:
+            json.dump(result, f, indent=2)
+
+        logger.info(
+            f"Backtest complete: MAPE={summary['mape']:.2f}%, RMSE={summary['rmse']:.2f}, r={summary['corr']:.4f}"
+        )
+        return result
+    finally:
+        if owns_session:
+            session.close()
 
 
 def compute_mape(actual: np.ndarray, predicted: np.ndarray) -> float:
