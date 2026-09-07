@@ -35,40 +35,24 @@ def load_weights(csv_path: str = "config/dgca_weights.csv") -> dict[str, float]:
     return weights
 
 
-def get_base_period_prices(session, n_days: int = 7) -> dict[str, float]:
+def get_base_period_prices(session=None, n_days: int = 7) -> dict[int, float]:
     """
     Get base period prices (first n_days of data) for each route.
 
     These are the P_i0 values in the Laspeyres formula.
     Base period = 100.
+    Delegates to db.queries.get_base_period_prices.
     """
-    # TODO: Implement with real DB query
-    # from db.models import FareQuote, Route
-    # from sqlalchemy import func
-    #
-    # # Get the earliest scrape_date
-    # earliest = session.query(func.min(FareQuote.scrape_date)).scalar()
-    # base_end = earliest + timedelta(days=n_days)
-    #
-    # # Compute median total_fare per route for base period
-    # prices = session.query(
-    #     Route.route_code,
-    #     func.percentile_cont(0.5).within_group(FareQuote.total_fare)
-    # ).join(Route).filter(
-    #     FareQuote.scrape_date >= earliest,
-    #     FareQuote.scrape_date < base_end,
-    #     FareQuote.quality_flag == "ok"
-    # ).group_by(Route.route_code).all()
-    #
-    # return {route_code: price for route_code, price in prices}
+    from db import queries as db_queries
+    from db.session import SessionLocal
 
-    # Placeholder: equal prices for all routes
-    logger.warning("get_base_period_prices: using placeholder values")
-    return {
-        "DEL-BOM": 5000.0,
-        "DEL-BLR": 5500.0,
-        "BOM-BLR": 4500.0,
-        "DEL-CCU": 6000.0,
-        "BLR-HYD": 3500.0,
-        "MAA-DEL": 5000.0,
-    }
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        return db_queries.get_base_period_prices(session, n_days=n_days)
+    finally:
+        if owns_session:
+            session.close()
