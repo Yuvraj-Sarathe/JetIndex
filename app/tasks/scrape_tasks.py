@@ -111,12 +111,21 @@ def scrape_route(self, source: str, route_code: str, lead_time: int):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Submit a scrape_route task to Celery")
+    parser = argparse.ArgumentParser(description="Run or submit a scrape_route task")
     parser.add_argument("--route", default="DEL-BOM", help="Route code (e.g. DEL-BOM)")
     parser.add_argument("--lead", type=int, default=7, help="Lead time in days")
     parser.add_argument("--source", default="indigo", help="Source name (e.g. indigo)")
+    parser.add_argument("--async-celery", action="store_true", help="Submit asynchronously to Celery queue")
     args = parser.parse_args()
 
-    result = scrape_route.delay(args.source, args.route, args.lead)
-    print(f"Task submitted: {result.id}")
-    print(f"  source={args.source}, route={args.route}, lead={args.lead}")
+    if args.async_celery:
+        result = scrape_route.delay(args.source, args.route, args.lead)
+        print(f"Task submitted: {result.id}")
+        print(f"  source={args.source}, route={args.route}, lead={args.lead}")
+    else:
+        res = scrape_route.apply(args=(args.source, args.route, args.lead)).get()
+        if res.get("ok"):
+            print("OK")
+            print(f"Scraped {args.source} {args.route} T+{args.lead} -> {res.get('raw_path')}")
+        else:
+            print(f"FAILED: {res}")
