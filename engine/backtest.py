@@ -1,13 +1,20 @@
 """Backtest — compare APIx vs DGCA benchmark, compute MAPE/RMSE."""
 
+from __future__ import annotations
+
 import json
+from collections import defaultdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from loguru import logger
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
-def run_backtest(session=None) -> dict:
+
+def run_backtest(session: Session | None = None) -> dict:
     """
     Run backtest: compare APIx-implied fares vs DGCA monthly average fares.
 
@@ -32,9 +39,6 @@ def run_backtest(session=None) -> dict:
     try:
         benchmarks = db_queries.get_dgca_benchmarks(session)
         apix_monthly = db_queries.get_apix_monthly(session)
-
-        # Average DGCA benchmarks across routes per month to get a single benchmark per month
-        from collections import defaultdict
 
         bench_by_month: dict[str, list[float]] = defaultdict(list)
         for b in benchmarks:
@@ -103,7 +107,10 @@ def run_backtest(session=None) -> dict:
             json.dump(result, f, indent=2)
 
         logger.info(
-            f"Backtest complete: MAPE={summary['mape']:.2f}%, RMSE={summary['rmse']:.2f}, r={summary['corr']:.4f}"
+            "Backtest complete: MAPE={:.2f}%, RMSE={:.2f}, r={:.4f}",
+            summary["mape"],
+            summary["rmse"],
+            summary["corr"],
         )
         return result
     finally:

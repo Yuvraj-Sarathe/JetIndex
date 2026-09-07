@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 import yaml
@@ -63,7 +62,7 @@ class ScrapeResult:
     status_code: int | None = None
     payload: dict | list | None = None
     error: str | None = None
-    fetched_at: datetime = field(default_factory=datetime.utcnow)
+    fetched_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     method: Literal["curl_cffi", "playwright"] = "curl_cffi"
     proxy_used: str | None = None
     raw_path: str | None = None
@@ -224,6 +223,7 @@ class BaseScraper(ABC):
             payload = resp.json() if resp.content else None
             is_ok = (resp.status_code == 200) and self.parse_ok(resp)
             if not is_ok:
+                # Intentional: triggers Playwright fallback, not curl_cffi retry
                 raise RetryableStatusError(resp.status_code)
 
             result = ScrapeResult(
@@ -240,15 +240,19 @@ class BaseScraper(ABC):
             use_pw = source_cfg.get("use_playwright_fallback", False)
             if use_pw:
                 logger.info(
-                    f"curl_cffi retries exhausted for {self.source} "
-                    f"{job.origin}-{job.destination}; falling back to Playwright"
+                    "curl_cffi retries exhausted for {} {}-{}; falling back to Playwright",
+                    self.source,
+                    job.origin,
+                    job.destination,
                 )
+                import asyncio
+
                 from scrapers.playwright_fallback import fetch_with_browser
 
                 try:
                     result = asyncio.run(fetch_with_browser(job, self))
                 except Exception as pw_err:
-                    logger.error(f"Playwright fallback also failed: {pw_err}")
+                    logger.error("Playwright fallback also failed: {}", pw_err)
                     result = ScrapeResult(
                         job=job,
                         ok=False,
@@ -264,7 +268,7 @@ class BaseScraper(ABC):
                 )
 
         except Exception as exc:
-            logger.error(f"Unexpected error fetching {job.source}: {exc}")
+            logger.error("Unexpected error fetching {}: {}", job.source, exc)
             result = ScrapeResult(
                 job=job,
                 ok=False,
@@ -277,7 +281,7 @@ class BaseScraper(ABC):
             try:
                 save_raw(result)
             except Exception as storage_err:
-                logger.warning(f"save_raw failed (non-fatal): {storage_err}")
+                logger.warning("save_raw failed (non-fatal): {}", storage_err)
 
         return result
 

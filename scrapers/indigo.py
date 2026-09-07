@@ -5,6 +5,7 @@ Captured XHR endpoint: https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/s
 See details in scrapers/recon/indigo_endpoint.md
 """
 
+import os
 from typing import Any
 
 from scrapers.base_scraper import BaseScraper, RequestSpec, ScrapeJob
@@ -17,7 +18,7 @@ class IndigoScraper(BaseScraper):
     rate_limit_rps = 0.33  # 1 req / 3s
 
     ENDPOINT_URL = "https://api-prod-flight-skyplus6e.goindigo.in/v2/flight/search"
-    USER_KEY = "31e90be8fff2f5e2eea242c225f21b1a"
+    USER_KEY = os.getenv("INDIGO_USER_KEY", "31e90be8fff2f5e2eea242c225f21b1a")
 
     def build_request(self, job: ScrapeJob) -> RequestSpec:
         """Build the IndiGo fare search request."""
@@ -29,7 +30,7 @@ class IndigoScraper(BaseScraper):
             "origin": "https://www.goindigo.in",
             "pragma": "no-cache",
             "referer": "https://www.goindigo.in/",
-            "user_key": self.USER_KEY,
+            "user_key": self.USER_KEY,  # os.getenv("INDIGO_USER_KEY")
             "user-agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "

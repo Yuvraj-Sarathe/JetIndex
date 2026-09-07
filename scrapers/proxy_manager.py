@@ -63,11 +63,14 @@ class ProxyManager:
         if count >= self.ESCALATION_THRESHOLD:
             effective_cooldown = max(cooldown_seconds, self.ESCALATED_COOLDOWN)
             logger.warning(
-                f"Proxy {proxy} has {count} consecutive failures — escalating cooldown to {effective_cooldown}s"
+                "Proxy {} has {} consecutive failures — escalating cooldown to {}s",
+                proxy,
+                count,
+                effective_cooldown,
             )
 
         self._bad_proxies[proxy] = time.time() + effective_cooldown
-        logger.warning(f"Proxy {proxy} marked bad, cooldown {effective_cooldown}s (failures: {count})")
+        logger.warning("Proxy {} marked bad, cooldown {}s (failures: {})", proxy, effective_cooldown, count)
 
     def backoff(self, status_code: int) -> float:
         """Calculate backoff time based on HTTP status code."""
@@ -91,7 +94,7 @@ class ProxyManager:
             # Reset failure counter when cooldown expires
             self._failure_counts.pop(p, None)
         if expired:
-            logger.info(f"Cleaned up {len(expired)} expired proxy cooldown(s)")
+            logger.info("Cleaned up {} expired proxy cooldown(s)", len(expired))
         return len(expired)
 
     def get_stats(self) -> dict:

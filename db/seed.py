@@ -43,7 +43,7 @@ def seed_routes(session) -> int:
         count += 1
 
     session.commit()
-    logger.info(f"Seeded {count} routes")
+    logger.info("Seeded {} routes", count)
     return count
 
 
@@ -62,7 +62,7 @@ def seed_dgca_weights(session) -> int:
             route = session.execute(select(Route).where(Route.route_code == row["route_code"])).scalar_one_or_none()
 
             if not route:
-                logger.warning(f"Route {row['route_code']} not found, skipping weight")
+                logger.warning("Route {} not found, skipping weight", row["route_code"])
                 continue
 
             # Handle both old format (period, passengers) and new format (total_passengers)
@@ -79,7 +79,7 @@ def seed_dgca_weights(session) -> int:
             count += 1
 
     session.commit()
-    logger.info(f"Seeded {count} DGCA weights")
+    logger.info("Seeded {} DGCA weights", count)
     return count
 
 
@@ -124,7 +124,7 @@ def seed_dgca_benchmarks(session) -> int:
             count += 1
 
     session.commit()
-    logger.info(f"Seeded {count} DGCA benchmarks (per route)")
+    logger.info("Seeded {} DGCA benchmarks (per route)", count)
     return count
 
 
@@ -136,7 +136,7 @@ def seed():
         n_routes = seed_routes(session)
         n_weights = seed_dgca_weights(session)
         n_benchmarks = seed_dgca_benchmarks(session)
-        logger.info(f"Seeding complete: {n_routes} routes, {n_weights} weights, {n_benchmarks} benchmarks")
+        logger.info("Seeding complete: {} routes, {} weights, {} benchmarks", n_routes, n_weights, n_benchmarks)
     finally:
         session.close()
 
