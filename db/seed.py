@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.v1 import routes
 from db.models import DgcaWeight, Route
+from db.models import DgcaBenchmark, DgcaWeight, Route
 from db.session import Base, SessionLocal, engine
 
 
@@ -68,10 +69,14 @@ def seed_dgca_weights(session) -> int:
                 logger.warning(f"Route {row['route_code']} not found, skipping weight")
                 continue
 
+            # Handle both old format (period, passengers) and new format (total_passengers)
+            period = row.get("period", "2024-25")
+            passengers = int(row.get("passengers", row.get("total_passengers", 0)))
+
             weight = DgcaWeight(
                 route_id=route.id,
-                period=row["period"],
-                passengers=int(row["passengers"]),
+                period=period,
+                passengers=passengers,
                 weight=float(row["weight"]),
             )
             session.add(weight)
@@ -82,6 +87,40 @@ def seed_dgca_weights(session) -> int:
     return count
 
 
+def seed_dgca_benchmarks(session) -> int:
+    """Load monthly average fares from config/dgca_monthly_avg_fare.csv into dgca_benchmark table."""
+    csv_path = Path("config/dgca_monthly_avg_fare.csv")
+    if not csv_path.exists():
+        logger.warning("dgca_monthly_avg_fare.csv not found, skipping")
+        return 0
+
+    count = 0
+    with open(csv_path) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            month = row["month"]
+            source = row.get("source", "")
+
+            # Upsert: update if month already exists
+            existing = session.execute(select(DgcaBenchmark).where(DgcaBenchmark.month == month)).scalar_one_or_none()
+
+            if existing:
+                existing.avg_fare = float(row["avg_fare_inr"])
+                existing.source_url = source
+            else:
+                benchmark = DgcaBenchmark(
+                    month=month,
+                    avg_fare=float(row["avg_fare_inr"]),
+                    source_url=source,
+                )
+                session.add(benchmark)
+            count += 1
+
+    session.commit()
+    logger.info(f"Seeded {count} DGCA benchmarks")
+    return count
+
+
 def seed():
     """Run all seed functions."""
     Base.metadata.create_all(bind=engine)
@@ -89,7 +128,8 @@ def seed():
     try:
         n_routes = seed_routes(session)
         n_weights = seed_dgca_weights(session)
-        logger.info(f"Seeding complete: {n_routes} routes, {n_weights} weights")
+        n_benchmarks = seed_dgca_benchmarks(session)
+        logger.info(f"Seeding complete: {n_routes} routes, {n_weights} weights, {n_benchmarks} benchmarks")
     finally:
         session.close()
 

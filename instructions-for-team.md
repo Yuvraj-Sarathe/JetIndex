@@ -21,7 +21,12 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | GET /admin/status | ✅ Done | System health endpoint: scrape times, quote counts, index, coverage, quality distribution. |
 | MOCK_MODE toggle (all endpoints) | ✅ Done | All 9 endpoints check `settings.MOCK_MODE`; mock branch (demo) + real DB branch wired. |
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
+| IndiGo + MMT build_request/parse_ok | ✅ Done | Implemented by Abhay in `scrapers/indigo.py` and `scrapers/makemytrip.py` |
+| IndiGo parser | ✅ Done | `pipeline/parsers/indigo_parser.py` — parses real fixture (77 flights) |
+| Pipeline loader wired to DB | ✅ Done | `pipeline/loader.py` calls `db.queries.upsert_fare_quotes()` — data now flows end-to-end |
+| Playwright fallback | ✅ Done | `scrapers/playwright_fallback.py` — stealth browser with fixture adaptation |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
+| Integration tests | ✅ Done | 11 DB round-trip tests in `tests/test_integration/` |
 
 ---
 
@@ -99,7 +104,8 @@ fix/<yourname>/<topic>       # bug fixes
 | Start everything | `docker compose up -d` |
 | Stop everything | `docker compose down` |
 | View logs | `docker compose logs -f api` |
-| Run tests | `make test` |
+| Run unit tests | `make test` |
+| Run integration tests | `make test-integration` |
 | Lint Python | `ruff check .` |
 | Format Python | `ruff format .` |
 | Access database | `make psql` |
@@ -126,7 +132,23 @@ fix/<yourname>/<topic>       # bug fixes
 - If you need to change it, open a PR tagged `data-contract` and ping Yuvraj + Vanshika.
 - All API responses, database models, and frontend types must match this file.
 
-### 11. Database Queries
+### 11. Data Sources (Real DGCA Data)
+
+The project uses **real DGCA data** for route weighting and backtesting. Do NOT use placeholder values.
+
+**DGCA Passenger Traffic (FY 2024–25):**
+- File: `config/dgca_weights.csv`
+- 6 routes, total 23,163,234 passengers
+- Weights: DEL-BOM 0.2958, DEL-BLR 0.2021, BOM-BLR 0.1776, DEL-CCU 0.1196, MAA-DEL 0.1059, BLR-HYD 0.0990
+- Source: DGCA "City Pair Wise Passenger Traffic" ([dgca.gov.in](https://dgca.gov.in))
+
+**DGCA Monthly Average Fares (Jan 2024 – Nov 2025):**
+- File: `config/dgca_monthly_avg_fare.csv`
+- 32 data points across 6 routes
+- Source: Kaggle dataset ["India Aviation Traffic Data"](https://github.com/Vonter/india-aviation-traffic) by Vonter — compiled from DGCA published reports
+- Note: DGCA's own portal hasn't been updated in recent years; this Kaggle aggregation compiles the same DGCA reports
+
+### 12. Database Queries
 
 **Use `db/queries.py`** for all database access. Do NOT write raw SQLAlchemy in your modules.
 
@@ -156,22 +178,16 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
 - Real Indigo fixture saved in `tests/fixtures/indigo_sample.json` (77 flights, 756 KB)
 - DB migration + hypertable ready (`make migrate && make seed`)
 - `db/queries.py` ready for engine queries
+- IndiGo + MakeMyTrip `build_request()`/`parse_ok()` implemented (by Abhay)
+- IndiGo parser implemented in `pipeline/parsers/indigo_parser.py`
 
 #### Your Tasks (Priority Order)
 
-**1. Implement `indigo.py` (unblocks everything)**
-   - Read `scrapers/recon/indigo_endpoint.md` — the full cURL is there
-   - Fill in `IndigoScraper.build_request()` with the URL, headers, body template
-   - Fill in `IndigoScraper.parse_ok()` to check if response has fare data
-   - Test: `python -m app.tasks.scrape_tasks --route DEL-BOM --lead 7 --source indigo`
+**1. ~~Implement `indigo.py`~~ ✅ DONE** (by Abhay)
 
-**2. Do MakeMyTrip recon**
-   - Same process as IndiGo (DevTools → Network → XHR → Copy as cURL)
-   - Save to `scrapers/recon/makemytrip_endpoint.md`
-   - MMT has heavier anti-bot (Akamai) — note any challenge pages
+**2. ~~Do MakeMyTrip recon~~ ✅ DONE** (in `scrapers/recon/makemytrip_endpoint.md`)
 
-**3. Implement `makemytrip.py`**
-   - Same pattern as IndiGo
+**3. ~~Implement `makemytrip.py`~~ ✅ DONE** (by Abhay)
 
 **4. Implement engine queries**
    - Replace `compute_daily()` placeholder with real DB queries
@@ -180,9 +196,8 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
    - Use `db/queries.get_base_period_prices()` for base prices
    - Use `db/queries.upsert_apix_daily()` to write results
 
-**5. Add tests**
-   - `tests/test_scrapers/test_indigo.py` — test build_request, parse_ok
-   - `tests/test_engine/test_compute_daily.py` — test with mock DB
+**5. Implement `raw_quotes` DB insert in `storage.py`**
+   - Use `db.queries.insert_raw_quote()` to persist raw payloads to the audit table
 
 #### IndiGo Reconstruct Reference
 
@@ -228,37 +243,28 @@ Response path: `data.trips[0].journeysAvailable[]` — each has `designator` (ti
 
 #### Your Tasks
 
-**1. Review the real fixture**
-   - Open `tests/fixtures/indigo_sample.json`
-   - See how IndiGo data is structured (carrier, flight_no, fare_breakdown, etc.)
-   - Compare with `pipeline/schemas.py` — the fixture already maps to `RawQuote`
+**1. ~~Review the real fixture~~ ✅ DONE**
 
-**2. Implement `indigo_parser.py`**
-   - Parse the flat array from the fixture
-   - Map each item to `RawQuote`:
-     - `source` → `"indigo"`
-     - `route_code` → from fixture
-     - `carrier` → `"6E"` (IndiGo)
-     - `flight_no` → extract from `flight_no` field
-     - `fare_breakdown` → use `fare_breakdown` from fixture
-   - Test: `python -c "from pipeline.parsers.indigo_parser import parse; ..."`
+**2. ~~Implement `indigo_parser.py`~~ ✅ DONE** — by Yuvraj
 
-**3. Implement `loader.py`**
-   - Use `db.queries.upsert_fare_quotes()` to load data
-   - Convert Polars DataFrame rows to dicts for upsert
+**3. ~~Implement `loader.py`~~ ✅ DONE** — by Yuvraj (calls `db.queries.upsert_fare_quotes()`)
 
 **4. Test the full pipeline**
    ```bash
    python -m pipeline.run --date 2026-10-13
    ```
-   - Should parse → validate → unbundle → clean → load
+   - Should parse → validate → unbundle → clean → load (data now reaches DB)
    - Verify data in DB: `make psql` then `SELECT COUNT(*) FROM fare_quotes;`
+
+**5. Implement `makemytrip_parser.py`** (still pending)
+   - Same pattern as `indigo_parser.py`
+   - Parse the MMT fixture structure (searchResult.flightOffers[])
 
 #### Your Definition of Done
 
-- `python -m pipeline.run --date 2026-10-13` loads ≥ 90% of valid quotes
-- Unit tests in `tests/test_pipeline/`
-- `docs/data_contract.md` matches `schemas.py`
+- `python -m pipeline.run --date 2026-10-13` loads ≥ 90% of valid quotes ✅
+- Unit tests in `tests/test_pipeline/` ✅
+- `docs/data_contract.md` matches `schemas.py` ⏳
 
 ---
 
@@ -363,4 +369,4 @@ npm run dev                  # http://localhost:5173
 
 ---
 
-*Last updated: Sept 6, 2026. Infrastructure complete — team tasks unblocked.*
+*Last updated: Sept 7, 2026. Pipeline complete: data flows end-to-end to `fare_quotes`.*

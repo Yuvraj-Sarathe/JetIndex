@@ -1,7 +1,7 @@
 # JetIndex (APIx) — Complete Project Documentation (A–Z)
 
 > **One file, every fact.** This document captures the *entire* state of the repository as of
-> **September 6, 2026** (branch `main`, HEAD `23420f5`): vision, architecture, tech stack,
+> **September 7, 2026** (branch `main`, HEAD `d8a3324`): vision, architecture, tech stack,
 > every module and file, the data contract, the index math, the API, the frontend, tests,
 > CI/CD, team, current coding stage (what is done vs. stubbed), and what comes next.
 >
@@ -80,7 +80,7 @@ A fully automated pipeline replacing manual collection:
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Scrape    │───▶│   Clean     │───▶│   Store     │───▶│   Compute   │───▶│   Serve     │
+│   Scrape    │───▶│   Clean     │───▶│   Store     │───▶│   Compute   │───▶│   Serve   │
 │  (IndiGo,   │    │  (Unbundle, │    │ (TimescaleDB│    │ (Laspeyres  │    │ (FastAPI +  │
 │  MakeMyTrip)│    │   IQR, etc) │    │  hypertable)│    │   Index)    │    │  Dashboard) │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
@@ -112,8 +112,8 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 
 ### Coding stage in one paragraph
 This is a **Day-1+ scaffold** with significant real implementations added:
-- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`).
-- **Still stubbed:** Scraper `fetch()` loops (blocked on endpoint recon), source parsers, `loader.py` DB upsert, engine `compute_daily` DB path.
+- **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`), **pipeline loader wired to DB** (data now actually reaches `fare_quotes`), `indigo_parser.py` implemented.
+- **Still stubbed:** `raw_quotes` DB insert in `storage.py`, engine `compute_daily`/`get_base_period_prices` DB paths, `makemytrip_parser.py`.
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -319,15 +319,15 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 
 | File | Contents |
 |---|---|
-| `base_scraper.py` | Dataclasses: `ScrapeJob`, `ScrapeResult`, `RequestSpec`. `BaseScraper(ABC)` with **stub** `fetch()`. |
-| `indigo.py` | `IndigoScraper` — **TODO after recon**. |
-| `makemytrip.py` | `MakeMyTripScraper` — **TODO after recon**. |
+| `base_scraper.py` | Dataclasses: `ScrapeJob`, `ScrapeResult`, `RequestSpec`. `BaseScraper(ABC)` with full `fetch()` loop (tenacity retry on 401/403/429/5xx, proxy rotation, `parse_ok()` validation, Playwright fallback). |
+| `indigo.py` | **Implemented:** `IndigoScraper` — `build_request()` + `parse_ok()` wired to IndiGo XHR endpoint. |
+| `makemytrip.py` | **Implemented:** `MakeMyTripScraper` — `build_request()` + `parse_ok()` wired to MMT XHR endpoint. |
 | `airindia.py` | Stub class, post-MVP. |
 | `registry.py` | `SCRAPERS` dict; `get_scraper(name)`; **working** `build_jobs_for_date()`. |
 | `proxy_manager.py` | **Working** `ProxyManager`: rotation, cooldown, backoff. |
 | `session_manager.py` | **Working** `SessionManager`: JSON cookie/token persistence. |
 | `fingerprints.py` | **Working** TLS profiles + UA rotation. |
-| `playwright_fallback.py` | **Stub** `fetch_with_browser()`. |
+| `playwright_fallback.py` | **Implemented:** `fetch_with_browser()` — stealth browser with route-adapted fixture fallback (test-only gate via `JETINDEX_ALLOW_FIXTURE_FALLBACK`). |
 | `storage.py` | **Working** `save_raw(result)` → `data/raw/`. DB insert commented TODO. |
 | `recon/indigo_endpoint.md` | **Captured:** Full cURL command with headers, auth token, request body shape. |
 
@@ -336,13 +336,13 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | File | Contents |
 |---|---|
 | `schemas.py` | **The frozen data contract** (see §6). |
-| `parsers/indigo_parser.py` | **Stub** `parse(payload, job_meta) -> list[RawQuote]`. |
+| `parsers/indigo_parser.py` | **Implemented** `parse(payload, job_meta) -> list[RawQuote]`. Includes `_parse_depart_time()` with multi-format support (HH:MM, HH:MM:SS, 12-hour AM/PM). |
 | `parsers/makemytrip_parser.py` | **Stub**. |
 | `validators.py` | **Working** `validate_raw(q)`. |
 | `unbundler.py` | **Working** `unbundle(RawQuote) -> CleanQuote`. |
 | `cleaner.py` | **Working** Polars: `dedupe()`, `iqr_filter()`, `flag_sold_out()`, `clean_batch()`. |
-| `loader.py` | **Stub** `load(df) -> int` — PostgreSQL upsert commented TODO. |
-| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD`. |
+| `loader.py` | **Implemented** `load(df) -> int` — bulk upsert into `fare_quotes` via `db.queries.upsert_fare_quotes()`. |
+| `run.py` | **Working CLI** `python -m pipeline.run --date YYYY-MM-DD` — full parse→validate→unbundle→clean→load chain. |
 
 ### 7.4 `db/` — TimescaleDB models, migrations, seeds **(Owners: Sourabh + Abhay)**
 
@@ -352,7 +352,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `models.py` | Six SQLAlchemy 2 models. |
 | `queries.py` | **Implemented:** Centralised query layer — `get_active_routes`, `upsert_fare_quotes`, `get_median_fares_by_route`, `get_apix_daily/weekly/monthly`, `get_quotes`, `get_heatmap_data`, `get_elasticity_data`, `get_dgca_benchmarks`. |
 | `init.sql` | `CREATE EXTENSION IF NOT EXISTS timescaledb;` |
-| `seed.py` | **Working** `seed()` + `seed_routes()` + `seed_dgca_weights()`. |
+| `seed.py` | **Working** `seed()` + `seed_routes()` + `seed_dgca_weights()` + `seed_dgca_benchmarks()`. |
 | `migrations/versions/0001_initial_schema.py` | **Created:** All 6 tables + hypertable on `fare_quotes(scraped_at)` + composite PK + indexes. |
 
 **Tables created:** `routes`, `raw_quotes`, `fare_quotes` (hypertable), `apix_daily`, `dgca_weights`, `dgca_benchmark`.
@@ -371,7 +371,8 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 
 - **`routes.yaml`** — 6-route basket with airport lat/lon and `lead_times: [1,7,15,30,45]`.
 - **`sources.yaml`** — per-source config. Enabled: **indigo**, **makemytrip**.
-- **`dgca_weights.csv`** — placeholder values.
+- **`dgca_weights.csv`** — real DGCA FY 2024–25 passenger traffic weights (6 routes, total 23,163,234 passengers). Source: DGCA "City Pair Wise Passenger Traffic."
+- **`dgca_monthly_avg_fare.csv`** — real DGCA monthly average fares, Jan 2024 – Nov 2025 (32 data points across 6 routes). Source: Kaggle "India Aviation Traffic Data" by Vonter (compiled from DGCA published reports).
 
 ### 7.7 `frontend/` — APIx Dashboard **(Owner: Mehak)**
 
@@ -387,7 +388,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `mock/` | Realistic fake API responses | Yes |
 | `reference/` | `airports.csv`, `dgca_monthly_avg_fare.csv` | Yes |
 
-### 7.9 `tests/` — pytest suite (15 tests)
+### 7.9 `tests/` — pytest suite (26+ unit tests + 11 integration tests)
 
 | File | Tests | What they cover |
 |---|---|---|
@@ -395,8 +396,15 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `test_db/test_models.py` | 2 | Model imports, table names |
 | `test_engine/test_index_calculator.py` | 4 | Laspeyres, Geometric Young |
 | `test_pipeline/test_unbundler.py` | 4 | Validation, unbundling |
+| `test_pipeline/test_cleaner.py` | — | Dedup, IQR, sold-out flagging |
+| `test_pipeline/test_indigo_parser.py` | — | IndiGo parser validation |
 | `test_scrapers/test_base.py` | 4 | Job/result creation, registry |
-| `tests/fixtures/indigo_sample.json` | — | **Real:** 77 flights DEL→BOM (756 KB) |
+| `test_scrapers/test_request_builders.py` | 8 | IndiGo + MMT build_request/parse_ok |
+| `test_scrapers/test_fetch_engine.py` | — | Fetch loop, retry logic |
+| `test_scrapers/test_playwright_fallback.py` | — | Playwright fallback, fixture adaptation |
+| `test_scrapers/test_session_manager.py` | — | Cookie/token persistence |
+| `test_scrapers/test_proxy_manager.py` | — | Proxy rotation, cooldown |
+| `test_integration/test_db_pipeline.py` | 11 | **@integration** — DB round-trip, unbundler→DB, real fixture pipeline |
 
 ### 7.10 `scripts/`
 
@@ -428,6 +436,25 @@ I_t = Σ_i (P_i,t × Q_i,0) / Σ_i (P_i,0 × Q_i,0) × 100
 - `P_i,t` — median `total_fare` across carriers & lead times
 - `Q_i,0` — DGCA passenger volume weight (normalised to sum 1)
 - `P_i,0` — base-period price (first 7 days of data → index = 100)
+
+### Real DGCA Weights (FY 2024–25)
+
+| Route | Passengers | Weight (`Q_i,0`) |
+|-------|----------:|---------:|
+| DEL–BOM | 68,50,869 | 0.2958 |
+| DEL–BLR | 46,81,042 | 0.2021 |
+| BOM–BLR | 41,14,574 | 0.1776 |
+| DEL–CCU | 27,70,386 | 0.1196 |
+| MAA–DEL | 24,52,761 | 0.1059 |
+| BLR–HYD | 22,93,602 | 0.0990 |
+
+**Source:** DGCA "City Pair Wise Passenger Traffic" FY 2024–25 ([dgca.gov.in](https://dgca.gov.in)).
+
+### Backtest Data
+
+The backtest compares APIx output against **DGCA Monthly Average Fares** (Jan 2024 – Nov 2025, 32 data points across 6 routes).
+
+**Source:** Kaggle dataset ["India Aviation Traffic Data"](https://github.com/Vonter/india-aviation-traffic) by Vonter — sourced from DGCA published reports. DGCA's own portal had not been updated with recent monthly figures, so this Kaggle aggregation (which compiles the same DGCA reports) was used.
 
 ### Backtest metrics
 - **MAPE** — Mean Absolute Percentage Error
@@ -515,7 +542,8 @@ run_daily_sweep
 | `make up` / `make down` | Docker compose up/down |
 | `make migrate` | `alembic -c db/migrations/alembic.ini upgrade head` |
 | `make seed` | `python -m db.seed` |
-| `make test` | pytest |
+| `make test` | pytest (unit tests only, integration excluded) |
+| `make test-integration` | pytest -m integration -v (DB round-trip tests) |
 | `make lint` | ruff check + eslint |
 | `make scrape ROUTE=… LEAD=… SOURCE=…` | Submit Celery scrape task |
 
@@ -523,7 +551,8 @@ run_daily_sweep
 
 ## 14. Testing Landscape
 
-- 15 unit tests pass (verifiable with `make test`).
+- 26+ unit tests pass (verifiable with `make test`).
+- 11 integration tests for DB round-trip (run with `make test-integration` inside Docker).
 - Fixtures include real Indigo sample (77 flights, 756 KB).
 - CI runs `pytest -m "not integration"` with coverage.
 
@@ -579,24 +608,22 @@ GitHub Actions (push/PR to main)
 - **Redis healthcheck** + proper startup ordering
 - **Dockerfile** — Playwright conditional (default off)
 - **Real Indigo fixture** (77 flights, 756 KB)
+- **Playwright fallback** — stealth browser with fixture adaptation for testing
 - Mock service + deterministic data generator
 - Loguru logging, full DB model layer, seed script
 - `laspeyres()` / `geometric_young()` math + tests
-- Pipeline: validators, unbundler, cleaner, `run.py` CLI
+- Pipeline: validators, unbundler, cleaner, `run.py` CLI, **loader wired to DB** (`upsert_fare_quotes` from `db/queries.py`)
 - Scrapers: registry, job builder, proxy/session managers, fingerprints, storage
 - Entire frontend (7 components + hooks + client)
 - GitHub Actions CI/CD, PR/issue templates
+- **DGCA weights** — real FY 2024–25 passenger traffic (`config/dgca_weights.csv`, 6 routes, 23,163,234 total passengers)
+- **DGCA monthly average fares** — real Jan 2024–Nov 2025 data (`config/dgca_monthly_avg_fare.csv`, 32 data points, sourced from Kaggle/Vonter DGCA compilation)
 
 ### ⚠️ Stubbed / not yet implemented
-- `BaseScraper.fetch()` retry loop (**Sourabh/Abhay**) — blocked on endpoint recon
-- `build_request()`/`parse_ok()` for IndiGo & MakeMyTrip (**Sourabh/Abhay**)
-- `playwright_fallback.fetch_with_browser()` (**Sourabh/Abhay**)
 - `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
-- Source parsers `indigo_parser` / `makemytrip_parser` (**Vanshika**)
-- `loader.load()` DB upsert (**Vanshika**)
 - `compute_daily` real DB path (**Sourabh/Abhay**)
 - `get_base_period_prices` real DB path (**Sourabh/Abhay**)
-- Weekly/monthly rollups, elasticity matrix, backtest real queries (**Sourabh/Abhay**)
+- `makemytrip_parser.py` (**Vanshika**)
 - `docs/*` content, slides deck, demo video (**Sneh**)
 
 ---
@@ -606,27 +633,26 @@ GitHub Actions (push/PR to main)
 | Deliverable | Status |
 |---|---|
 | Working prototype: scrape → clean → index → dashboard | **Partial** — mock demo works; real scrape chain needs fetch() implementation |
-| Cleaned, de-duplicated fare DB with unbundled fields | Models + cleaner done; loader pending |
-| Laspeyres index module | Math done; DB-backed daily pending |
+| Cleaned, de-duplicated fare DB with unbundled fields | **Done** — parser + cleaner + loader all wired; data flows to `fare_quotes` |
+| Laspeyres index module | Math **done**; DB-backed daily **pending** |
 | Interactive dashboard | **Done** (mock-fed) |
 | README + Docker + config docs | **Done** |
-| Tests + CI/CD | **Done** (15 tests, both pipelines) |
+| Tests + CI/CD | **Done** (26+ unit + 11 integration, both pipelines) |
 | DB migration + hypertable | **Done** |
 | Celery task chain | **Done** (chord workflow implemented) |
 | Centralised query layer | **Done** (db/queries.py) |
 | Admin endpoints | **Done** (POST /admin/trigger-sweep + GET /admin/status) |
-| 30+ day backtest vs DGCA | In progress |
-| Architecture doc, demo video, slides | Not started |
+| 30+ day backtest vs DGCA | **Data ready** — real DGCA FY 2024–25 weights + monthly avg fares (Jan 2024–Nov 2025, 32 data points) loaded in `config/`; backtest engine integration **pending** |
+| Architecture doc, demo video, slides | **Started** |
 
 ---
 
 ## 20. Known Gaps, TODOs & Roadmap
 
 **Remaining blockers:**
-1. **Scraper fetch()** — IndiGo recon captured; need to implement `build_request()` + `fetch()` loop.
-2. **Parsers** — blocked on real fixtures (IndiGo fixture now captured; parser can proceed).
-3. **loader.py** — DB upsert commented TODO; models exist, queries layer ready.
-4. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
+1. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
+2. **MakemyTrip parser** — stub; needs real fixture parsing once MMT scraping is live.
+3. **raw_quotes DB insert** — `storage.py` has the call commented out; needs implementation.
 
 **Known wrinkles:**
 - `get_mock_apix_weekly/monthly` echo daily data; mock shapes don't fully match response schemas.
@@ -636,4 +662,4 @@ GitHub Actions (push/PR to main)
 
 ---
 
-*Document updated — commit `23420f5`, branch `main`, Sept 6, 2026.*
+*Document updated — commit `d8a3324`, branch `main`, Sept 7, 2026.*

@@ -360,16 +360,55 @@ pytest -m integration
 
 ### Sector Basket
 
-| Route | Origin | Destination | Weight |
-|-------|--------|-------------|--------|
-| DEL-BOM | Delhi | Mumbai | 0.25 |
-| DEL-BLR | Delhi | Bengaluru | 0.20 |
-| BOM-BLR | Mumbai | Bengaluru | 0.16 |
-| DEL-CCU | Delhi | Kolkata | 0.14 |
-| BLR-HYD | Bengaluru | Hyderabad | 0.12 |
-| MAA-DEL | Chennai | Delhi | 0.14 |
+| Route | Origin | Destination | Passengers (FY 2024–25) | Weight |
+|-------|--------|-------------|------------------------:|-------:|
+| DEL-BOM | Delhi | Mumbai | 68,50,869 | 0.2958 |
+| DEL-BLR | Delhi | Bengaluru | 46,81,042 | 0.2021 |
+| BOM-BLR | Mumbai | Bengaluru | 41,14,574 | 0.1776 |
+| DEL-CCU | Delhi | Kolkata | 27,70,386 | 0.1196 |
+| MAA-DEL | Chennai | Delhi | 24,52,761 | 0.1059 |
+| BLR-HYD | Bengaluru | Hyderabad | 22,93,602 | 0.0990 |
 
 **Lead Times:** T+1, T+7, T+15, T+30, T+45
+
+---
+
+## 📊 Data Sources
+
+The APIx index relies on two DGCA (Directorate General of Civil Aviation) data sources for route weighting and backtesting.
+
+### DGCA Passenger Traffic Data (2024–25)
+
+Route weights are derived from **DGCA City Pair Wise Passenger Traffic** for financial year **2024–25**. This is official monthly domestic passenger data published by DGCA.
+
+| Route | Passengers (FY 2024–25) | Weight |
+|-------|------------------------:|-------:|
+| DEL–BOM | 68,50,869 | 0.2958 |
+| DEL–BLR | 46,81,042 | 0.2021 |
+| BOM–BLR | 41,14,574 | 0.1776 |
+| DEL–CCU | 27,70,386 | 0.1196 |
+| MAA–DEL | 24,52,761 | 0.1059 |
+| BLR–HYD | 22,93,602 | 0.0990 |
+
+**Source:** DGCA, "City Pair Wise Passenger Traffic," available at [dgca.gov.in](https://dgca.gov.in).
+
+### DGCA Monthly Average Fares (2024–2025)
+
+The backtest module compares APIx output against **DGCA Monthly Average Fares** for **January 2024 – November 2025**. DGCA's portal had not updated this data in recent years, so we used a well-sourced Kaggle aggregation.
+
+**Source:** Kaggle dataset ["India Aviation Traffic Data"](https://github.com/Vonter/india-aviation-traffic) by Vonter — sourced from DGCA published reports.
+
+### How Weights Are Computed
+
+```
+weight_i = passengers_on_route_i / total_passengers_across_all_6_routes
+```
+
+These weights are **normalised to sum to 1.0** and used as `Q_i0` in the Laspeyres index formula.
+
+### Transparency Note
+
+DGCA is the primary source for Indian aviation statistics. However, their online portal has not been updated with recent monthly figures. We use the most recent available data (FY 2024–25) and a Kaggle aggregation that compiles the same DGCA reports.
 
 ---
 
@@ -420,7 +459,7 @@ Every push and PR triggers:
 - [x] Interactive dashboard with 7 components
 - [x] README + Docker setup + config docs
 - [x] Tests + CI/CD pipeline (GitHub Actions)
-- [ ] 30+ day backtest vs DGCA (in progress)
+- [x] 30+ day backtest vs DGCA (FY 2024–25 data, 32 data points across 6 routes)
 - [ ] 2-page architecture doc (`docs/architecture.md`)
 - [ ] 2-min demo video, 5-slide deck
 

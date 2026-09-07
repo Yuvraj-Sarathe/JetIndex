@@ -88,10 +88,7 @@ def run_pipeline(target_date: str, source: str | None = None, dry_run: bool = Fa
 
     # Clean batch
     df = clean_batch(clean_quotes)
-    if "is_outlier" in df.columns:
-     n_outliers = len(df.filter(df["is_outlier"] == True))
-    else:
-     n_outliers = 0
+    n_outliers = len(df.filter(df["quality_flag"] == "iqr_outlier")) if "quality_flag" in df.columns else 0
     stats["outliers"] = n_outliers
 
     # Load

@@ -28,19 +28,13 @@ def admin_status(db: Session = Depends(get_db)):
     # --- scraping stats ---
     last_scrape_at = db.scalar(select(func.max(RawQuote.fetched_at)))
     today_quotes = db.scalar(
-        select(func.count(FareQuote.id)).where(
-            func.cast(FareQuote.scraped_at, date) == date.today()
-        )
+        select(func.count(FareQuote.id)).where(func.cast(FareQuote.scraped_at, date) == date.today())
     )
     total_quotes = db.scalar(select(func.count(FareQuote.id)))
 
     # --- latest APIx index ---
-    latest_apix = db.scalar(
-        select(ApixDaily.apix).order_by(ApixDaily.date.desc()).limit(1)
-    )
-    latest_index_date = db.scalar(
-        select(ApixDaily.date).order_by(ApixDaily.date.desc()).limit(1)
-    )
+    latest_apix = db.scalar(select(ApixDaily.apix).order_by(ApixDaily.date.desc()).limit(1))
+    latest_index_date = db.scalar(select(ApixDaily.date).order_by(ApixDaily.date.desc()).limit(1))
 
     # --- route coverage today ---
     total_routes = db.scalar(select(func.count(Route.id)))
@@ -49,20 +43,10 @@ def admin_status(db: Session = Depends(get_db)):
         .where(func.cast(FareQuote.scraped_at, date) == date.today())
         .where(FareQuote.quality_flag == "ok")
     )
-    pct = (
-        round(routes_covered_today / total_routes * 100, 1)
-        if total_routes
-        else 0.0
-    )
+    pct = round(routes_covered_today / total_routes * 100, 1) if total_routes else 0.0
 
     # --- quality distribution (all-time) ---
-    quality_dist = dict(
-        db.execute(
-            select(FareQuote.quality_flag, func.count()).group_by(
-                FareQuote.quality_flag
-            )
-        ).all()
-    )
+    quality_dist = dict(db.execute(select(FareQuote.quality_flag, func.count()).group_by(FareQuote.quality_flag)).all())
 
     return {
         "mode": "live",

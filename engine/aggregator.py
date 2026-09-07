@@ -2,45 +2,66 @@
 
 from datetime import date
 
-from loguru import logger
 
-
-def weekly_rollup(session, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
+def weekly_rollup(session=None, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
     """
     Compute weekly average APIx from daily values.
 
-    Returns list of dicts with week_start, apix_avg, n_days.
+    Returns list of dicts with week_start, apix, apix_avg, apix_base_only, n_quotes, n_routes.
+    Delegates to db.queries.get_apix_weekly.
     """
-    # TODO: Implement with real DB query
-    # SELECT date_trunc('week', date) as week_start,
-    #        AVG(apix) as apix_avg,
-    #        COUNT(*) as n_days
-    # FROM apix_daily
-    # WHERE date BETWEEN :start AND :end
-    # GROUP BY week_start
-    # ORDER BY week_start
+    from db import queries as db_queries
+    from db.session import SessionLocal
 
-    logger.warning("weekly_rollup: using placeholder values")
-    return []
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        rows = db_queries.get_apix_weekly(session, from_date=start_date, to_date=end_date)
+        results = []
+        for r in rows:
+            item = dict(r)
+            if "apix_avg" not in item:
+                item["apix_avg"] = item.get("apix")
+            results.append(item)
+        return results
+    finally:
+        if owns_session:
+            session.close()
 
 
-def monthly_rollup(session, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
+def monthly_rollup(session=None, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
     """
     Compute monthly average APIx from daily values.
 
-    Returns list of dicts with month, apix_avg, n_days.
+    Returns list of dicts with month_start, month, apix, apix_avg, apix_base_only, n_quotes, n_routes.
+    Delegates to db.queries.get_apix_monthly.
     """
-    # TODO: Implement with real DB query
-    # SELECT date_trunc('month', date) as month,
-    #        AVG(apix) as apix_avg,
-    #        COUNT(*) as n_days
-    # FROM apix_daily
-    # WHERE date BETWEEN :start AND :end
-    # GROUP BY month
-    # ORDER BY month
+    from db import queries as db_queries
+    from db.session import SessionLocal
 
-    logger.warning("monthly_rollup: using placeholder values")
-    return []
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        rows = db_queries.get_apix_monthly(session, from_date=start_date, to_date=end_date)
+        results = []
+        for r in rows:
+            item = dict(r)
+            if "apix_avg" not in item:
+                item["apix_avg"] = item.get("apix")
+            if "month" not in item and "month_start" in item:
+                ms = item["month_start"]
+                item["month"] = ms.strftime("%Y-%m") if hasattr(ms, "strftime") else str(ms)[:7]
+            results.append(item)
+        return results
+    finally:
+        if owns_session:
+            session.close()
 
 
 def pct_change(current: float, previous: float) -> float | None:

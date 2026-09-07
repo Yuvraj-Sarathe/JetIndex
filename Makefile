@@ -30,6 +30,9 @@ mock-data:
 test:
 	pytest
 
+test-integration:
+	pytest -m integration -v
+
 test-cov:
 	pytest --cov --cov-report=term-missing
 

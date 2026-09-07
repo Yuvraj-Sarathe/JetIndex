@@ -91,50 +91,89 @@ def compute_daily(
 
     logger.info(f"Computing daily index for {compute_date}")
 
-    # TODO: Implement with real DB queries
-    # from db.models import FareQuote, Route, ApixDaily
-    # from engine.weights import load_weights, get_base_period_prices
-    # from sqlalchemy import func
-    #
-    # # Get prices per route for this date
-    # prices_today = {}
-    # for route in routes:
-    #     median_fare = session.query(
-    #         func.percentile_cont(0.5).within_group(FareQuote.total_fare)
-    #     ).filter(
-    #         FareQuote.route_id == route.id,
-    #         FareQuote.scrape_date == compute_date,
-    #         FareQuote.quality_flag == "ok"
-    #     ).scalar()
-    #     prices_today[route.route_code] = median_fare or 0.0
-    #
-    # # Load weights and base prices
-    # weights = load_weights()
-    # base_prices = get_base_period_prices(session)
-    #
-    # # Compute index
-    # apix = laspeyres(prices_today, base_prices, weights)
-    #
-    # # Write to DB
-    # apix_record = ApixDaily(
-    #     date=compute_date,
-    #     apix=apix,
-    #     n_quotes=n_quotes,
-    #     n_routes=len(prices_today),
-    #     method="laspeyres",
-    #     base_period=f"{base_start} to {base_end}",
-    # )
-    # session.merge(apix_record)
-    # session.commit()
+    import statistics
+    from collections import defaultdict
 
-    # Placeholder: return mock value
-    logger.warning("compute_daily: using placeholder values")
-    return {
-        "date": compute_date.isoformat(),
-        "apix": 100.0,
-        "apix_base_only": 100.0,
-        "n_quotes": 0,
-        "n_routes": 6,
-        "method": "laspeyres",
-        "base_period": "placeholder",
-    }
+    from db import queries as db_queries
+    from db.session import SessionLocal
+
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        # 1. Fetch median fares per route
+        fare_rows = db_queries.get_median_fares_by_route(
+            session=session,
+            scrape_date=compute_date,
+            lead_times=lead_times,
+        )
+
+        # 2. Fetch DGCA weights
+        weights = db_queries.get_weights(session)
+
+        # 3. Fetch base period prices
+        base_prices = db_queries.get_base_period_prices(session)
+
+        # Aggregate lead-time fares per route
+        route_total_fares: dict[int, list[float]] = defaultdict(list)
+        route_base_fares: dict[int, list[float]] = defaultdict(list)
+        n_quotes = 0
+
+        for row in fare_rows:
+            r_id = row["route_id"]
+            if row.get("median_fare") is not None:
+                route_total_fares[r_id].append(float(row["median_fare"]))
+            if row.get("median_base_fare") is not None:
+                route_base_fares[r_id].append(float(row["median_base_fare"]))
+            n_quotes += int(row.get("n_quotes", 0))
+
+        prices_today: dict[int, float] = {}
+        prices_base_today: dict[int, float] = {}
+        agg_fn = statistics.mean if price_agg == "mean" else statistics.median
+
+        for r_id, fares in route_total_fares.items():
+            if fares:
+                prices_today[r_id] = float(agg_fn(fares))
+
+        for r_id, b_fares in route_base_fares.items():
+            if b_fares:
+                prices_base_today[r_id] = float(agg_fn(b_fares))
+
+        # 4. Compute Laspeyres index
+        if prices_today and base_prices and weights:
+            apix = laspeyres(prices_today, base_prices, weights)
+            apix_base_only = laspeyres(prices_base_today, base_prices, weights) if prices_base_today else apix
+        else:
+            logger.warning(
+                f"compute_daily: Insufficient data for {compute_date} "
+                f"(prices={len(prices_today)}, base={len(base_prices)}, weights={len(weights)}). Defaulting to 100.0"
+            )
+            apix = 100.0
+            apix_base_only = 100.0
+
+        # 5. Persist to apix_daily table
+        record = {
+            "date": compute_date,
+            "apix": apix,
+            "apix_base_only": apix_base_only,
+            "n_quotes": n_quotes,
+            "n_routes": len(prices_today),
+            "method": "laspeyres",
+            "base_period": "first_7_days",
+        }
+        db_queries.upsert_apix_daily(session, record)
+
+        return {
+            "date": compute_date.isoformat(),
+            "apix": apix,
+            "apix_base_only": apix_base_only,
+            "n_quotes": n_quotes,
+            "n_routes": len(prices_today),
+            "method": "laspeyres",
+            "base_period": "first_7_days",
+        }
+    finally:
+        if owns_session:
+            session.close()
