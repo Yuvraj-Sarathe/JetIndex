@@ -23,6 +23,7 @@ I have completed the infrastructure layer. Here's what's ready for you:
 | IndiGo recon | ✅ Done | Full endpoint captured in `scrapers/recon/indigo_endpoint.md` |
 | IndiGo + MMT build_request/parse_ok | ✅ Done | Implemented by Abhay in `scrapers/indigo.py` and `scrapers/makemytrip.py` |
 | IndiGo parser | ✅ Done | `pipeline/parsers/indigo_parser.py` — parses real fixture (77 flights) |
+| Playwright fallback | ✅ Done | `scrapers/playwright_fallback.py` — stealth browser with fixture adaptation |
 | Real Indigo fixture | ✅ Done | 77 flights in `tests/fixtures/indigo_sample.json` (756 KB) |
 | Integration tests | ✅ Done | 11 DB round-trip tests in `tests/test_integration/` |
 
@@ -194,9 +195,9 @@ routes = session.scalars(select(Route).where(Route.active == True)).all()
    - Use `db/queries.get_base_period_prices()` for base prices
    - Use `db/queries.upsert_apix_daily()` to write results
 
-**5. Add tests**
-   - `tests/test_scrapers/test_indigo.py` — test build_request, parse_ok
-   - `tests/test_engine/test_compute_daily.py` — test with mock DB
+**5. Implement `loader.load()`**
+   - Use `db.queries.upsert_fare_quotes()` to load data
+   - Convert Polars DataFrame rows to dicts for upsert
 
 #### IndiGo Reconstruct Reference
 

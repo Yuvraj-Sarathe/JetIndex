@@ -113,7 +113,7 @@ against DGCA monthly average fares (MAPE / RMSE / Pearson correlation).
 ### Coding stage in one paragraph
 This is a **Day-1+ scaffold** with significant real implementations added:
 - **Done:** DB migration + hypertable, deps.py single source of truth, Celery chord workflow (scrape → clean → index), centralised query layer (`db/queries.py`), admin endpoint, Redis healthcheck, conditional Playwright, real Indigo fixture (77 flights), **MOCK_MODE toggle wired in all 9 endpoints** (mock branch stays as demo safety net; real branch calls `db/queries.py`).
-- **Still stubbed:** `playwright_fallback`, `raw_quotes` DB insert in `storage.py`, `loader.load()` DB upsert, engine `compute_daily`/`get_base_period_prices` DB paths.
+- **Still stubbed:** `raw_quotes` DB insert in `storage.py`, `loader.load()` DB upsert, engine `compute_daily`/`get_base_period_prices` DB paths, `makemytrip_parser.py`.
 See [§18](#18-implementation-status-done-vs-stub-critical) for the precise inventory.
 
 ---
@@ -319,7 +319,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 
 | File | Contents |
 |---|---|
-| `base_scraper.py` | Dataclasses: `ScrapeJob`, `ScrapeResult`, `RequestSpec`. `BaseScraper(ABC)` with full `fetch()` loop (tenacity retry, proxy rotation, Playwright fallback). |
+| `base_scraper.py` | Dataclasses: `ScrapeJob`, `ScrapeResult`, `RequestSpec`. `BaseScraper(ABC)` with full `fetch()` loop (tenacity retry on 401/403/429/5xx, proxy rotation, `parse_ok()` validation, Playwright fallback). |
 | `indigo.py` | **Implemented:** `IndigoScraper` — `build_request()` + `parse_ok()` wired to IndiGo XHR endpoint. |
 | `makemytrip.py` | **Implemented:** `MakeMyTripScraper` — `build_request()` + `parse_ok()` wired to MMT XHR endpoint. |
 | `airindia.py` | Stub class, post-MVP. |
@@ -327,7 +327,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `proxy_manager.py` | **Working** `ProxyManager`: rotation, cooldown, backoff. |
 | `session_manager.py` | **Working** `SessionManager`: JSON cookie/token persistence. |
 | `fingerprints.py` | **Working** TLS profiles + UA rotation. |
-| `playwright_fallback.py` | **Stub** `fetch_with_browser()`. |
+| `playwright_fallback.py` | **Implemented:** `fetch_with_browser()` — stealth browser with route-adapted fixture fallback (test-only gate via `JETINDEX_ALLOW_FIXTURE_FALLBACK`). |
 | `storage.py` | **Working** `save_raw(result)` → `data/raw/`. DB insert commented TODO. |
 | `recon/indigo_endpoint.md` | **Captured:** Full cURL command with headers, auth token, request body shape. |
 
@@ -397,9 +397,11 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 | `test_engine/test_index_calculator.py` | 4 | Laspeyres, Geometric Young |
 | `test_pipeline/test_unbundler.py` | 4 | Validation, unbundling |
 | `test_pipeline/test_cleaner.py` | — | Dedup, IQR, sold-out flagging |
+| `test_pipeline/test_indigo_parser.py` | — | IndiGo parser validation |
 | `test_scrapers/test_base.py` | 4 | Job/result creation, registry |
 | `test_scrapers/test_request_builders.py` | 8 | IndiGo + MMT build_request/parse_ok |
 | `test_scrapers/test_fetch_engine.py` | — | Fetch loop, retry logic |
+| `test_scrapers/test_playwright_fallback.py` | — | Playwright fallback, fixture adaptation |
 | `test_scrapers/test_session_manager.py` | — | Cookie/token persistence |
 | `test_scrapers/test_proxy_manager.py` | — | Proxy rotation, cooldown |
 | `test_integration/test_db_pipeline.py` | 11 | **@integration** — DB round-trip, unbundler→DB, real fixture pipeline |
@@ -606,6 +608,7 @@ GitHub Actions (push/PR to main)
 - **Redis healthcheck** + proper startup ordering
 - **Dockerfile** — Playwright conditional (default off)
 - **Real Indigo fixture** (77 flights, 756 KB)
+- **Playwright fallback** — stealth browser with fixture adaptation for testing
 - Mock service + deterministic data generator
 - Loguru logging, full DB model layer, seed script
 - `laspeyres()` / `geometric_young()` math + tests
@@ -617,7 +620,6 @@ GitHub Actions (push/PR to main)
 - **DGCA monthly average fares** — real Jan 2024–Nov 2025 data (`config/dgca_monthly_avg_fare.csv`, 32 data points, sourced from Kaggle/Vonter DGCA compilation)
 
 ### ⚠️ Stubbed / not yet implemented
-- `playwright_fallback.fetch_with_browser()` (**Sourabh/Abhay**)
 - `raw_quotes` DB insert in `storage.py` (**Sourabh/Abhay**)
 - `loader.load()` DB upsert (**Vanshika**)
 - `compute_daily` real DB path (**Sourabh/Abhay**)
@@ -652,7 +654,6 @@ GitHub Actions (push/PR to main)
 1. **loader.py** — DB upsert commented TODO; models exist, queries layer ready.
 2. **compute_daily DB path** — placeholder returns 100.0; needs real `percentile_cont` queries.
 3. **MakemyTrip parser** — stub; needs real fixture parsing once MMT scraping is live.
-4. **Playwright fallback** — not yet wired for live anti-bot challenges.
 
 **Known wrinkles:**
 - `get_mock_apix_weekly/monthly` echo daily data; mock shapes don't fully match response schemas.
