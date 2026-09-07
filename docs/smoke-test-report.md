@@ -74,17 +74,17 @@ docker compose run --rm api python -m engine.run --date 2026-09-07
 # Health check
 docker compose exec api curl -s http://localhost:8000/health
 
-# Daily APIx index series
-docker compose exec api curl -s -H "Authorization: Bearer change-me-dev-token" \
-  http://localhost:8000/api/v1/apix/daily
+# Daily APIx index series (authenticated via container API_TOKEN environment variable)
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/apix/daily'
 
 # Route network summary
-docker compose exec api curl -s -H "Authorization: Bearer change-me-dev-token" \
-  http://localhost:8000/api/v1/routes
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/routes'
 
 # Network heatmap aggregation
-docker compose exec api curl -s -H "Authorization: Bearer change-me-dev-token" \
-  http://localhost:8000/api/v1/routes/heatmap
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/routes/heatmap'
 ```
 
 **Result:** ✓ API returns real data from database across all core endpoints with active authentication.
