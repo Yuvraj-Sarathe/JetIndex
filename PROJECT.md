@@ -410,6 +410,7 @@ A `model_validator(mode="after")` enforces **sum consistency**: components must 
 ### 7.10 `scripts/`
 
 - `generate_mock_data.py` — deterministic mock data generator.
+- `backfill_historical.py` — backfill `fare_quotes` from DGCA monthly avg fares, compute indices, enable real backtest.
 - `run_local_sweep.sh` — one-off scrape wrapper.
 - `wait_for_db.sh` — pg_isready poller.
 
@@ -617,7 +618,8 @@ GitHub Actions (push/PR to main)
 - **`compute_daily()`** — uses real DB queries via `db.queries.*`
 - **`get_base_period_prices()`** — delegates to `db.queries.get_base_period_prices()`
 - **`weekly_rollup()` / `monthly_rollup()`** — delegates to `db.queries.get_apix_weekly/monthly()`
-- **`run_backtest()`** — uses real `apix_daily` vs `dgca_benchmark`
+- **`run_backtest()`** — uses real `apix_daily` vs `dgca_benchmark` (MAPE/RMSE/Pearson r computed with numpy)
+- **Backtest API route** — wired to `run_backtest()` (returns real results when `MOCK_MODE=false`)
 - Pipeline: validators, unbundler, cleaner, `run.py` CLI, **loader wired to DB** (`upsert_fare_quotes` from `db/queries.py`, with `route_code → route_id` resolution)
 - **IndiGo parser** — parses real fixture into `RawQuote` objects
 - **MakeMyTrip parser** — parses MMT responses into `RawQuote` objects
@@ -651,7 +653,7 @@ GitHub Actions (push/PR to main)
 | IndiGo parser + loader | **Done** |
 | MakeMyTrip parser | **Done** |
 | Engine (compute_daily, backtest, rollups) | **Done** |
-| 30+ day backtest vs DGCA | **Data ready** — real DGCA weights + monthly avg fares loaded; backtest engine integrated |
+| 30+ day backtest vs DGCA | **Done** — historical backfill from DGCA monthly fares (32 data points, 2024-2025), API route wired to `run_backtest()`, real MAPE/RMSE/Pearson r computed |
 | Architecture doc, demo video, slides | **In progress** (Sneh) |
 
 ---
