@@ -130,6 +130,4 @@ class DgcaBenchmark(Base):
     avg_fare = Column(Float, nullable=False)
     source_url = Column(String(500))
 
-    __table_args__ = (
-        UniqueConstraint("route_code", "month", name="uq_dgca_benchmark_route_month"),
-    )
+    __table_args__ = (UniqueConstraint("route_code", "month", name="uq_dgca_benchmark_route_month"),)

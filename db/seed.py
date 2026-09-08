@@ -103,15 +103,12 @@ def seed_dgca_benchmarks(session) -> int:
             source = row.get("source", "")
 
             # Upsert: update if (route_code, month) already exists
-            existing = (
-                session.execute(
-                    select(DgcaBenchmark).where(
-                        DgcaBenchmark.route_code == route_code,
-                        DgcaBenchmark.month == month,
-                    )
+            existing = session.execute(
+                select(DgcaBenchmark).where(
+                    DgcaBenchmark.route_code == route_code,
+                    DgcaBenchmark.month == month,
                 )
-                .scalar_one_or_none()
-            )
+            ).scalar_one_or_none()
 
             if existing:
                 existing.avg_fare = avg_fare
