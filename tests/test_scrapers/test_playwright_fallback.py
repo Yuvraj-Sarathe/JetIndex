@@ -66,6 +66,8 @@ def test_browser_timeout_returns_failure_without_fixtures(sample_job, mock_scrap
     mock_browser = AsyncMock()
     mock_context = AsyncMock()
     mock_page = AsyncMock()
+    # page.on() is synchronous in Playwright — must not be an AsyncMock
+    mock_page.on = MagicMock()
 
     mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
     mock_browser.new_context = AsyncMock(return_value=mock_context)
@@ -103,6 +105,8 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     mock_browser = AsyncMock()
     mock_context = AsyncMock()
     mock_page = AsyncMock()
+    # page.on() is synchronous in Playwright — must not be an AsyncMock
+    mock_page.on = MagicMock()
 
     mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
     mock_browser.new_context = AsyncMock(return_value=mock_context)

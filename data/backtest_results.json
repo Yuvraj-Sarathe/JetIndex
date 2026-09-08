@@ -1,8 +1,169 @@
 {
-  "monthly": [],
+  "monthly": [
+    {
+      "month": "2024-01",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 8370.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 0.0
+    },
+    {
+      "month": "2024-03",
+      "apix_avg": 64.6676,
+      "dgca_avg_fare": 5304.33,
+      "apix_rebased": 64.6676,
+      "implied_fare": 5413.0,
+      "error_pct": 2.05
+    },
+    {
+      "month": "2024-04",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 11677.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 28.32
+    },
+    {
+      "month": "2024-05",
+      "apix_avg": 82.4443,
+      "dgca_avg_fare": 6901.0,
+      "apix_rebased": 82.4443,
+      "implied_fare": 6901.0,
+      "error_pct": 0.0
+    },
+    {
+      "month": "2024-07",
+      "apix_avg": 72.6719,
+      "dgca_avg_fare": 6083.0,
+      "apix_rebased": 72.6719,
+      "implied_fare": 6083.0,
+      "error_pct": 0.0
+    },
+    {
+      "month": "2024-08",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 10105.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 17.17
+    },
+    {
+      "month": "2024-09",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 5168.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 61.95
+    },
+    {
+      "month": "2024-10",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 4558.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 83.64
+    },
+    {
+      "month": "2024-11",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 7604.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 10.07
+    },
+    {
+      "month": "2024-12",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 6478.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 29.2
+    },
+    {
+      "month": "2025-02",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 5154.5,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 62.39
+    },
+    {
+      "month": "2025-03",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 4091.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 104.61
+    },
+    {
+      "month": "2025-04",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 10402.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 19.53
+    },
+    {
+      "month": "2025-05",
+      "apix_avg": 63.3773,
+      "dgca_avg_fare": 5305.0,
+      "apix_rebased": 63.3773,
+      "implied_fare": 5305.0,
+      "error_pct": 0.0
+    },
+    {
+      "month": "2025-06",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 6511.25,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 28.55
+    },
+    {
+      "month": "2025-07",
+      "apix_avg": 59.3991,
+      "dgca_avg_fare": 6760.0,
+      "apix_rebased": 59.3991,
+      "implied_fare": 4972.0,
+      "error_pct": 26.45
+    },
+    {
+      "month": "2025-08",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 9746.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 14.11
+    },
+    {
+      "month": "2025-09",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 10916.0,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 23.32
+    },
+    {
+      "month": "2025-10",
+      "apix_avg": 100.0,
+      "dgca_avg_fare": 8158.67,
+      "apix_rebased": 100.0,
+      "implied_fare": 8370.5,
+      "error_pct": 2.6
+    },
+    {
+      "month": "2025-11",
+      "apix_avg": 96.0755,
+      "dgca_avg_fare": 8042.0,
+      "apix_rebased": 96.0755,
+      "implied_fare": 8042.0,
+      "error_pct": 0.0
+    }
+  ],
   "summary": {
-    "mape": 0.0,
-    "rmse": 0.0,
-    "corr": 0.0
+    "mape": 25.7,
+    "rmse": 2130.3,
+    "corr": 0.3439
   }
 }
