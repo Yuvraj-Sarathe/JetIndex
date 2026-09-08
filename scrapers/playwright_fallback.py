@@ -42,7 +42,12 @@ def _build_fixture_fallback_result(job: ScrapeJob, scraper_instance) -> ScrapeRe
                     item["lead_time"] = job.lead_time
                     item["scraped_at"] = datetime.now(UTC).isoformat()
                 if scraper_instance.parse_ok(adapted):
-                    logger.info(f"Using route-adapted test fixture for {job.source} {job.origin}-{job.destination}")
+                    logger.info(
+                        "Using route-adapted test fixture for {} {}-{}",
+                        job.source,
+                        job.origin,
+                        job.destination,
+                    )
                     return ScrapeResult(
                         job=job,
                         ok=True,
@@ -69,7 +74,12 @@ def _build_fixture_fallback_result(job: ScrapeJob, scraper_instance) -> ScrapeRe
                         time_part = offer["arrival"].split("T")[-1]
                         offer["arrival"] = f"{job.depart_date.isoformat()}T{time_part}"
                 if scraper_instance.parse_ok(adapted):
-                    logger.info(f"Using route-adapted test fixture for {job.source} {job.origin}-{job.destination}")
+                    logger.info(
+                        "Using route-adapted test fixture for {} {}-{}",
+                        job.source,
+                        job.origin,
+                        job.destination,
+                    )
                     return ScrapeResult(
                         job=job,
                         ok=True,
@@ -79,7 +89,7 @@ def _build_fixture_fallback_result(job: ScrapeJob, scraper_instance) -> ScrapeRe
                         fetched_at=datetime.now(UTC),
                     )
         except Exception as e:
-            logger.warning(f"Failed to load test fixture fallback for {job.source}: {e}")
+            logger.warning("Failed to load test fixture fallback for {}: {}", job.source, e)
 
     return ScrapeResult(
         job=job,
@@ -98,7 +108,13 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
     3. Intercept JSON responses matching the target endpoint
     4. Return captured live fare data, or failed ScrapeResult if uncaptured
     """
-    logger.info(f"Playwright fallback triggered for {job.source} {job.origin}-{job.destination} T+{job.lead_time}")
+    logger.info(
+        "Playwright fallback triggered for {} {}-{} T+{}",
+        job.source,
+        job.origin,
+        job.destination,
+        job.lead_time,
+    )
 
     try:
         from playwright.async_api import async_playwright
@@ -112,7 +128,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                 await Stealth().apply_stealth_async(page)
 
     except ImportError as exc:
-        logger.error(f"Playwright dependencies not installed: {exc}")
+        logger.error("Playwright dependencies not installed: {}", exc)
         if ALLOW_FIXTURE_FALLBACK:
             return _build_fixture_fallback_result(job, scraper_instance)
         return ScrapeResult(
@@ -147,8 +163,8 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                     if scraper_instance.parse_ok(body):
                         captured_payload.append(body)
                         capture_event.set()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Response handler ignored: {}", e)
 
     browser = None
     try:
@@ -176,11 +192,11 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                 # Navigate to the base origin first to set up domain context and cookies
                 origin = spec.headers.get("origin") or spec.headers.get("referer")
                 if origin:
-                    logger.debug(f"Playwright preparing browser session at {origin}")
+                    logger.debug("Playwright preparing browser session at {}", origin)
                     with contextlib.suppress(Exception):
                         await page.goto(origin, wait_until="domcontentloaded", timeout=30_000)
 
-                logger.debug(f"Playwright issuing {spec.method} to {spec.url}")
+                logger.debug("Playwright issuing {} to {}", spec.method, spec.url)
                 # Execute in-page fetch so browser fingerprint and session tokens apply
                 try:
                     eval_result = await page.evaluate(
@@ -207,7 +223,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                         captured_payload.append(eval_result)
                         capture_event.set()
                 except Exception as eval_err:
-                    logger.debug(f"In-page fetch evaluation failed: {eval_err}")
+                    logger.debug("In-page fetch evaluation failed: {}", eval_err)
 
                 # If in-page evaluate didn't succeed, attempt via page.request API
                 if not captured_payload:
@@ -228,9 +244,9 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                                 captured_payload.append(body)
                                 capture_event.set()
                     except Exception as req_err:
-                        logger.debug(f"Playwright page.request.fetch failed: {req_err}")
+                        logger.debug("Playwright page.request.fetch failed: {}", req_err)
             else:
-                logger.debug(f"Playwright navigating to {spec.url}")
+                logger.debug("Playwright navigating to {}", spec.url)
                 await page.goto(spec.url, wait_until="domcontentloaded", timeout=30_000)
 
             # Wait for the intercepted fare response (max 30s) if not already captured
@@ -246,7 +262,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
         if captured_payload:
             payload = captured_payload[0]
             if scraper_instance.parse_ok(payload):
-                logger.info(f"Playwright captured fare data for {job.source}")
+                logger.info("Playwright captured fare data for {}", job.source)
                 return ScrapeResult(
                     job=job,
                     ok=True,
@@ -267,7 +283,7 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
         )
 
     except Exception as exc:
-        logger.warning(f"Playwright fallback error: {exc}")
+        logger.warning("Playwright fallback error: {}", exc)
         if ALLOW_FIXTURE_FALLBACK:
             return _build_fixture_fallback_result(job, scraper_instance)
         return ScrapeResult(

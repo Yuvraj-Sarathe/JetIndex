@@ -26,6 +26,7 @@ def get_route_by_code(session: Session, route_code: str) -> Route | None:
 
 # ── Fare Quotes ─────────────────────────────────────────────────
 def upsert_fare_quotes(session: Session, records: list[dict]) -> int:
+    """Insert fare quotes, resolving route_code to route_id. Returns row count."""
     if not records:
         return 0
 
@@ -149,7 +150,7 @@ def get_weights(session: Session) -> dict[int, float]:
 # ── APIx Daily ──────────────────────────────────────────────────
 
 
-def upsert_apix_daily(session: Session, record: dict):
+def upsert_apix_daily(session: Session, record: dict) -> None:
     """Insert or update a daily index row."""
     stmt = pg_insert(ApixDaily).values(**record)
     stmt = stmt.on_conflict_do_update(
@@ -268,11 +269,11 @@ def get_quotes(
 ) -> list[dict]:
     """Flexible quote query with optional filters."""
     stmt = select(FareQuote).where(FareQuote.quality_flag == "ok")
-    if route_id:
+    if route_id is not None:
         stmt = stmt.where(FareQuote.route_id == route_id)
     if route_date:
         stmt = stmt.where(func.cast(FareQuote.scraped_at, date) == route_date)
-    if lead_time:
+    if lead_time is not None:
         stmt = stmt.where(FareQuote.lead_time == lead_time)
     if carrier:
         stmt = stmt.where(FareQuote.carrier == carrier)

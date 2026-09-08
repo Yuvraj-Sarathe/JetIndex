@@ -1,5 +1,9 @@
 """Scraper registry — maps source names to scraper classes."""
 
+from __future__ import annotations
+
+from datetime import date
+
 from scrapers.airindia import AirIndiaScraper
 from scrapers.base_scraper import BaseScraper, ScrapeJob
 from scrapers.indigo import IndigoScraper
@@ -10,8 +14,8 @@ SCRAPERS: dict[str, type[BaseScraper]] = {
     "indigo": IndigoScraper,
     "makemytrip": MakeMyTripScraper,
     "airindia": AirIndiaScraper,
-    # "akasa": AkasaScraper,       # TODO: implement
-    # "easemytrip": EaseMyTripScraper,  # TODO: implement
+    # "akasa": AkasaScraper,       # Post-MVP: not yet implemented
+    # "easemytrip": EaseMyTripScraper,  # Post-MVP: not yet implemented
 }
 
 
@@ -22,7 +26,7 @@ def get_scraper(name: str) -> BaseScraper:
     return SCRAPERS[name]()
 
 
-def build_jobs_for_date(scrape_date=None) -> list[ScrapeJob]:
+def build_jobs_for_date(scrape_date: date | None = None) -> list[ScrapeJob]:
     """
     Build all scrape jobs for a given date from config/routes.yaml.
 

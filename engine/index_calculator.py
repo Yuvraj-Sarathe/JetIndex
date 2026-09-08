@@ -1,8 +1,17 @@
 """Index calculation — Laspeyres, Geometric Young, and daily computation."""
 
-from datetime import date
+from __future__ import annotations
+
+import math
+import statistics
+from collections import defaultdict
+from datetime import date, timedelta
+from typing import TYPE_CHECKING
 
 from loguru import logger
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 def laspeyres(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float]) -> float:
@@ -49,8 +58,6 @@ def geometric_young(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str,
     Returns:
         Index value (base period = 100)
     """
-    import math
-
     log_sum = 0.0
     for route in p_0:
         if route in p_t and route in q_0 and p_0[route] > 0:
@@ -63,10 +70,10 @@ def geometric_young(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str,
 
 def compute_daily(
     compute_date: str | date,
-    session=None,
+    session: Session | None = None,
     lead_times: tuple[int, ...] = (1, 7, 15, 30, 45),
     price_agg: str = "median",
-) -> dict:
+) -> dict[str, str | float | int]:
     """
     Compute the daily APIx index for a given date.
 
@@ -89,10 +96,7 @@ def compute_daily(
     if isinstance(compute_date, str):
         compute_date = date.fromisoformat(compute_date)
 
-    logger.info(f"Computing daily index for {compute_date}")
-
-    import statistics
-    from collections import defaultdict
+    logger.info("Computing daily index for {}", compute_date)
 
     from db import queries as db_queries
     from db.session import SessionLocal
@@ -112,8 +116,7 @@ def compute_daily(
 
         # Fallback: if no data for exact date, try ±3 day window
         if not fare_rows:
-            logger.info(f"No fare data for exact date {compute_date}, trying ±3 day window")
-            from datetime import timedelta
+            logger.info("No fare data for exact date {}, trying ±3 day window", compute_date)
 
             for offset in range(1, 4):
                 for sign in (1, -1):
@@ -124,12 +127,12 @@ def compute_daily(
                         lead_times=lead_times,
                     )
                     if fare_rows:
-                        logger.info(f"Found fare data for {alt_date} ({len(fare_rows)} route×lead_time groups)")
+                        logger.info("Found fare data for {} ({} route×lead_time groups)", alt_date, len(fare_rows))
                         break
                 if fare_rows:
                     break
 
-        logger.info(f"compute_daily: got {len(fare_rows)} route×lead_time groups for {compute_date}")
+        logger.info("compute_daily: got {} route×lead_time groups for {}", len(fare_rows), compute_date)
 
         # 2. Fetch DGCA weights
         weights = db_queries.get_weights(session)
@@ -163,9 +166,10 @@ def compute_daily(
                 prices_base_today[r_id] = float(agg_fn(b_fares))
 
         logger.info(
-            f"compute_daily: {len(prices_today)} routes with prices, "
-            f"{len(weights)} routes with weights, "
-            f"{len(base_prices)} routes with base prices"
+            "compute_daily: {} routes with prices, {} routes with weights, {} routes with base prices",
+            len(prices_today),
+            len(weights),
+            len(base_prices),
         )
 
         # 4. Compute Laspeyres index
@@ -174,8 +178,11 @@ def compute_daily(
             apix_base_only = laspeyres(prices_base_today, base_prices, weights) if prices_base_today else apix
         else:
             logger.warning(
-                f"compute_daily: Insufficient data for {compute_date} "
-                f"(prices={len(prices_today)}, base={len(base_prices)}, weights={len(weights)}). Defaulting to 100.0"
+                "compute_daily: Insufficient data for {} (prices={}, base={}, weights={}). Defaulting to 100.0",
+                compute_date,
+                len(prices_today),
+                len(base_prices),
+                len(weights),
             )
             apix = 100.0
             apix_base_only = 100.0

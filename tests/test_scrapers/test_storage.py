@@ -1,7 +1,10 @@
 """Tests for scrapers/storage.py — save_raw disk and DB write."""
 
 from datetime import date, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from scrapers.base_scraper import ScrapeJob, ScrapeResult
 from scrapers.storage import save_raw
@@ -75,6 +78,42 @@ def test_save_raw_db_failure_does_not_crash(tmp_path):
         patch("scrapers.storage.settings.RAW_DATA_DIR", str(tmp_path)),
         patch("db.session.SessionLocal", side_effect=Exception("DB connection refused")),
     ):
-        # Should not raise exception
+        # Operational outage should not crash disk save
         saved_path = save_raw(result)
         assert saved_path.exists()
+
+
+def test_save_raw_missing_route_raises_value_error(tmp_path):
+    job = ScrapeJob(
+        source="indigo",
+        origin="UNKNOWN",
+        destination="ROUTE",
+        scrape_date=date(2026, 10, 13),
+        depart_date=date(2026, 10, 20),
+        lead_time=7,
+    )
+    result = ScrapeResult(
+        job=job,
+        ok=True,
+        payload={"data": "test"},
+        fetched_at=datetime(2026, 10, 13, 10, 0, 0),
+        status_code=200,
+        method="curl_cffi",
+    )
+
+    mock_session = MagicMock()
+    mock_session_ctx = MagicMock()
+    mock_session_ctx.__enter__.return_value = mock_session
+    mock_session_ctx.__exit__.return_value = None
+
+    with (
+        patch("scrapers.storage.settings.RAW_DATA_DIR", str(tmp_path)),
+        patch("db.session.SessionLocal", return_value=mock_session_ctx),
+        patch("db.queries.get_route_by_code", return_value=None),
+    ):
+        with pytest.raises(ValueError, match="UNKNOWN-ROUTE"):
+            save_raw(result)
+
+        # Confirm the file was still saved to disk before raising
+        assert result.raw_path is not None
+        assert Path(result.raw_path).exists()

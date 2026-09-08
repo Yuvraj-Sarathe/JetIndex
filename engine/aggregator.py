@@ -1,9 +1,19 @@
 """Daily → weekly/monthly rollups and percentage change helpers."""
 
+from __future__ import annotations
+
 from datetime import date
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
-def weekly_rollup(session=None, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
+def weekly_rollup(
+    session: Session | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[dict]:
     """
     Compute weekly average APIx from daily values.
 
@@ -23,6 +33,7 @@ def weekly_rollup(session=None, start_date: date | None = None, end_date: date |
         results = []
         for r in rows:
             item = dict(r)
+            # Ensure backward compatibility for callers expecting 'apix_avg' alias alongside 'apix'
             if "apix_avg" not in item:
                 item["apix_avg"] = item.get("apix")
             results.append(item)
@@ -32,7 +43,11 @@ def weekly_rollup(session=None, start_date: date | None = None, end_date: date |
             session.close()
 
 
-def monthly_rollup(session=None, start_date: date | None = None, end_date: date | None = None) -> list[dict]:
+def monthly_rollup(
+    session: Session | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[dict]:
     """
     Compute monthly average APIx from daily values.
 
@@ -52,6 +67,7 @@ def monthly_rollup(session=None, start_date: date | None = None, end_date: date 
         results = []
         for r in rows:
             item = dict(r)
+            # Ensure backward compatibility for callers expecting 'apix_avg' alias alongside 'apix'
             if "apix_avg" not in item:
                 item["apix_avg"] = item.get("apix")
             if "month" not in item and "month_start" in item:

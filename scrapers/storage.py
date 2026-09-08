@@ -30,11 +30,11 @@ def save_raw(result: ScrapeResult) -> Path:
         json.dump(result.payload, f, indent=2, default=str)
 
     result.raw_path = str(filepath)
-    logger.info(f"Saved raw payload to {filepath}")
+    logger.info("Saved raw payload to {}", filepath)
 
     # Try to insert into raw_quotes table (non-critical)
     try:
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from db.queries import get_route_by_code, insert_raw_quote
         from db.session import SessionLocal
@@ -53,7 +53,7 @@ def save_raw(result: ScrapeResult) -> Path:
                 "scrape_date": result.job.scrape_date,
                 "depart_date": result.job.depart_date,
                 "lead_time": result.job.lead_time,
-                "fetched_at": result.fetched_at or datetime.utcnow(),
+                "fetched_at": result.fetched_at or datetime.now(UTC),
                 "status_code": result.status_code,
                 "method": result.method,
                 "proxy_used": result.proxy_used,
@@ -61,7 +61,11 @@ def save_raw(result: ScrapeResult) -> Path:
                 "payload": result.payload,
             }
             insert_raw_quote(db, raw_quote_data)
+    except ValueError:
+        # Re-raise explicit data/route configuration errors so callers can detect audit row failure
+        raise
     except Exception as e:
-        logger.error(f"Failed to insert raw_quotes audit row: {e}")
+        # Broad catch for operational DB outages: disk write succeeded, scrape remains unblocked
+        logger.error("Operational DB failure while inserting raw_quotes audit row: {}", e)
 
     return filepath

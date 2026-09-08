@@ -29,7 +29,7 @@ class SessionManager:
                 with open(session_file) as f:
                     return json.load(f)
             except (OSError, json.JSONDecodeError) as e:
-                logger.warning(f"Failed to load session for {source}: {e}")
+                logger.warning("Failed to load session for {}: {}", source, e)
         return {}
 
     def save(self, source: str, data: dict) -> None:
@@ -45,7 +45,7 @@ class SessionManager:
             with open(session_file, "w") as f:
                 json.dump(data_with_ts, f, indent=2)
         except OSError as e:
-            logger.warning(f"Failed to save session for {source}: {e}")
+            logger.warning("Failed to save session for {}: {}", source, e)
 
     def clear(self, source: str) -> None:
         """Clear session data for a source."""

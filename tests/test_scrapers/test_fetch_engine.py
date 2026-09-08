@@ -51,9 +51,9 @@ def sample_job():
         source="stub",
         origin="DEL",
         destination="BOM",
-        depart_date=date(2025, 2, 1),
+        depart_date=date(2026, 10, 20),
         lead_time=7,
-        scrape_date=date(2025, 1, 25),
+        scrape_date=date(2026, 10, 13),
     )
 
 

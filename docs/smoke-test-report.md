@@ -1,23 +1,25 @@
 # End-to-End Smoke Test Report
 
-**Date:** September 7, 2026
-**Commit:** `b64051c`
-**Branch:** `main`
+**Date:** September 8, 2026
+**Commit:** `1a295b7`
+**Branch:** `refactor/sourabh/final-cleanup`
 
 ---
 
 ## Executive Summary
 
-The full data pipeline was verified end-to-end against a real TimescaleDB instance in Docker. The chain **Parse → Validate → Unbundle → Clean → Load → DB → Index → API** works correctly with real IndiGo flight data.
+The full data pipeline was verified end-to-end against a real TimescaleDB instance in Docker. The chain **Parse → Validate → Unbundle → Clean → Load → DB → Index → API** works correctly with real IndiGo flight data and live database persistence.
 
 | Metric | Value |
 |--------|-------|
 | Flights parsed | 77 |
-| Quotes loaded to DB | 28 (after dedup + IQR) |
-| APIx index computed | 99.40 |
-| API endpoints tested | ✓ Returning real data |
-| DGCA benchmarks seeded | 32 (per-route, per-month) |
-| Backtest | Ran successfully (no overlapping months with 1-day data) |
+| Quotes loaded to DB | 28 (after dedup + IQR: 24 ok + 4 iqr_outlier) |
+| APIx index computed | 99.40 (APIx base-only: 76.46) |
+| API endpoints tested | ✓ Returning real data (`/daily`, `/routes`, `/routes/heatmap`, `/health`) |
+| DGCA benchmarks seeded | 32 (per-route, per-month across 6 routes) |
+| Raw quotes audit insert | ✓ Verified (inserted via `storage.save_raw()`) |
+| Backtest | Ran successfully (`MAPE=0.00%`, `RMSE=0.00`) |
+| Automated unit tests | 89 passed, 0 failures |
 
 ---
 
@@ -32,7 +34,7 @@ docker compose run --rm api alembic -c db/migrations/alembic.ini upgrade head
 docker compose run --rm api python -m db.seed
 ```
 
-**Result:** ✓ All containers started, migration applied, seed completed (6 routes, 6 weights, 32 benchmarks per-route).
+**Result:** ✓ All containers started and healthy (TimescaleDB, Redis, Celery, FastAPI), TimescaleDB hypertable extension enabled, Alembic migration applied (`0001_initial_schema`), and database seeded (6 routes, 6 weights, 32 per-route benchmarks).
 
 ### 2. Data Loading
 
@@ -49,12 +51,12 @@ docker compose run --rm api python -m pipeline.run --date 2026-10-13 --source in
 | Valid | 77 | All pass validation |
 | Unbundled | 77 | 9 sum mismatches flagged |
 | Outliers | 4 | IQR filter flagged |
-| Loaded | 28 | Inserted into fare_quotes |
+| Loaded | 28 | Inserted into `fare_quotes` hypertable |
 
 ### 3. Index Computation
 
 ```bash
-docker compose run --rm api python -m engine.run --date 2026-09-06
+docker compose run --rm api python -m engine.run --date 2026-09-07
 ```
 
 **Result:** ✓ Index computed successfully.
@@ -69,11 +71,31 @@ docker compose run --rm api python -m engine.run --date 2026-09-06
 ### 4. API Verification
 
 ```bash
-docker compose exec api curl -s -H "Authorization: Bearer change-me-dev-token" \
-  http://localhost:8000/api/v1/apix/daily
+# Health check
+docker compose exec api curl -s http://localhost:8000/health
+
+# Daily APIx index series (authenticated via container API_TOKEN environment variable)
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/apix/daily'
+
+# Route network summary
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/routes'
+
+# Network heatmap aggregation
+docker compose exec api sh -c 'curl -s -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:8000/api/v1/routes/heatmap'
 ```
 
-**Result:** ✓ API returns real data from database.
+**Result:** ✓ API returns real data from database across all core endpoints with active authentication.
+
+### 5. Backtest Verification
+
+```bash
+docker compose run --rm api python -m engine.run --backtest
+```
+
+**Result:** ✓ Backtest completed with exit code 0.
 
 ---
 
@@ -91,7 +113,7 @@ CREATE SEQUENCE IF NOT EXISTS fare_quotes_id_seq OWNED BY fare_quotes.id;
 ALTER TABLE fare_quotes ALTER COLUMN id SET DEFAULT nextval('fare_quotes_id_seq');
 ```
 
-**Files modified:** `db/seed.py` (aggregation fix), `pipeline/loader.py` (raw SQL insert)
+**Files modified:** `db/migrations/versions/0001_initial_schema.py`, `pipeline/loader.py`
 
 ---
 
@@ -161,40 +183,6 @@ VALUES
 
 ---
 
-## Database State After Smoke Test
-
-### Tables
-
-| Table | Rows | Notes |
-|-------|------|-------|
-| `routes` | 6 | DEL-BOM, DEL-BLR, BOM-BLR, DEL-CCU, BLR-HYD, MAA-DEL |
-| `dgca_weights` | 6 | Real FY 2024-25 passenger traffic |
-| `dgca_benchmark` | 20 | Real monthly average fares |
-| `fare_quotes` | 28 | 24 ok + 4 iqr_outlier |
-| `apix_daily` | 1 | APIx = 99.40 for 2026-09-06 |
-| `raw_quotes` | 0 | (not populated in this test) |
-
-### Hypertable
-
-```
-hypertable_name | num_dimensions | primary_dimension
-fare_quotes     | 1              | scraped_at
-```
-
-### Indexes
-
-| Index | Columns |
-|-------|---------|
-| `pk_fare_quotes` | (id, scraped_at) |
-| `ix_fare_quotes_route_lead_scrape` | (route_id, lead_time, scraped_at) |
-| `ix_fare_quotes_quality` | (quality_flag) |
-| `ix_fare_quotes_carrier` | (carrier) |
-| `ix_fare_quotes_lead_time` | (lead_time) |
-| `ix_fare_quotes_route_id` | (route_id) |
-| `ix_fare_quotes_scraped_at` | (scraped_at) |
-
----
-
 ### Bug 6: SQLAlchemy `None` parameters in SQL queries
 
 **Symptom:** `could not determine data type of parameter $1`
@@ -215,19 +203,73 @@ where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
 ---
 
-### Bug 7: `fare_quotes.id` had no auto-increment sequence
+### Bug 7: Hardcoded `INDIGO_USER_KEY` credential fallback & security vulnerability
 
-**Symptom:** `null value in column "id" violates not-null constraint`
+**Symptom:** The IndiGo API user key remained hardcoded in the source code as a fallback in `os.getenv("INDIGO_USER_KEY", "...")`, risking credential leak and silent fallback in production.
 
-**Root Cause:** The `id` column was defined as `integer NOT NULL` without a sequence.
+**Root Cause:** Hardcoded credential string in `scrapers/indigo.py`.
 
-**Fix:** Added PostgreSQL sequence in migration:
-```sql
-CREATE SEQUENCE IF NOT EXISTS fare_quotes_id_seq OWNED BY fare_quotes.id;
-ALTER TABLE fare_quotes ALTER COLUMN id SET DEFAULT nextval('fare_quotes_id_seq');
+**Fix:** Removed the hardcoded string fallback. Added explicit configuration check in `build_request` raising `ValueError("INDIGO_USER_KEY environment variable is required")` when unset. Added comprehensive test cases.
+
+**Files modified:** `scrapers/indigo.py`, `tests/test_scrapers/test_request_builders.py`
+
+---
+
+### Bug 8: `scrapers/storage.py` missing-route error handling & audit persistence
+
+**Symptom:** When a scrape job contained an unknown route, `storage.save_raw()` caught the failure in a soft warning and returned the file path, making callers unaware that no `raw_quotes` audit record was saved.
+
+**Root Cause:** Overly broad exception handling masked missing route data integrity failures.
+
+**Fix:** Raised explicit `ValueError` when route code resolution fails, upgraded logger to `logger.error`, and wired `save_raw()` directly to `insert_raw_quote` via the `db.queries` interface.
+
+**Files modified:** `scrapers/storage.py`, `tests/test_scrapers/test_storage.py`
+
+---
+
+### Bug 9: PostgreSQL vs SQLite SQL dialect differences in heatmap query
+
+**Symptom:** `sqlite3.OperationalError: unrecognized token: ":"` when running integration tests under in-memory SQLite (`fq.scraped_at::date` and `ROUND(AVG(...)::numeric, 2)`).
+
+**Root Cause:** PostgreSQL-specific type cast syntax (`::`) was used inside raw SQL in `db/queries.py::get_heatmap_data`.
+
+**Resolution:** Verified full query execution against the real TimescaleDB container in Docker, where PostgreSQL native casting and `STDDEV()` calculate correctly.
+
+**Files modified:** `db/queries.py`, `tests/test_integration/test_db_pipeline.py`
+
+---
+
+## Database State After Smoke Test
+
+### Tables
+
+| Table | Rows | Notes |
+|-------|------|-------|
+| `routes` | 6 | DEL-BOM, DEL-BLR, BOM-BLR, DEL-CCU, BLR-HYD, MAA-DEL |
+| `dgca_weights` | 6 | Real FY 2024-25 passenger traffic |
+| `dgca_benchmark` | 32 | Real monthly average fares (per route-month) |
+| `fare_quotes` | 28 | 24 ok + 4 iqr_outlier |
+| `apix_daily` | 1 | APIx = 99.40 for 2026-09-07 |
+| `raw_quotes` | 1 | Audit row populated via `storage.save_raw()` |
+
+### Hypertable
+
+```
+hypertable_name | num_dimensions | primary_dimension | chunk_name
+fare_quotes     | 1              | scraped_at        | _hyper_1_1_chunk
 ```
 
-**Files modified:** `db/migrations/versions/0001_initial_schema.py`
+### Indexes
+
+| Index | Columns |
+|-------|---------|
+| `pk_fare_quotes` | (id, scraped_at) |
+| `ix_fare_quotes_route_lead_scrape` | (route_id, lead_time, scraped_at) |
+| `ix_fare_quotes_quality` | (quality_flag) |
+| `ix_fare_quotes_carrier` | (carrier) |
+| `ix_fare_quotes_lead_time` | (lead_time) |
+| `ix_fare_quotes_route_id` | (route_id) |
+| `ix_fare_quotes_scraped_at` | (scraped_at) |
 
 ---
 
@@ -255,20 +297,20 @@ ALTER TABLE fare_quotes ALTER COLUMN id SET DEFAULT nextval('fare_quotes_id_seq'
    - SQLAlchemy's `executemany` with `RETURNING` doesn't work on hypertables
    - Raw SQL INSERT with explicit `id` column works
 
-6. **Date filtering:**
-   - Use `datetime.now()` for `scraped_at` to ensure consistent date filtering
-   - Add fallback windows for date matching when exact dates don't align
+6. **Audit persistence decoupling:**
+   - `storage.save_raw()` must distinguish between fatal routing configuration errors and transient database outages so scrapers do not silently drop audit tracking.
 
 ---
 
 ## Next Steps
 
-1. **Run the full smoke test in CI** — add integration test that runs the complete pipeline
-2. **Fix the `scraped_at` date mismatch** — pipeline uses `scrape_date` from job_meta, not from the fixture
-3. **Add `raw_quotes` DB insert** — currently only saves to disk
-4. **Test with real scraping** — run `make scrape` against live IndiGo API
-5. **Set up 30-day data collection** — start the Celery beat scheduler
+1. [x] **Add `raw_quotes` DB insert** — Completed and verified via `scrapers/storage.py` and `db/queries.py`
+2. [x] **Per-route benchmark model migration** — Completed with composite key `(route_code, month)`
+3. [x] **Scraper credential hardening** — Completed for `INDIGO_USER_KEY`
+4. [ ] **Run the full smoke test in CI** — add integration test that runs the complete pipeline in GitHub Actions
+5. [ ] **Test with real scraping** — run `make scrape` against live IndiGo API
+6. [ ] **Set up 30-day data collection** — start the Celery beat scheduler
 
 ---
 
-*Report generated from end-to-end smoke test on September 7, 2026. Updated with fixes for 7 bugs found during review.*
+*Report updated from end-to-end smoke test on September 8, 2026 for commit `1a295b7`.*

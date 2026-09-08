@@ -1,9 +1,22 @@
 """Lead-time elasticity matrix — fare vs lead time per route."""
 
+from __future__ import annotations
+
+import math
+from datetime import date
+from typing import TYPE_CHECKING
+
 from loguru import logger
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
-def compute_elasticity(session, route_id: int | None = None, route_date=None) -> list[dict]:
+
+def compute_elasticity(
+    session: Session | None = None,
+    route_id: int | None = None,
+    route_date: date | None = None,
+) -> list[dict]:
     """
     Compute lead-time elasticity matrix.
 
@@ -12,36 +25,48 @@ def compute_elasticity(session, route_id: int | None = None, route_date=None) ->
 
     Returns list of dicts with route_id, lead_time, avg_total_fare, avg_base_fare, n.
     """
-    # TODO: Implement with real DB query
-    # from db.models import FareQuote
-    # from sqlalchemy import func
-    #
-    # query = session.query(
-    #     FareQuote.route_id,
-    #     FareQuote.lead_time,
-    #     func.percentile_cont(0.5).within_group(FareQuote.total_fare).label("avg_total_fare"),
-    #     func.percentile_cont(0.5).within_group(FareQuote.base_fare).label("avg_base_fare"),
-    #     func.count().label("n"),
-    # ).filter(FareQuote.quality_flag == "ok")
-    #
-    # if route_id:
-    #     query = query.filter(FareQuote.route_id == route_id)
-    # if route_date:
-    #     query = query.filter(FareQuote.scrape_date == route_date)
-    #
-    # results = query.group_by(FareQuote.route_id, FareQuote.lead_time).all()
-    # return [
-    #     {"route_id": r.route_id, "lead_time": r.lead_time,
-    #      "avg_total_fare": r.avg_total_fare, "avg_base_fare": r.avg_base_fare,
-    #      "n": r.n}
-    #     for r in results
-    # ]
+    from db import queries as db_queries
+    from db.session import SessionLocal
 
-    logger.warning("compute_elasticity: using placeholder values")
-    return [
-        {"lead_time": lt, "avg_total_fare": 5000 + (45 - lt) * 50, "avg_base_fare": 4000 + (45 - lt) * 40, "n": 10}
-        for lt in [1, 7, 15, 30, 45]
-    ]
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        if route_id is not None:
+            rows = db_queries.get_elasticity_data(session, route_id=route_id, route_date=route_date)
+            return [
+                {
+                    "route_id": route_id,
+                    "lead_time": int(r["lead_time"]),
+                    "avg_total_fare": float(r["median_fare"]) if r.get("median_fare") is not None else 0.0,
+                    "avg_base_fare": float(r["median_base_fare"]) if r.get("median_base_fare") is not None else 0.0,
+                    "n": int(r["n_quotes"]),
+                }
+                for r in rows
+            ]
+
+        routes = db_queries.get_active_routes(session)
+        results = []
+        for r in routes:
+            rows = db_queries.get_elasticity_data(session, route_id=r.id, route_date=route_date)
+            for row in rows:
+                results.append(
+                    {
+                        "route_id": r.id,
+                        "lead_time": int(row["lead_time"]),
+                        "avg_total_fare": float(row["median_fare"]) if row.get("median_fare") is not None else 0.0,
+                        "avg_base_fare": float(row["median_base_fare"])
+                        if row.get("median_base_fare") is not None
+                        else 0.0,
+                        "n": int(row["n_quotes"]),
+                    }
+                )
+        return results
+    finally:
+        if owns_session:
+            session.close()
 
 
 def compute_elasticity_coefficient(fares: list[float], lead_times: list[int]) -> float | None:
@@ -52,8 +77,6 @@ def compute_elasticity_coefficient(fares: list[float], lead_times: list[int]) ->
 
     Negative elasticity means fares decrease as lead time increases (advance purchase discount).
     """
-    import math
-
     if len(fares) < 2 or len(lead_times) < 2:
         return None
 
@@ -70,6 +93,6 @@ def compute_elasticity_coefficient(fares: list[float], lead_times: list[int]) ->
 
         slope, _, _, _, _ = linregress(log_lts, log_fares)
         return round(slope, 4)
-    except Exception as e:
-        logger.error(f"Elasticity computation failed: {e}")
+    except (ValueError, TypeError) as e:
+        logger.error("Elasticity computation failed: {}", e)
         return None

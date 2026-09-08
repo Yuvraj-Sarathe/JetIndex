@@ -11,9 +11,9 @@ def test_scrape_job_creation():
         source="indigo",
         origin="DEL",
         destination="BOM",
-        depart_date=date(2025, 1, 15),
+        depart_date=date(2026, 10, 20),
         lead_time=7,
-        scrape_date=date(2025, 1, 8),
+        scrape_date=date(2026, 10, 13),
     )
     assert job.source == "indigo"
     assert job.lead_time == 7
@@ -25,9 +25,9 @@ def test_scrape_result_creation():
         source="indigo",
         origin="DEL",
         destination="BOM",
-        depart_date=date(2025, 1, 15),
+        depart_date=date(2026, 10, 20),
         lead_time=7,
-        scrape_date=date(2025, 1, 8),
+        scrape_date=date(2026, 10, 13),
     )
     result = ScrapeResult(job=job, ok=True, status_code=200)
     assert result.ok is True
