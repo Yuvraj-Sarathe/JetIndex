@@ -1,16 +1,6 @@
 import { MapContainer, TileLayer, Polyline, CircleMarker, Popup } from 'react-leaflet';
 import { useHeatmap } from '../hooks/useApix';
 
-// Airport coordinates (fallback if API doesn't provide)
-const AIRPORT_COORDS = {
-  DEL: [28.5562, 77.1000],
-  BOM: [19.0896, 72.8656],
-  BLR: [13.1986, 77.7066],
-  CCU: [22.6520, 88.4463],
-  HYD: [17.2403, 78.4294],
-  MAA: [12.9941, 80.1709],
-};
-
 /**
  * Heatmap — Leaflet map showing routes colored by volatility.
  */
@@ -50,8 +40,13 @@ function Heatmap({ date }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
           {routes.map((route, idx) => {
-            const origin = AIRPORT_COORDS[route.origin];
-            const dest = AIRPORT_COORDS[route.dest];
+            // Use API-provided coordinates, fall back to null
+            const origin = route.o_lat != null && route.o_lon != null
+              ? [route.o_lat, route.o_lon]
+              : null;
+            const dest = route.d_lat != null && route.d_lon != null
+              ? [route.d_lat, route.d_lon]
+              : null;
             if (!origin || !dest) return null;
 
             // Color by volatility (lower = green, higher = red)

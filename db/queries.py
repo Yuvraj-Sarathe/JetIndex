@@ -360,3 +360,40 @@ def get_dgca_benchmarks(session: Session) -> list[dict]:
     """Return all DGCA monthly average fare benchmarks (per route)."""
     rows = session.scalars(select(DgcaBenchmark).order_by(DgcaBenchmark.route_code, DgcaBenchmark.month)).all()
     return [{"route_code": r.route_code, "month": r.month, "avg_fare": r.avg_fare} for r in rows]
+
+
+def get_scraped_vs_dgca(session: Session) -> list[dict]:
+    """
+    Monthly comparison: avg scraped fare from fare_quotes vs DGCA benchmark.
+    Returns list of {month, avg_scraped, avg_dgca, n_scraped, n_dgca}.
+    """
+    stmt = text("""
+        WITH scraped AS (
+            SELECT
+                to_char(depart_date, 'YYYY-MM') AS month,
+                ROUND(AVG(total_fare)::numeric, 2) AS avg_scraped,
+                COUNT(*) AS n_scraped
+            FROM fare_quotes
+            WHERE quality_flag = 'ok'
+            GROUP BY to_char(depart_date, 'YYYY-MM')
+        ),
+        dgca AS (
+            SELECT
+                month,
+                ROUND(AVG(avg_fare)::numeric, 2) AS avg_dgca,
+                COUNT(*) AS n_dgca
+            FROM dgca_benchmark
+            GROUP BY month
+        )
+        SELECT
+            COALESCE(s.month, d.month) AS month,
+            s.avg_scraped,
+            s.n_scraped,
+            d.avg_dgca,
+            d.n_dgca
+        FROM scraped s
+        FULL OUTER JOIN dgca d ON s.month = d.month
+        ORDER BY COALESCE(s.month, d.month)
+    """)
+    rows = session.execute(stmt).mappings().all()
+    return [dict(r) for r in rows]

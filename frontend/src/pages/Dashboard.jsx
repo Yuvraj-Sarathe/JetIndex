@@ -5,6 +5,7 @@ import Heatmap from '../components/Heatmap';
 import ElasticityCurve from '../components/ElasticityCurve';
 import UnbundlingInspector from '../components/UnbundlingInspector';
 import BacktestChart from '../components/BacktestChart';
+import ScrapedVsDGCA from '../components/ScrapedVsDGCA';
 import TimeRangeFilter from '../components/TimeRangeFilter';
 import ExportButton from '../components/ExportButton';
 import { useApixDaily } from '../hooks/useApix';
@@ -64,6 +65,7 @@ function Dashboard() {
         <Heatmap />
         <ElasticityCurve />
         <BacktestChart />
+        <ScrapedVsDGCA />
       </div>
 
       {/* Unbundling inspector */}

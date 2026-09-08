@@ -78,3 +78,7 @@ export async function getBacktest() {
 export async function triggerSweep() {
   return apiFetch('/admin/trigger-sweep', { method: 'POST' });
 }
+
+export async function getScrapedVsDGCA() {
+  return apiFetch('/apix/scraped-vs-dgca');
+}
