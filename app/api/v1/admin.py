@@ -27,9 +27,7 @@ def admin_status(db: Session = Depends(get_db)):
 
     # --- scraping stats ---
     last_scrape_at = db.scalar(select(func.max(RawQuote.fetched_at)))
-    today_quotes = db.scalar(
-        select(func.count(FareQuote.id)).where(func.cast(FareQuote.scraped_at, date) == date.today())
-    )
+    today_quotes = db.scalar(select(func.count(FareQuote.id)).where(FareQuote.depart_date == date.today()))
     total_quotes = db.scalar(select(func.count(FareQuote.id)))
 
     # --- latest APIx index ---
@@ -40,7 +38,7 @@ def admin_status(db: Session = Depends(get_db)):
     total_routes = db.scalar(select(func.count(Route.id)))
     routes_covered_today = db.scalar(
         select(func.count(func.distinct(FareQuote.route_id)))
-        .where(func.cast(FareQuote.scraped_at, date) == date.today())
+        .where(FareQuote.depart_date == date.today())
         .where(FareQuote.quality_flag == "ok")
     )
     pct = round(routes_covered_today / total_routes * 100, 1) if total_routes else 0.0
