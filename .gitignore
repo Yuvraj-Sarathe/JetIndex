@@ -24,6 +24,9 @@ frontend/dist/
 # Database
 pgdata/
 
+# Celery
+celerybeat-schedule
+
 # Large binary artifacts
 *.pptx~
 *.mp4

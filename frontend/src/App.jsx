@@ -3,12 +3,24 @@ import Dashboard from './pages/Dashboard';
 import ForecastPage from './pages/ForecastPage';
 import AnomaliesPage from './pages/AnomaliesPage';
 import DataQualityPage from './pages/DataQualityPage';
+import AlertsPage from './pages/AlertsPage';
+import ScenarioPage from './pages/ScenarioPage';
+import ProvenancePage from './pages/ProvenancePage';
+import ValidationPage from './pages/ValidationPage';
+import AIAnalystPage from './pages/AIAnalystPage';
+import TemporalPage from './pages/TemporalPage';
 
 const TABS = [
   { id: 'overview', label: 'Overview', component: Dashboard },
   { id: 'forecast', label: 'Forecast', component: ForecastPage },
   { id: 'anomalies', label: 'Anomalies', component: AnomaliesPage },
   { id: 'quality', label: 'Data Quality', component: DataQualityPage },
+  { id: 'alerts', label: 'Alerts', component: AlertsPage },
+  { id: 'scenario', label: 'Scenario', component: ScenarioPage },
+  { id: 'temporal', label: 'Temporal', component: TemporalPage },
+  { id: 'provenance', label: 'Provenance', component: ProvenancePage },
+  { id: 'validation', label: 'Validation', component: ValidationPage },
+  { id: 'ai-analyst', label: 'AI Analyst', component: AIAnalystPage },
 ];
 
 function App() {
