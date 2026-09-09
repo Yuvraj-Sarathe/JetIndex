@@ -147,7 +147,7 @@ def load_mospi_cpi_data() -> list[dict]:
     if not _MOSPI_CSV.exists():
         logger.warning("MoSPI CPI CSV not found at {}", _MOSPI_CSV)
         return []
-    with open(_MOSPI_CSV, "r", encoding="utf-8") as f:
+    with open(_MOSPI_CSV, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         return list(reader)
 
@@ -207,14 +207,16 @@ def compare_with_mospi_cpi(session: Session | None = None) -> dict:
             else:
                 apix_yoy_pct = None
 
-            comparisons.append({
-                "month": month,
-                "apix_index": round(apix_val, 2),
-                "mospi_transport_cpi": cpi_info["transport_combined"],
-                "mospi_airfare_subgroup": cpi_info["airfare_subgroup"],
-                "mospi_yoy_transport_pct": cpi_info["yoy_transport_pct"],
-                "apix_yoy_pct": round(apix_yoy_pct, 2) if apix_yoy_pct is not None else None,
-            })
+            comparisons.append(
+                {
+                    "month": month,
+                    "apix_index": round(apix_val, 2),
+                    "mospi_transport_cpi": cpi_info["transport_combined"],
+                    "mospi_airfare_subgroup": cpi_info["airfare_subgroup"],
+                    "mospi_yoy_transport_pct": cpi_info["yoy_transport_pct"],
+                    "apix_yoy_pct": round(apix_yoy_pct, 2) if apix_yoy_pct is not None else None,
+                }
+            )
 
         # Compute correlation between APIx and transport CPI
         if len(comparisons) > 2:

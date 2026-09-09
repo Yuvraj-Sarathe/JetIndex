@@ -5,12 +5,12 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 
 import datetime
 import logging
-import math
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 import numpy as np
 
-from db.session import SessionLocal
 from db.models import NationalIndex
+from db.session import SessionLocal
 
 logger = logging.getLogger("jetindex.validation")
 
@@ -36,40 +36,44 @@ ADVANCE_WINDOWS = [
 class ModelValidationCenter:
     """Evaluates multi-model performance, residual error distributions, and route-level precision."""
 
-    def generate_validation_report(self) -> Dict[str, Any]:
+    def generate_validation_report(self) -> dict[str, Any]:
         db = SessionLocal()
-        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        now_dt = datetime.datetime.now(datetime.UTC)
 
         try:
             nat_rows = db.query(NationalIndex).order_by(NationalIndex.calculation_date.asc()).all()
-            vals = np.array([r.laspeyres_index for r in nat_rows], dtype=float) if nat_rows else np.array([100.0])
+            np.array([r.laspeyres_index for r in nat_rows], dtype=float) if nat_rows else np.array([100.0])
         finally:
             db.close()
 
         # Route-level error precision
         route_evals = []
         for rcode, (origin, dest, weight) in DGCA_ROUTES.items():
-            route_evals.append({
-                "route_code": rcode,
-                "corridor": f"{origin} <-> {dest}",
-                "dgca_weight_pct": round(weight * 100.0, 2),
-                "pearson_r": round(float(np.random.uniform(0.965, 0.992)), 4),
-                "mape_pct": round(float(np.random.uniform(0.72, 1.15)), 2),
-                "rmse": round(float(np.random.uniform(0.95, 1.45)), 2),
-                "status": "PASSED_STATISTICAL_RIGOR",
-            })
+            route_evals.append(
+                {
+                    "route_code": rcode,
+                    "corridor": f"{origin} <-> {dest}",
+                    "dgca_weight_pct": round(weight * 100.0, 2),
+                    "pearson_r": round(float(np.random.uniform(0.965, 0.992)), 4),
+                    "mape_pct": round(float(np.random.uniform(0.72, 1.15)), 2),
+                    "rmse": round(float(np.random.uniform(0.95, 1.45)), 2),
+                    "status": "PASSED_STATISTICAL_RIGOR",
+                }
+            )
 
         # Horizon-level precision
         horizon_evals = []
         for wid, wname, weight in ADVANCE_WINDOWS:
-            horizon_evals.append({
-                "window_id": wid,
-                "name": wname,
-                "basket_weight_pct": round(weight, 1),
-                "pearson_r": round(float(np.random.uniform(0.950, 0.988)), 4),
-                "mape_pct": round(float(np.random.uniform(0.85, 1.40)), 2),
-                "status": "VALIDATED",
-            })
+            horizon_evals.append(
+                {
+                    "window_id": wid,
+                    "name": wname,
+                    "basket_weight_pct": round(weight, 1),
+                    "pearson_r": round(float(np.random.uniform(0.950, 0.988)), 4),
+                    "mape_pct": round(float(np.random.uniform(0.85, 1.40)), 2),
+                    "status": "VALIDATED",
+                }
+            )
 
         residual_std = 1.15
         error_distribution = {
@@ -124,5 +128,5 @@ class ModelValidationCenter:
 validator = ModelValidationCenter()
 
 
-def get_validation_center_report() -> Dict[str, Any]:
+def get_validation_center_report() -> dict[str, Any]:
     return validator.generate_validation_report()

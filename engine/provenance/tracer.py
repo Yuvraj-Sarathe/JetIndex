@@ -3,15 +3,13 @@ JetIndex - Traceability & Cryptographic Audit Provenance Engine
 Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 """
 
-import datetime
 import hashlib
-import json
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
+from db.models import CleanedQuote, RawQuote
 from db.session import SessionLocal
-from db.models import RawQuote, CleanedQuote
 
 logger = logging.getLogger("jetindex.provenance")
 
@@ -41,7 +39,7 @@ class QuoteProvenanceRecord:
     validation_status: str
     cleaning_status: str
     is_outlier: int
-    outlier_reason: Optional[str]
+    outlier_reason: str | None
     is_direct_booking: int
     sha256_hash: str
     data_tag: str
@@ -52,7 +50,7 @@ class ProvenanceTracer:
     """Manages audit verification and hierarchical drill-down."""
 
     @staticmethod
-    def generate_quote_hash(quote_data: Dict[str, Any]) -> str:
+    def generate_quote_hash(quote_data: dict[str, Any]) -> str:
         """Generates deterministic SHA-256 fingerprint for tamper-evident provenance."""
         sig = (
             f"{quote_data.get('quote_id')}:{quote_data.get('route_code')}:"
@@ -61,7 +59,7 @@ class ProvenanceTracer:
         )
         return hashlib.sha256(sig.encode("utf-8")).hexdigest()
 
-    def get_quote_by_id(self, quote_id: str) -> Optional[QuoteProvenanceRecord]:
+    def get_quote_by_id(self, quote_id: str) -> QuoteProvenanceRecord | None:
         db = SessionLocal()
         try:
             row = db.query(RawQuote).filter(RawQuote.quote_id == quote_id).first()
@@ -121,11 +119,11 @@ class ProvenanceTracer:
 
     def drilldown_cell_quotes(
         self,
-        calculation_date: Optional[str] = None,
+        calculation_date: str | None = None,
         route_code: str = "DEL-BOM",
         advance_window: str = "T+7",
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Drills down from an aggregate route-window index cell to all contributing underlying quotes."""
         db = SessionLocal()
         try:
@@ -147,17 +145,29 @@ class ProvenanceTracer:
                 calc_dt = str(latest_row[0]) if latest_row else "2026-08-26"
 
             # Fetch underlying raw quotes
-            rows = db.query(RawQuote).filter(
-                RawQuote.route_code == route_code.upper(),
-                RawQuote.advance_window == norm_win,
-                RawQuote.booking_date == calc_dt,
-            ).order_by(RawQuote.total_fare.asc()).limit(limit).all()
-
-            if not rows:
-                rows = db.query(RawQuote).filter(
+            rows = (
+                db.query(RawQuote)
+                .filter(
                     RawQuote.route_code == route_code.upper(),
                     RawQuote.advance_window == norm_win,
-                ).order_by(RawQuote.booking_date.desc(), RawQuote.total_fare.asc()).limit(limit).all()
+                    RawQuote.booking_date == calc_dt,
+                )
+                .order_by(RawQuote.total_fare.asc())
+                .limit(limit)
+                .all()
+            )
+
+            if not rows:
+                rows = (
+                    db.query(RawQuote)
+                    .filter(
+                        RawQuote.route_code == route_code.upper(),
+                        RawQuote.advance_window == norm_win,
+                    )
+                    .order_by(RawQuote.booking_date.desc(), RawQuote.total_fare.asc())
+                    .limit(limit)
+                    .all()
+                )
 
             quotes_list = []
             for r in rows:
@@ -176,26 +186,28 @@ class ProvenanceTracer:
                 mad_val = 800.0
                 mad_z = abs(0.6745 * (base_fare - median_base) / mad_val) if mad_val > 0 else 0.0
 
-                quotes_list.append({
-                    "quote_id": r.quote_id,
-                    "flight_number": r.flight_number,
-                    "carrier": r.airline_name,
-                    "airline_name": r.airline_name,
-                    "airline_code": r.airline_code,
-                    "source_portal": r.source_portal,
-                    "departure_time": r.departure_time,
-                    "arrival_time": r.arrival_time,
-                    "base_fare": r.base_fare,
-                    "fuel_surcharge": r.fuel_surcharge,
-                    "taxes_and_fees": tax_sum,
-                    "total_fare": r.total_fare,
-                    "is_direct": r.is_direct,
-                    "is_outlier": 0,
-                    "outlier_flag": 0,
-                    "outlier_reason": None,
-                    "mad_modified_z_score": round(mad_z, 2),
-                    "provenance_sha256": q_hash,
-                })
+                quotes_list.append(
+                    {
+                        "quote_id": r.quote_id,
+                        "flight_number": r.flight_number,
+                        "carrier": r.airline_name,
+                        "airline_name": r.airline_name,
+                        "airline_code": r.airline_code,
+                        "source_portal": r.source_portal,
+                        "departure_time": r.departure_time,
+                        "arrival_time": r.arrival_time,
+                        "base_fare": r.base_fare,
+                        "fuel_surcharge": r.fuel_surcharge,
+                        "taxes_and_fees": tax_sum,
+                        "total_fare": r.total_fare,
+                        "is_direct": r.is_direct,
+                        "is_outlier": 0,
+                        "outlier_flag": 0,
+                        "outlier_reason": None,
+                        "mad_modified_z_score": round(mad_z, 2),
+                        "provenance_sha256": q_hash,
+                    }
+                )
 
             avg_fare = sum(q["total_fare"] for q in quotes_list) / len(quotes_list) if quotes_list else 5400.0
 
@@ -222,9 +234,9 @@ class ProvenanceTracer:
 tracer = ProvenanceTracer()
 
 
-def get_quote_trace(quote_id: str) -> Optional[QuoteProvenanceRecord]:
+def get_quote_trace(quote_id: str) -> QuoteProvenanceRecord | None:
     return tracer.get_quote_by_id(quote_id)
 
 
-def get_cell_drilldown(calculation_date: str, route_code: str, advance_window: str, limit: int = 50) -> Dict[str, Any]:
+def get_cell_drilldown(calculation_date: str, route_code: str, advance_window: str, limit: int = 50) -> dict[str, Any]:
     return tracer.drilldown_cell_quotes(calculation_date, route_code, advance_window, limit=limit)

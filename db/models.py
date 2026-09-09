@@ -198,7 +198,7 @@ class AlertRule(Base):
     threshold_value = Column(Float, nullable=False)
     severity = Column(String(20), default="HIGH")
     is_enabled = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
 
 
 class Alert(Base):
@@ -213,6 +213,6 @@ class Alert(Base):
     message = Column(String(1000))
     severity = Column(String(20))
     status = Column(String(20), default="ACTIVE")
-    triggered_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    triggered_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
     resolved_at = Column(DateTime)
     acknowledged_by = Column(String(100))

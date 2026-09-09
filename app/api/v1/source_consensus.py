@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_db
 from app.core.config import settings
 from app.core.security import require_token
 
@@ -30,6 +29,7 @@ def get_source_consensus(
         }
     try:
         from engine.analytics.source_consensus import SourceConsensusEngine
+
         engine = SourceConsensusEngine()
         result = engine.get_consensus_for_route(route_code.upper())
         return result

@@ -184,10 +184,12 @@ def seed_tax_rules(session) -> int:
 
     gst = config.get("gst", {})
     fees = config.get("fees", {})
-    logger.info("Loaded tax rules: GST economy={}%, ASF=₹{}, PSF=₹{}",
-                gst.get("rate_economy", 0) * 100,
-                fees.get("aviation_security_fee", 0),
-                fees.get("passenger_service_fee", 0))
+    logger.info(
+        "Loaded tax rules: GST economy={}%, ASF=₹{}, PSF=₹{}",
+        gst.get("rate_economy", 0) * 100,
+        fees.get("aviation_security_fee", 0),
+        fees.get("passenger_service_fee", 0),
+    )
     return 1
 
 
@@ -201,10 +203,12 @@ def seed_cpi_weights(session) -> int:
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    logger.info("Loaded CPI weights: transport={}%, airfare={}%, headline={:.4f}%",
-                config.get("transport_and_communication_cpi_weight", 0) * 100,
-                config.get("airfare_share_within_transport", 0) * 100,
-                config.get("effective_headline_cpi_weight", 0) * 100)
+    logger.info(
+        "Loaded CPI weights: transport={}%, airfare={}%, headline={:.4f}%",
+        config.get("transport_and_communication_cpi_weight", 0) * 100,
+        config.get("airfare_share_within_transport", 0) * 100,
+        config.get("effective_headline_cpi_weight", 0) * 100,
+    )
     return 1
 
 
@@ -239,7 +243,13 @@ def seed():
         logger.info(
             "Seeding complete: {} routes, {} weights, {} benchmarks, "
             "{} airlines, {} tax rules, {} CPI weights, {} windows",
-            n_routes, n_weights, n_benchmarks, n_airlines, n_tax, n_cpi, n_windows,
+            n_routes,
+            n_weights,
+            n_benchmarks,
+            n_airlines,
+            n_tax,
+            n_cpi,
+            n_windows,
         )
     finally:
         session.close()

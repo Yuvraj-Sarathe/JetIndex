@@ -7,12 +7,11 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 
 import datetime
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
-import numpy as np
+from dataclasses import asdict, dataclass
+from typing import Any
 
+from db.models import RouteIndex
 from db.session import SessionLocal
-from db.models import RouteIndex, RawQuote
 
 logger = logging.getLogger("jetindex.anomaly")
 
@@ -20,6 +19,7 @@ logger = logging.getLogger("jetindex.anomaly")
 @dataclass
 class MarketAnomalyEvent:
     """Individual market anomaly detection record."""
+
     anomaly_id: str
     timestamp: str
     route_code: str
@@ -63,10 +63,12 @@ DGCA_ROUTES = {
 class MarketAnomalyDetector:
     """Scans recent transaction panel series to surface genuine market regime shifts."""
 
-    def scan_anomalies(self, target_date: Optional[str] = None, route_filter: Optional[str] = None) -> List[MarketAnomalyEvent]:
+    def scan_anomalies(
+        self, target_date: str | None = None, route_filter: str | None = None
+    ) -> list[MarketAnomalyEvent]:
         """Executes multi-method anomaly detection across all routes and advance horizons."""
         db = SessionLocal()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        datetime.datetime.now(datetime.UTC).isoformat()
 
         try:
             if not target_date:
@@ -79,10 +81,10 @@ class MarketAnomalyDetector:
             if route_filter:
                 rows = [r for r in rows if r.route_code == route_filter.upper()]
 
-            anomalies: List[MarketAnomalyEvent] = []
+            anomalies: list[MarketAnomalyEvent] = []
 
             # Group route cells by route_code
-            route_cells: Dict[str, Dict[str, Any]] = {}
+            route_cells: dict[str, dict[str, Any]] = {}
             for r in rows:
                 rcode = r.route_code
                 if rcode not in route_cells:
@@ -107,20 +109,22 @@ class MarketAnomalyDetector:
                     p_t7 = windows_map["T+7"]["jevons_mean_fare"]
                     if p_t30 > p_t7 * 1.05 and p_t7 > 0:
                         dev = round(((p_t30 - p_t7) / p_t7) * 100.0, 2)
-                        anomalies.append(MarketAnomalyEvent(
-                            anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
-                            timestamp=calc_date,
-                            route_code=rcode,
-                            corridor_name=corridor_str,
-                            anomaly_type="HORIZON_INVERSION",
-                            severity="MEDIUM",
-                            observed_value=p_t30,
-                            expected_range_min=round(p_t7 * 0.60, 2),
-                            expected_range_max=p_t7,
-                            deviation_pct=dev,
-                            confidence_score=0.91,
-                            explanation=f"30-day advance booking (Rs {p_t30:,.0f}) is inverted and trading {dev:+}% higher than urgent 7-day business tariff (Rs {p_t7:,.0f}), indicating heavy holiday/festival advance demand.",
-                        ))
+                        anomalies.append(
+                            MarketAnomalyEvent(
+                                anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
+                                timestamp=calc_date,
+                                route_code=rcode,
+                                corridor_name=corridor_str,
+                                anomaly_type="HORIZON_INVERSION",
+                                severity="MEDIUM",
+                                observed_value=p_t30,
+                                expected_range_min=round(p_t7 * 0.60, 2),
+                                expected_range_max=p_t7,
+                                deviation_pct=dev,
+                                confidence_score=0.91,
+                                explanation=f"30-day advance booking (Rs {p_t30:,.0f}) is inverted and trading {dev:+}% higher than urgent 7-day business tariff (Rs {p_t7:,.0f}), indicating heavy holiday/festival advance demand.",
+                            )
+                        )
                         event_counter += 1
 
                 # Test 2: Severe Spot Price Surge (T+1 > 2.85x base)
@@ -129,20 +133,22 @@ class MarketAnomalyDetector:
                     exp_t1_max = base_bm * 2.85
                     if p_t1 > exp_t1_max * 1.15:
                         dev = round(((p_t1 - exp_t1_max) / exp_t1_max) * 100.0, 2)
-                        anomalies.append(MarketAnomalyEvent(
-                            anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
-                            timestamp=calc_date,
-                            route_code=rcode,
-                            corridor_name=corridor_str,
-                            anomaly_type="PRICE_SPIKE",
-                            severity="HIGH" if dev < 30 else "CRITICAL",
-                            observed_value=p_t1,
-                            expected_range_min=round(base_bm * 2.20, 2),
-                            expected_range_max=round(exp_t1_max, 2),
-                            deviation_pct=dev,
-                            confidence_score=0.96,
-                            explanation=f"Emergency <24h spot fare on {corridor_str} surged to Rs {p_t1:,.0f} ({dev:+}% above typical spot ceiling of Rs {exp_t1_max:,.0f}), signalling severe route capacity constraint.",
-                        ))
+                        anomalies.append(
+                            MarketAnomalyEvent(
+                                anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
+                                timestamp=calc_date,
+                                route_code=rcode,
+                                corridor_name=corridor_str,
+                                anomaly_type="PRICE_SPIKE",
+                                severity="HIGH" if dev < 30 else "CRITICAL",
+                                observed_value=p_t1,
+                                expected_range_min=round(base_bm * 2.20, 2),
+                                expected_range_max=round(exp_t1_max, 2),
+                                deviation_pct=dev,
+                                confidence_score=0.96,
+                                explanation=f"Emergency <24h spot fare on {corridor_str} surged to Rs {p_t1:,.0f} ({dev:+}% above typical spot ceiling of Rs {exp_t1_max:,.0f}), signalling severe route capacity constraint.",
+                            )
+                        )
                         event_counter += 1
 
                 # Test 3: Sudden Fare Crash / Carrier Discount War
@@ -151,20 +157,22 @@ class MarketAnomalyDetector:
                     exp_t7_min = base_bm * 1.35
                     if p_t7 < exp_t7_min * 0.85 and p_t7 > 0:
                         dev = round(((p_t7 - exp_t7_min) / exp_t7_min) * 100.0, 2)
-                        anomalies.append(MarketAnomalyEvent(
-                            anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
-                            timestamp=calc_date,
-                            route_code=rcode,
-                            corridor_name=corridor_str,
-                            anomaly_type="PRICE_DROP",
-                            severity="MEDIUM",
-                            observed_value=p_t7,
-                            expected_range_min=round(exp_t7_min, 2),
-                            expected_range_max=round(base_bm * 1.85, 2),
-                            deviation_pct=dev,
-                            confidence_score=0.88,
-                            explanation=f"7-day business fare dropped to Rs {p_t7:,.0f} ({dev:+}% below expected corridor floor), indicating aggressive LCC promotional discounting or excess seat dump.",
-                        ))
+                        anomalies.append(
+                            MarketAnomalyEvent(
+                                anomaly_id=f"ANOM-{calc_date.replace('-', '')}-{event_counter:03d}",
+                                timestamp=calc_date,
+                                route_code=rcode,
+                                corridor_name=corridor_str,
+                                anomaly_type="PRICE_DROP",
+                                severity="MEDIUM",
+                                observed_value=p_t7,
+                                expected_range_min=round(exp_t7_min, 2),
+                                expected_range_max=round(base_bm * 1.85, 2),
+                                deviation_pct=dev,
+                                confidence_score=0.88,
+                                explanation=f"7-day business fare dropped to Rs {p_t7:,.0f} ({dev:+}% below expected corridor floor), indicating aggressive LCC promotional discounting or excess seat dump.",
+                            )
+                        )
                         event_counter += 1
 
             # Fallback anomalies if current day is calm
@@ -209,11 +217,11 @@ class MarketAnomalyDetector:
 detector = MarketAnomalyDetector()
 
 
-def get_market_anomalies(target_date: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_market_anomalies(target_date: str | None = None) -> list[dict[str, Any]]:
     anoms = detector.scan_anomalies(target_date=target_date)
     return [asdict(a) for a in anoms]
 
 
-def get_route_anomalies(route_code: str, target_date: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_route_anomalies(route_code: str, target_date: str | None = None) -> list[dict[str, Any]]:
     anoms = detector.scan_anomalies(target_date=target_date, route_filter=route_code)
     return [asdict(a) for a in anoms]

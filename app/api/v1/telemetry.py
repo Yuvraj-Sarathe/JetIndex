@@ -25,6 +25,7 @@ def get_telemetry(
         }
     try:
         from engine.analytics.source_telemetry import get_source_telemetry
+
         return {"data_tag": "REAL_COMPUTED", **get_source_telemetry()}
     except Exception as e:
         return {"error": str(e), "data_tag": "ERROR"}

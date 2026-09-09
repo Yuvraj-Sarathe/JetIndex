@@ -1,8 +1,7 @@
 """Source Analytics - Carrier & OTA Analytics API."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from app.api.deps import get_db
 from app.core.config import settings
 from app.core.security import require_token
 
@@ -18,13 +17,32 @@ def get_carrier_analytics(
         return {
             "data_tag": "MOCK_DATA",
             "carriers": [
-                {"carrier_name": "IndiGo", "median_fare": 5200.0, "avg_fare": 5480.0, "market_share_pct": 42.0, "volatility_index": 18.5},
-                {"carrier_name": "Vistara", "median_fare": 5850.0, "avg_fare": 6100.0, "market_share_pct": 21.0, "volatility_index": 22.3},
-                {"carrier_name": "Air India", "median_fare": 5400.0, "avg_fare": 5650.0, "market_share_pct": 18.0, "volatility_index": 19.8},
+                {
+                    "carrier_name": "IndiGo",
+                    "median_fare": 5200.0,
+                    "avg_fare": 5480.0,
+                    "market_share_pct": 42.0,
+                    "volatility_index": 18.5,
+                },
+                {
+                    "carrier_name": "Vistara",
+                    "median_fare": 5850.0,
+                    "avg_fare": 6100.0,
+                    "market_share_pct": 21.0,
+                    "volatility_index": 22.3,
+                },
+                {
+                    "carrier_name": "Air India",
+                    "median_fare": 5400.0,
+                    "avg_fare": 5650.0,
+                    "market_share_pct": 18.0,
+                    "volatility_index": 19.8,
+                },
             ],
         }
     try:
         from engine.analytics.source_analytics import SourceAnalyticsEngine
+
         engine = SourceAnalyticsEngine()
         result = engine.get_analytics()
         return {"data_tag": "REAL_COMPUTED", "carriers": result.get("carriers", [])}
@@ -48,6 +66,7 @@ def get_ota_analytics(
         }
     try:
         from engine.analytics.source_analytics import SourceAnalyticsEngine
+
         engine = SourceAnalyticsEngine()
         result = engine.get_analytics()
         return {"data_tag": "REAL_COMPUTED", "otas": result.get("otas", [])}

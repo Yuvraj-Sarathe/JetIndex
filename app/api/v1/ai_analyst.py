@@ -31,9 +31,11 @@ def ask_policy_analyst(
         }
     try:
         from engine.ai_analyst.policy_analyst import AIPolicyAnalyst, PolicyAnalystQuery
+
         analyst = AIPolicyAnalyst()
         result = analyst.answer_query(PolicyAnalystQuery(question=query.question, user_role=query.user_role))
         from dataclasses import asdict
+
         return {"data_tag": "REAL_COMPUTED", **asdict(result)}
     except Exception as e:
         return {"error": str(e), "data_tag": "ERROR"}

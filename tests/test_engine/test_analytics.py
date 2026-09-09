@@ -1,17 +1,10 @@
 """Tests for analytics engine."""
 
-import pytest
-
 from engine.analytics import (
     _AIRFARE_SHARE,
     _TRANSPORT_WEIGHT,
-    compute_pressure_score,
-    compute_cpi_decomposition,
-    compute_heatmap,
-    compute_trust_score,
-    PressureReport,
     CPIDecomposition,
-    HeatmapMatrix,
+    PressureReport,
     TrustScoreReport,
 )
 
@@ -75,6 +68,7 @@ class TestHeatmap:
 
     def test_heatmap_cell_structure(self):
         from engine.analytics import HeatmapCell
+
         cell = HeatmapCell(
             route_code="DEL-BOM",
             window_id="T+7",
@@ -87,7 +81,6 @@ class TestHeatmap:
         assert cell.status == "SURGE"
 
     def test_heatmap_status_logic(self):
-        from engine.analytics import HeatmapCell
         # Test status assignment logic
         for change, expected in [(30.0, "SURGE"), (15.0, "ELEVATED"), (-15.0, "DISCOUNTED"), (5.0, "NORMAL")]:
             if change > 25:

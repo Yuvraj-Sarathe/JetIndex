@@ -5,14 +5,15 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 """
 
 import datetime
-import re
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+import re
+from dataclasses import dataclass
+from typing import Any
+
 from pydantic import BaseModel, Field
 
-from db.session import SessionLocal
 from db.models import NationalIndex
+from db.session import SessionLocal
 
 logger = logging.getLogger("jetindex.ai_analyst")
 
@@ -28,9 +29,9 @@ class PolicyAnalystResponse:
     detected_intent: str
     answer_summary: str
     detailed_explanation: str
-    numerical_evidence: Dict[str, Any]
-    affected_routes: List[str]
-    statutory_citations: List[str]
+    numerical_evidence: dict[str, Any]
+    affected_routes: list[str]
+    statutory_citations: list[str]
     data_tag: str
     timestamp: str
 
@@ -56,7 +57,7 @@ class AIPolicyAnalyst:
         return "GENERAL_POLICY_INQUIRY"
 
     def answer_query(self, query: PolicyAnalystQuery) -> PolicyAnalystResponse:
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
         intent = self.detect_intent(query.question)
 
         db = SessionLocal()
@@ -75,7 +76,12 @@ class AIPolicyAnalyst:
                 f"This transmitted {trans_bps:+.2f} bps into Transport Group 6.1.03 and {head_bps:+.4f} bps into Headline CPI."
             )
             explanation = "The primary upward pressure was driven by high-density metro corridors."
-            evidence = {"master_laspeyres_index": lasp, "daily_percentage_change": dod, "total_transport_bps": trans_bps, "total_headline_cpi_bps": head_bps}
+            evidence = {
+                "master_laspeyres_index": lasp,
+                "daily_percentage_change": dod,
+                "total_transport_bps": trans_bps,
+                "total_headline_cpi_bps": head_bps,
+            }
             citations = ["MoSPI Methodology for CPI", "ILO CPI Manual (2020)", "https://esankhyiki.mospi.gov.in"]
             top_routes = ["DEL-BOM", "DEL-BLR"]
 

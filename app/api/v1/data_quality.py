@@ -22,8 +22,10 @@ def get_data_quality(
         return _mock_data_quality(target_date)
     # Use actual engine
     from engine.analytics import compute_trust_score
+
     report = compute_trust_score(db)
     from dataclasses import asdict
+
     return asdict(report)
 
 

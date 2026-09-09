@@ -19,17 +19,23 @@ def trace_quote(
             "quote_id": quote_id,
             "data_tag": "MOCK_DATA",
             "provenance": {
-                "route_code": "DEL-BOM", "carrier": "IndiGo", "total_fare": 5400.0,
-                "cleaning_status": "CLEANED_VALID", "outlier_flag": 0,
-                "sha256_hash": "a1b2c3...", "validation_status": "SCHEMA_VALIDATED",
+                "route_code": "DEL-BOM",
+                "carrier": "IndiGo",
+                "total_fare": 5400.0,
+                "cleaning_status": "CLEANED_VALID",
+                "outlier_flag": 0,
+                "sha256_hash": "a1b2c3...",
+                "validation_status": "SCHEMA_VALIDATED",
             },
         }
     try:
         from engine.provenance.tracer import get_quote_trace
+
         record = get_quote_trace(quote_id)
         if record is None:
             return {"error": f"Quote {quote_id} not found", "data_tag": "NOT_FOUND"}
         from dataclasses import asdict
+
         return {"data_tag": "REAL_COMPUTED", "provenance": asdict(record)}
     except Exception as e:
         return {"error": str(e), "data_tag": "ERROR"}
@@ -56,13 +62,32 @@ def cell_drilldown(
                 "sample_size_evaluated": 3,
             },
             "quotes": [
-                {"quote_id": "Q-001", "flight_number": "6E-234", "carrier": "IndiGo", "base_fare": 4500.0, "total_fare": 5400.0},
-                {"quote_id": "Q-002", "flight_number": "UK-955", "carrier": "Vistara", "base_fare": 4800.0, "total_fare": 5850.0},
-                {"quote_id": "Q-003", "flight_number": "AI-865", "carrier": "Air India", "base_fare": 4650.0, "total_fare": 5580.0},
+                {
+                    "quote_id": "Q-001",
+                    "flight_number": "6E-234",
+                    "carrier": "IndiGo",
+                    "base_fare": 4500.0,
+                    "total_fare": 5400.0,
+                },
+                {
+                    "quote_id": "Q-002",
+                    "flight_number": "UK-955",
+                    "carrier": "Vistara",
+                    "base_fare": 4800.0,
+                    "total_fare": 5850.0,
+                },
+                {
+                    "quote_id": "Q-003",
+                    "flight_number": "AI-865",
+                    "carrier": "Air India",
+                    "base_fare": 4650.0,
+                    "total_fare": 5580.0,
+                },
             ],
         }
     try:
         from engine.provenance.tracer import get_cell_drilldown
+
         return get_cell_drilldown(
             calculation_date or "2026-08-26",
             route_code.upper(),

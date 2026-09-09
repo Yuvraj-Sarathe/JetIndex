@@ -25,6 +25,7 @@ def get_validation_report(
         }
     try:
         from engine.validation.model_validator import get_validation_center_report
+
         return {"data_tag": "REAL_COMPUTED", **get_validation_center_report()}
     except Exception as e:
         return {"error": str(e), "data_tag": "ERROR"}

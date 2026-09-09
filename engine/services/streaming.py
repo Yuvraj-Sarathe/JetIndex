@@ -8,8 +8,9 @@ import collections
 import datetime
 import json
 import logging
-from typing import Dict, List, Any, Optional
-from fastapi import WebSocket, WebSocketDisconnect
+from typing import Any
+
+from fastapi import WebSocket
 
 logger = logging.getLogger("jetindex.streaming")
 
@@ -18,7 +19,7 @@ class ConnectionManager:
     """Manages concurrent WebSocket subscriber connections with resilient heartbeat and broadcast queues."""
 
     def __init__(self, max_history_events: int = 100):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
         self._lock = asyncio.Lock()
         self.event_history: collections.deque = collections.deque(maxlen=max_history_events)
 
@@ -39,11 +40,11 @@ class ConnectionManager:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
 
-    async def broadcast_event(self, event_type: str, data: Dict[str, Any], message: str = "") -> None:
+    async def broadcast_event(self, event_type: str, data: dict[str, Any], message: str = "") -> None:
         """Broadcasts a structured JSON event to all connected WebSocket subscribers."""
         event = {
             "event_type": event_type,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
             "message": message,
             "data": data,
         }
@@ -61,7 +62,7 @@ class ConnectionManager:
                 if dead in self.active_connections:
                     self.active_connections.remove(dead)
 
-    def get_recent_events(self, limit: int = 30) -> List[Dict[str, Any]]:
+    def get_recent_events(self, limit: int = 30) -> list[dict[str, Any]]:
         return list(self.event_history)[-limit:]
 
 

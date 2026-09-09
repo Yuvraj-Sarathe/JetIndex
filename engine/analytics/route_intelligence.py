@@ -6,12 +6,10 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 
 import datetime
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
-import numpy as np
+from typing import Any
 
+from db.models import RouteIndex
 from db.session import SessionLocal
-from db.models import RouteIndex, NationalIndex
 
 logger = logging.getLogger("jetindex.route_intel")
 
@@ -58,7 +56,7 @@ CPI_WEIGHTS = {
 class RouteIntelligenceEngine:
     """Builds comprehensive 360-degree intelligence dossiers for every DGCA domestic corridor."""
 
-    def get_intelligence(self, route_code: str) -> Dict[str, Any]:
+    def get_intelligence(self, route_code: str) -> dict[str, Any]:
         rcode = route_code.upper()
         r_def = DGCA_ROUTES.get(rcode)
         if not r_def:
@@ -66,33 +64,55 @@ class RouteIntelligenceEngine:
             rcode = list(DGCA_ROUTES.keys())[0]
 
         db = SessionLocal()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
 
         try:
             # 1. Fetch latest route index
-            latest_rows = db.query(RouteIndex).filter(
-                RouteIndex.route_code == rcode
-            ).order_by(RouteIndex.calculation_date.desc()).limit(5).all()
+            (
+                db.query(RouteIndex)
+                .filter(RouteIndex.route_code == rcode)
+                .order_by(RouteIndex.calculation_date.desc())
+                .limit(5)
+                .all()
+            )
 
             # Fetch history
-            history_rows = db.query(
-                RouteIndex.calculation_date,
-                RouteIndex.jevons_mean_fare,
-                RouteIndex.composite_route_relative,
-            ).filter(
-                RouteIndex.route_code == rcode
-            ).group_by(RouteIndex.calculation_date).order_by(RouteIndex.calculation_date.asc()).all()
+            history_rows = (
+                db.query(
+                    RouteIndex.calculation_date,
+                    RouteIndex.jevons_mean_fare,
+                    RouteIndex.composite_route_relative,
+                )
+                .filter(RouteIndex.route_code == rcode)
+                .group_by(RouteIndex.calculation_date)
+                .order_by(RouteIndex.calculation_date.asc())
+                .all()
+            )
 
             if history_rows:
                 history_series = [
-                    {"date": str(r.calculation_date), "fare_inr": round(r.jevons_mean_fare, 2), "index_relative": round(r.composite_route_relative, 4)}
+                    {
+                        "date": str(r.calculation_date),
+                        "fare_inr": round(r.jevons_mean_fare, 2),
+                        "index_relative": round(r.composite_route_relative, 4),
+                    }
                     for r in history_rows
                 ]
                 cur_fare = history_series[-1]["fare_inr"]
                 cur_rel = history_series[-1]["index_relative"]
-                change_24h = round(((cur_fare - history_series[-2]["fare_inr"]) / history_series[-2]["fare_inr"]) * 100.0, 2) if len(history_series) > 1 else +0.45
-                change_7d = round(((cur_fare - history_series[-7]["fare_inr"]) / history_series[-7]["fare_inr"]) * 100.0, 2) if len(history_series) >= 7 else +2.8
-                change_30d = round(((cur_fare - history_series[0]["fare_inr"]) / history_series[0]["fare_inr"]) * 100.0, 2)
+                change_24h = (
+                    round(((cur_fare - history_series[-2]["fare_inr"]) / history_series[-2]["fare_inr"]) * 100.0, 2)
+                    if len(history_series) > 1
+                    else +0.45
+                )
+                change_7d = (
+                    round(((cur_fare - history_series[-7]["fare_inr"]) / history_series[-7]["fare_inr"]) * 100.0, 2)
+                    if len(history_series) >= 7
+                    else +2.8
+                )
+                change_30d = round(
+                    ((cur_fare - history_series[0]["fare_inr"]) / history_series[0]["fare_inr"]) * 100.0, 2
+                )
             else:
                 cur_fare = r_def[4] * 1.068
                 cur_rel = 1.068
@@ -104,7 +124,17 @@ class RouteIntelligenceEngine:
             # 2. Advance Windows Breakdown
             horizon_cells = {}
             for wid, wname, days, weight in ADVANCE_WINDOWS:
-                mult = 2.45 if wid == "T+1" else 1.60 if wid == "T+7" else 1.18 if wid == "T+15" else 1.00 if wid == "T+30" else 0.92
+                mult = (
+                    2.45
+                    if wid == "T+1"
+                    else 1.60
+                    if wid == "T+7"
+                    else 1.18
+                    if wid == "T+15"
+                    else 1.00
+                    if wid == "T+30"
+                    else 0.92
+                )
                 w_fare = round(cur_fare * (mult / 1.18), 2)
                 horizon_cells[wid] = {
                     "window_name": wname,
@@ -122,10 +152,30 @@ class RouteIntelligenceEngine:
 
             # 4. Carrier Share & Pricing Breakdown
             carrier_quotes = [
-                {"carrier": "IndiGo (6E)", "fare_inr": round(cur_fare * 0.99, 2), "market_share_pct": 62.5, "flights_per_day": 18},
-                {"carrier": "Air India (AI)", "fare_inr": round(cur_fare * 1.16, 2), "market_share_pct": 14.5, "flights_per_day": 8},
-                {"carrier": "Akasa Air (QP)", "fare_inr": round(cur_fare * 0.95, 2), "market_share_pct": 4.8, "flights_per_day": 4},
-                {"carrier": "SpiceJet (SG)", "fare_inr": round(cur_fare * 0.94, 2), "market_share_pct": 3.2, "flights_per_day": 3},
+                {
+                    "carrier": "IndiGo (6E)",
+                    "fare_inr": round(cur_fare * 0.99, 2),
+                    "market_share_pct": 62.5,
+                    "flights_per_day": 18,
+                },
+                {
+                    "carrier": "Air India (AI)",
+                    "fare_inr": round(cur_fare * 1.16, 2),
+                    "market_share_pct": 14.5,
+                    "flights_per_day": 8,
+                },
+                {
+                    "carrier": "Akasa Air (QP)",
+                    "fare_inr": round(cur_fare * 0.95, 2),
+                    "market_share_pct": 4.8,
+                    "flights_per_day": 4,
+                },
+                {
+                    "carrier": "SpiceJet (SG)",
+                    "fare_inr": round(cur_fare * 0.94, 2),
+                    "market_share_pct": 3.2,
+                    "flights_per_day": 3,
+                },
             ]
 
             return {
@@ -160,7 +210,7 @@ class RouteIntelligenceEngine:
         finally:
             db.close()
 
-    def compare_multiple_routes(self, route_codes: List[str]) -> Dict[str, Any]:
+    def compare_multiple_routes(self, route_codes: list[str]) -> dict[str, Any]:
         """Compares multiple routes side by side."""
         reports = []
         for code in route_codes[:5]:
@@ -168,16 +218,16 @@ class RouteIntelligenceEngine:
         return {
             "comparison_count": len(reports),
             "routes_compared": reports,
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }
 
 
 route_intel_engine = RouteIntelligenceEngine()
 
 
-def get_route_intelligence(route_code: str) -> Dict[str, Any]:
+def get_route_intelligence(route_code: str) -> dict[str, Any]:
     return route_intel_engine.get_intelligence(route_code)
 
 
-def compare_routes(route_codes: List[str]) -> Dict[str, Any]:
+def compare_routes(route_codes: list[str]) -> dict[str, Any]:
     return route_intel_engine.compare_multiple_routes(route_codes)

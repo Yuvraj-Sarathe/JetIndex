@@ -4,13 +4,11 @@ Ported from VayuSutra-V4 live_connectors.py.
 Modular scrapers for IndiGo, Air India, SpiceJet, Akasa Air, MakeMyTrip, EaseMyTrip, and Cleartrip.
 """
 
-import datetime
-import uuid
 import random
-from typing import Dict, List, Any, Optional
+import uuid
+from typing import Any
 
-from config.airlines import AIRLINES, AIRLINE_LOOKUP
-from config.routes import ROUTES, ROUTE_LOOKUP
+from config.routes import ROUTE_LOOKUP
 from config.tax_rules import TAX_RULES
 
 from scrapers.base_scraper import BaseScraper
@@ -24,7 +22,7 @@ class BaseAirlineConnector(BaseScraper):
         self.carrier_code = carrier_code
         self.carrier_name = carrier_name
 
-    def _decompose_fare(self, total_fare: float, is_ota: bool = False, ota_name: str = "") -> Dict[str, Any]:
+    def _decompose_fare(self, total_fare: float, is_ota: bool = False, ota_name: str = "") -> dict[str, Any]:
         """Decompose gross fare into statutory components (Base, Fuel, Taxes, UDF/PSF/ASF, OTA Fee)."""
         asf = TAX_RULES.get("fees", {}).get("aviation_security_fee", 200.0)
         psf = TAX_RULES.get("fees", {}).get("passenger_service_fee", 91.0)
@@ -60,14 +58,18 @@ class IndigoConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="6E", carrier_name="IndiGo", base_url="https://www.goindigo.in")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = route_def.base_fare_benchmark if route_def else 4500.0
 
         quotes = []
-        flight_offsets = [("06:00", "08:15", "6E-201"), ("11:30", "13:45", "6E-542"),
-                          ("17:45", "20:00", "6E-809"), ("21:15", "23:30", "6E-994")]
+        flight_offsets = [
+            ("06:00", "08:15", "6E-201"),
+            ("11:30", "13:45", "6E-542"),
+            ("17:45", "20:00", "6E-809"),
+            ("21:15", "23:30", "6E-994"),
+        ]
 
         for dep, arr, flt_num in flight_offsets:
             slot_mult = 1.15 if "17:" in dep or "06:" in dep else 1.0
@@ -87,7 +89,7 @@ class IndigoConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 1,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -99,7 +101,7 @@ class AirIndiaConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="AI", carrier_name="Air India", base_url="https://www.airindia.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = (route_def.base_fare_benchmark * 1.16) if route_def else 5200.0
@@ -122,7 +124,7 @@ class AirIndiaConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 1,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -134,7 +136,7 @@ class SpiceJetConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="SG", carrier_name="SpiceJet", base_url="https://www.spicejet.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = (route_def.base_fare_benchmark * 0.94) if route_def else 4200.0
@@ -157,7 +159,7 @@ class SpiceJetConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 1,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -169,7 +171,7 @@ class AkasaAirConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="QP", carrier_name="Akasa Air", base_url="https://www.akasaair.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = (route_def.base_fare_benchmark * 0.95) if route_def else 4300.0
@@ -192,7 +194,7 @@ class AkasaAirConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 1,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -204,7 +206,7 @@ class MakeMyTripConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="MMT", carrier_name="MakeMyTrip", base_url="https://www.makemytrip.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = route_def.base_fare_benchmark if route_def else 4500.0
@@ -231,7 +233,7 @@ class MakeMyTripConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 0,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -243,7 +245,7 @@ class EaseMyTripConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="EMT", carrier_name="EaseMyTrip", base_url="https://www.easemytrip.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = route_def.base_fare_benchmark if route_def else 4500.0
@@ -254,7 +256,7 @@ class EaseMyTripConnector(BaseAirlineConnector):
             ("SG", "SpiceJet", "SG-123", "08:30", "10:45", 0.94),
         ]
         for ccode, cname, flt_num, dep, arr, mult in carriers:
-            fare_val = (benchmark * mult * random.uniform(0.98, 1.03))
+            fare_val = benchmark * mult * random.uniform(0.98, 1.03)
             decomp = self._decompose_fare(fare_val, is_ota=True, ota_name="EaseMyTrip")
             quote = {
                 "quote_id": f"EMT-{uuid.uuid4().hex[:10]}",
@@ -269,7 +271,7 @@ class EaseMyTripConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 0,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
@@ -281,7 +283,7 @@ class CleartripConnector(BaseAirlineConnector):
     def __init__(self):
         super().__init__(carrier_code="CT", carrier_name="Cleartrip", base_url="https://www.cleartrip.com")
 
-    def search_route(self, origin: str, destination: str, travel_date_str: str) -> List[Dict[str, Any]]:
+    def search_route(self, origin: str, destination: str, travel_date_str: str) -> list[dict[str, Any]]:
         route_key = f"{origin}-{destination}"
         route_def = ROUTE_LOOKUP.get(route_key)
         benchmark = route_def.base_fare_benchmark if route_def else 4500.0
@@ -307,13 +309,13 @@ class CleartripConnector(BaseAirlineConnector):
                 "departure_time": dep,
                 "arrival_time": arr,
                 "is_direct": 0,
-                **decomp
+                **decomp,
             }
             quotes.append(quote)
         return quotes
 
 
-def create_all_live_connectors() -> List[BaseScraper]:
+def create_all_live_connectors() -> list[BaseScraper]:
     """Factory helper initializing all production-grade airline and OTA connector instances."""
     return [
         IndigoConnector(),

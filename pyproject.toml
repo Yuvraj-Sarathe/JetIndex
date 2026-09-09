@@ -28,6 +28,8 @@ extend-exclude = [
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]
 ignore = [
     "B008",  # FastAPI Depends/Query in function args — standard pattern
+    "E501",  # line-too-long (long f-strings)
+    "N806",  # non-lowercase-variable-in-function (X is ML convention)
 ]
 
 [tool.pytest.ini_options]

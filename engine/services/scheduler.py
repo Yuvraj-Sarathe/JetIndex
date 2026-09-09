@@ -8,7 +8,7 @@ import asyncio
 import datetime
 import logging
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 
 from engine.services.streaming import stream_manager
 
@@ -26,12 +26,12 @@ class IngestionWorkerDaemon:
         self.auto_train_interval_cycles = auto_train_interval_cycles
         self.is_running = False
         self.is_paused = False
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self.total_cycles_executed = 0
-        self.last_run_timestamp: Optional[str] = None
+        self.last_run_timestamp: str | None = None
         self.last_duration_ms: float = 0.0
         self.last_status = "INITIAL"
-        self.last_summary: Dict[str, Any] = {}
+        self.last_summary: dict[str, Any] = {}
 
     def start(self) -> None:
         """Launches the background daemon task."""
@@ -55,7 +55,7 @@ class IngestionWorkerDaemon:
             self._task.cancel()
         logger.info("Ingestion Worker Daemon Stopped.")
 
-    async def trigger_cycle_now(self) -> Dict[str, Any]:
+    async def trigger_cycle_now(self) -> dict[str, Any]:
         """Executes a single end-to-end ingestion and indexing cycle immediately."""
         return await self._execute_cycle()
 
@@ -70,10 +70,10 @@ class IngestionWorkerDaemon:
 
             await asyncio.sleep(self.interval_seconds)
 
-    async def _execute_cycle(self) -> Dict[str, Any]:
+    async def _execute_cycle(self) -> dict[str, Any]:
         """Executes end-to-end ingestion cycle."""
         start_time = time.time()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
         cycle_id = f"CYCLE-{self.total_cycles_executed + 1}"
 
         try:
@@ -82,6 +82,7 @@ class IngestionWorkerDaemon:
             quotes_scraped = 0
             try:
                 from scrapers.connectors import create_all_live_connectors
+
                 connectors = create_all_live_connectors()
                 quotes_scraped = len(connectors) * 4  # approximate
             except Exception:
@@ -95,8 +96,9 @@ class IngestionWorkerDaemon:
             # Step 3: Index calculation
             logger.info(f"[{cycle_id}] Step 3: Computing indices...")
             try:
-                from engine.index_calculator import compute_national_index
                 from db.session import SessionLocal
+                from engine.index_calculator import compute_national_index
+
                 session = SessionLocal()
                 result = compute_national_index(session)
                 session.close()
@@ -145,7 +147,7 @@ class IngestionWorkerDaemon:
             logger.error(f"[{cycle_id}] FAILED in {elapsed_ms:.0f}ms: {e}")
             return {"error": str(e), "elapsed_ms": elapsed_ms}
 
-    def get_worker_status(self) -> Dict[str, Any]:
+    def get_worker_status(self) -> dict[str, Any]:
         """Returns current worker daemon status."""
         return {
             "is_running": self.is_running,

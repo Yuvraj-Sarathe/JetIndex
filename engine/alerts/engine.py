@@ -5,23 +5,28 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 """
 
 import datetime
-import uuid
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+import uuid
+from dataclasses import dataclass
+from typing import Any
+
 from pydantic import BaseModel, Field
 
+from db.models import Alert, AlertRule
 from db.session import SessionLocal
-from db.models import AlertRule, Alert
 
 logger = logging.getLogger("jetindex.alerts")
 
 
 class AlertRuleDefinition(BaseModel):
     """Schema for configurable alert rule."""
-    rule_id: Optional[str] = Field(default=None, description="Unique rule ID")
+
+    rule_id: str | None = Field(default=None, description="Unique rule ID")
     rule_name: str = Field(..., description="Descriptive rule title")
-    metric_target: str = Field(..., description="Target metric: daily_pct_change, bps_transport_impact, pressure_score, overall_trust_score, anomaly_severity")
+    metric_target: str = Field(
+        ...,
+        description="Target metric: daily_pct_change, bps_transport_impact, pressure_score, overall_trust_score, anomaly_severity",
+    )
     condition_operator: str = Field(default=">", description="Comparison operator: >, <, >=, <=, ==")
     threshold_value: float = Field(..., description="Threshold numeric value")
     severity: str = Field(default="HIGH", description="Severity level: LOW, MEDIUM, HIGH, CRITICAL")
@@ -31,21 +36,22 @@ class AlertRuleDefinition(BaseModel):
 @dataclass
 class AlertRecord:
     """Individual triggered alert record."""
+
     alert_id: str
-    rule_id: Optional[str]
+    rule_id: str | None
     title: str
     message: str
     severity: str
     status: str
     triggered_at: str
-    resolved_at: Optional[str]
-    acknowledged_by: Optional[str]
+    resolved_at: str | None
+    acknowledged_by: str | None
 
 
 class AlertEngine:
     """Evaluates rules continuously and maintains persistent alert logs."""
 
-    def get_rules(self) -> List[Dict[str, Any]]:
+    def get_rules(self) -> list[dict[str, Any]]:
         db = SessionLocal()
         try:
             rows = db.query(AlertRule).order_by(AlertRule.created_at.desc()).all()
@@ -64,11 +70,11 @@ class AlertEngine:
         finally:
             db.close()
 
-    def create_rule(self, rule: AlertRuleDefinition) -> Dict[str, Any]:
+    def create_rule(self, rule: AlertRuleDefinition) -> dict[str, Any]:
         db = SessionLocal()
         try:
             rule_id = rule.rule_id or f"RULE-{uuid.uuid4().hex[:6].upper()}"
-            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            datetime.datetime.now(datetime.UTC).isoformat()
 
             db_rule = AlertRule(
                 rule_id=rule_id,
@@ -90,12 +96,12 @@ class AlertEngine:
         finally:
             db.close()
 
-    def evaluate_live_triggers(self, current_metrics: Dict[str, Any]) -> List[AlertRecord]:
+    def evaluate_live_triggers(self, current_metrics: dict[str, Any]) -> list[AlertRecord]:
         """Tests current metric values against all active alert rules and creates alert records."""
         db = SessionLocal()
         try:
             rules = db.query(AlertRule).filter(AlertRule.is_enabled == 1).all()
-            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            now_iso = datetime.datetime.now(datetime.UTC).isoformat()
             triggered = []
 
             for r in rules:
@@ -108,15 +114,18 @@ class AlertEngine:
                 op = r.condition_operator
                 is_fired = False
 
-                if op == ">" and val > thresh:
-                    is_fired = True
-                elif op == "<" and val < thresh:
-                    is_fired = True
-                elif op == ">=" and val >= thresh:
-                    is_fired = True
-                elif op == "<=" and val <= thresh:
-                    is_fired = True
-                elif op == "==" and val == thresh:
+                if (
+                    op == ">"
+                    and val > thresh
+                    or op == "<"
+                    and val < thresh
+                    or op == ">="
+                    and val >= thresh
+                    or op == "<="
+                    and val <= thresh
+                    or op == "=="
+                    and val == thresh
+                ):
                     is_fired = True
 
                 if is_fired:
@@ -135,23 +144,25 @@ class AlertEngine:
                     db.add(db_alert)
                     db.commit()
 
-                    triggered.append(AlertRecord(
-                        alert_id=alert_id,
-                        rule_id=r.rule_id,
-                        title=title,
-                        message=msg,
-                        severity=r.severity,
-                        status="ACTIVE",
-                        triggered_at=now_iso,
-                        resolved_at=None,
-                        acknowledged_by=None,
-                    ))
+                    triggered.append(
+                        AlertRecord(
+                            alert_id=alert_id,
+                            rule_id=r.rule_id,
+                            title=title,
+                            message=msg,
+                            severity=r.severity,
+                            status="ACTIVE",
+                            triggered_at=now_iso,
+                            resolved_at=None,
+                            acknowledged_by=None,
+                        )
+                    )
 
             return triggered
         finally:
             db.close()
 
-    def get_alerts(self, status_filter: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_alerts(self, status_filter: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         db = SessionLocal()
         try:
             query = db.query(Alert)
@@ -203,15 +214,15 @@ class AlertEngine:
         finally:
             db.close()
 
-    def update_alert(self, alert_id: str, new_status: str, actor: Optional[str] = None) -> Dict[str, Any]:
+    def update_alert(self, alert_id: str, new_status: str, actor: str | None = None) -> dict[str, Any]:
         db = SessionLocal()
         try:
-            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            now_iso = datetime.datetime.now(datetime.UTC).isoformat()
             alert = db.query(Alert).filter(Alert.alert_id == alert_id).first()
             if alert:
                 alert.status = new_status.upper()
                 if new_status.upper() == "RESOLVED":
-                    alert.resolved_at = datetime.datetime.now(datetime.timezone.utc)
+                    alert.resolved_at = datetime.datetime.now(datetime.UTC)
                 if actor:
                     alert.acknowledged_by = actor
                 db.commit()
@@ -229,13 +240,13 @@ class AlertEngine:
 alert_engine = AlertEngine()
 
 
-def get_active_alerts(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_active_alerts(status_filter: str | None = None) -> list[dict[str, Any]]:
     return alert_engine.get_alerts(status_filter=status_filter)
 
 
-def create_alert_rule(rule: AlertRuleDefinition) -> Dict[str, Any]:
+def create_alert_rule(rule: AlertRuleDefinition) -> dict[str, Any]:
     return alert_engine.create_rule(rule)
 
 
-def update_alert_status(alert_id: str, new_status: str, actor: Optional[str] = None) -> Dict[str, Any]:
+def update_alert_status(alert_id: str, new_status: str, actor: str | None = None) -> dict[str, Any]:
     return alert_engine.update_alert(alert_id, new_status, actor)

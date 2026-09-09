@@ -1,10 +1,7 @@
 """Tests for forecasting engine."""
 
-import math
-
 import numpy as np
 import pandas as pd
-import pytest
 
 from engine.forecasting import (
     FEATURE_NAMES,
@@ -22,14 +19,16 @@ class TestFeatureMatrix:
         dates = pd.date_range("2025-01-01", periods=n, freq="D")
         np.random.seed(42)
         base = 100.0 + np.cumsum(np.random.randn(n) * 0.5)
-        return pd.DataFrame({
-            "calculation_date": dates,
-            "laspeyres_index": base,
-            "fisher_index": base + np.random.randn(n) * 0.1,
-            "spot_t1_index": base * 2.45,
-            "valid_quotes_count": np.full(n, 900),
-            "observations_count": np.full(n, 950),
-        })
+        return pd.DataFrame(
+            {
+                "calculation_date": dates,
+                "laspeyres_index": base,
+                "fisher_index": base + np.random.randn(n) * 0.1,
+                "spot_t1_index": base * 2.45,
+                "valid_quotes_count": np.full(n, 900),
+                "observations_count": np.full(n, 950),
+            }
+        )
 
     def test_build_feature_matrix_returns_correct_shape(self):
         df = self._make_df(30)
@@ -103,6 +102,7 @@ class TestCpiTransmission:
 
     def test_transmission_basic(self):
         from engine.forecasting import _AIRFARE_SHARE, _TRANSPORT_WEIGHT
+
         # 1% airfare change → 3.85 bps transport → 0.33 bps headline
         daily_pct = 1.0
         transport_bps = daily_pct * _AIRFARE_SHARE * 100.0

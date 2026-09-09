@@ -5,10 +5,10 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 
 import datetime
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from db.models import CleanedQuote, RawQuote, RouteIndex
 from db.session import SessionLocal
-from db.models import RawQuote, CleanedQuote, RouteIndex
 
 logger = logging.getLogger("jetindex.source_telemetry")
 
@@ -48,7 +48,7 @@ DGCA_ROUTES = {
 }
 
 
-def get_source_telemetry() -> Dict[str, Any]:
+def get_source_telemetry() -> dict[str, Any]:
     """Per-channel collection status: quote counts, latest activity, fare movement."""
     db = SessionLocal()
     try:
@@ -59,7 +59,7 @@ def get_source_telemetry() -> Dict[str, Any]:
         latest_date = str(dates[0][0]) if dates else None
         prev_date = str(dates[1][0]) if len(dates) > 1 else None
 
-        channels: List[Dict[str, Any]] = []
+        channels: list[dict[str, Any]] = []
         summary = {
             "as_of_date": latest_date,
             "previous_date": prev_date,
@@ -71,35 +71,47 @@ def get_source_telemetry() -> Dict[str, Any]:
             "average_fare_today_inr": None,
             "average_fare_previous_inr": None,
             "national_fare_change_pct": None,
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "generated_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }
 
-        today_stats_all: List[float] = []
-        prev_stats_all: List[float] = []
+        today_stats_all: list[float] = []
+        prev_stats_all: list[float] = []
 
         for portal, (label, stype) in PORTAL_LABELS.items():
             # Current date stats
-            cur_row = db.query(
-                func.count().label("cnt"),
-                func.avg(RawQuote.total_fare).label("avg_fare"),
-            ).filter(
-                RawQuote.source_portal == portal,
-                RawQuote.booking_date == latest_date,
-            ).first() if latest_date else None
+            cur_row = (
+                db.query(
+                    func.count().label("cnt"),
+                    func.avg(RawQuote.total_fare).label("avg_fare"),
+                )
+                .filter(
+                    RawQuote.source_portal == portal,
+                    RawQuote.booking_date == latest_date,
+                )
+                .first()
+                if latest_date
+                else None
+            )
 
             cur_cnt = cur_row[0] if cur_row else 0
             cur_avg = float(cur_row[1]) if cur_row and cur_row[1] else None
 
             # Previous date stats
-            prev_row = db.query(
-                func.count().label("cnt"),
-                func.avg(RawQuote.total_fare).label("avg_fare"),
-            ).filter(
-                RawQuote.source_portal == portal,
-                RawQuote.booking_date == prev_date,
-            ).first() if prev_date else None
+            prev_row = (
+                db.query(
+                    func.count().label("cnt"),
+                    func.avg(RawQuote.total_fare).label("avg_fare"),
+                )
+                .filter(
+                    RawQuote.source_portal == portal,
+                    RawQuote.booking_date == prev_date,
+                )
+                .first()
+                if prev_date
+                else None
+            )
 
-            prev_cnt = prev_row[0] if prev_row else 0
+            prev_row[0] if prev_row else 0
             prev_avg = float(prev_row[1]) if prev_row and prev_row[1] else None
 
             if cur_avg is not None:
@@ -108,9 +120,14 @@ def get_source_telemetry() -> Dict[str, Any]:
                 prev_stats_all.append(prev_avg)
 
             # 30-day count
-            cnt30 = db.query(func.count()).filter(
-                RawQuote.source_portal == portal,
-            ).scalar() or 0
+            cnt30 = (
+                db.query(func.count())
+                .filter(
+                    RawQuote.source_portal == portal,
+                )
+                .scalar()
+                or 0
+            )
 
             health = "SUCCESS" if cur_cnt and cur_cnt > 0 else "DELAYED"
 
@@ -118,25 +135,31 @@ def get_source_telemetry() -> Dict[str, Any]:
             if cur_avg is not None and prev_avg:
                 fare_change = round((cur_avg - prev_avg) / prev_avg * 100.0, 2)
 
-            channels.append({
-                "channel_key": portal,
-                "display_name": label,
-                "source_type": stype,
-                "health": health,
-                "quotes_today": cur_cnt,
-                "quotes_30d": cnt30,
-                "avg_fare_today_inr": round(cur_avg, 2) if cur_avg else None,
-                "avg_fare_previous_inr": round(prev_avg, 2) if prev_avg else None,
-                "fare_change_pct": fare_change,
-            })
+            channels.append(
+                {
+                    "channel_key": portal,
+                    "display_name": label,
+                    "source_type": stype,
+                    "health": health,
+                    "quotes_today": cur_cnt,
+                    "quotes_30d": cnt30,
+                    "avg_fare_today_inr": round(cur_avg, 2) if cur_avg else None,
+                    "avg_fare_previous_inr": round(prev_avg, 2) if prev_avg else None,
+                    "fare_change_pct": fare_change,
+                }
+            )
 
         # Pipeline cleanliness
         if latest_date:
-            clean_row = db.query(
-                func.count().label("c"),
-                func.sum(func.cast(CleanedQuote.outlier_flag == 0, type_=func.count())),
-                func.sum(func.cast(CleanedQuote.outlier_flag == 1, type_=func.count())),
-            ).filter(CleanedQuote.booking_date == latest_date).first()
+            clean_row = (
+                db.query(
+                    func.count().label("c"),
+                    func.sum(func.cast(CleanedQuote.outlier_flag == 0, type_=func.count())),
+                    func.sum(func.cast(CleanedQuote.outlier_flag == 1, type_=func.count())),
+                )
+                .filter(CleanedQuote.booking_date == latest_date)
+                .first()
+            )
             if clean_row:
                 summary["validated_quotes_today"] = int(clean_row[1] or 0)
                 summary["outliers_today"] = int(clean_row[2] or 0)
@@ -151,7 +174,10 @@ def get_source_telemetry() -> Dict[str, Any]:
         if summary["average_fare_today_inr"] and summary["average_fare_previous_inr"]:
             summary["national_fare_change_pct"] = round(
                 (summary["average_fare_today_inr"] - summary["average_fare_previous_inr"])
-                / summary["average_fare_previous_inr"] * 100.0, 2)
+                / summary["average_fare_previous_inr"]
+                * 100.0,
+                2,
+            )
 
         return {"summary": summary, "channels": channels, "data_tag": "REAL_COMPUTED"}
 
@@ -159,13 +185,22 @@ def get_source_telemetry() -> Dict[str, Any]:
         db.close()
 
 
-def get_route_movements(lookback_days: int = 7) -> Dict[str, Any]:
+def get_route_movements(lookback_days: int = 7) -> dict[str, Any]:
     """Route-level composite movement between the latest two calculation dates."""
     db = SessionLocal()
     try:
-        dates = [str(r[0]) for r in db.query(RouteIndex.calculation_date).distinct().order_by(RouteIndex.calculation_date.desc()).all()]
+        dates = [
+            str(r[0])
+            for r in db.query(RouteIndex.calculation_date).distinct().order_by(RouteIndex.calculation_date.desc()).all()
+        ]
         if len(dates) < 2:
-            return {"as_of_date": dates[0] if dates else None, "comparison_date": None, "routes": [], "national": None, "data_tag": "REAL_COMPUTED"}
+            return {
+                "as_of_date": dates[0] if dates else None,
+                "comparison_date": None,
+                "routes": [],
+                "national": None,
+                "data_tag": "REAL_COMPUTED",
+            }
 
         latest = dates[0]
         target = latest
@@ -176,9 +211,9 @@ def get_route_movements(lookback_days: int = 7) -> Dict[str, Any]:
         if target == latest:
             target = dates[-1]
 
-        def route_snapshot(date_str: str) -> Dict[str, Dict[str, Any]]:
+        def route_snapshot(date_str: str) -> dict[str, dict[str, Any]]:
             rows = db.query(RouteIndex).filter(RouteIndex.calculation_date == date_str).all()
-            snap: Dict[str, Dict[str, Any]] = {}
+            snap: dict[str, dict[str, Any]] = {}
             for r in rows:
                 w = int(r.advance_window.replace("T+", "").replace("T", "") or 7)
                 wt = WINDOW_WEIGHTS.get(w, 0.2)
@@ -206,16 +241,18 @@ def get_route_movements(lookback_days: int = 7) -> Dict[str, Any]:
             if p is None or not p["composite_fare_inr"] or not c["composite_fare_inr"]:
                 continue
             change_pct = round((c["composite_fare_inr"] - p["composite_fare_inr"]) / p["composite_fare_inr"] * 100.0, 2)
-            routes_out.append({
-                "route_code": rc,
-                "origin_city": origin,
-                "destination_city": dest,
-                "dgca_weight_pct": round(weight * 100.0, 2),
-                "current_fare_inr": round(c["composite_fare_inr"], 2),
-                "previous_fare_inr": round(p["composite_fare_inr"], 2),
-                "current_composite_relative": round(c["composite_relative"], 4),
-                "change_pct": change_pct,
-            })
+            routes_out.append(
+                {
+                    "route_code": rc,
+                    "origin_city": origin,
+                    "destination_city": dest,
+                    "dgca_weight_pct": round(weight * 100.0, 2),
+                    "current_fare_inr": round(c["composite_fare_inr"], 2),
+                    "previous_fare_inr": round(p["composite_fare_inr"], 2),
+                    "current_composite_relative": round(c["composite_relative"], 4),
+                    "change_pct": change_pct,
+                }
+            )
 
         routes_out.sort(key=lambda x: x["change_pct"], reverse=True)
 

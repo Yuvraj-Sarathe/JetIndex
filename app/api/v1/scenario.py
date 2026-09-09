@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from app.core.config import settings
 from app.core.security import require_token
@@ -40,6 +39,7 @@ def run_scenario_simulation(
         }
     try:
         from engine.scenario.simulator import PolicyScenarioSimulator, ScenarioInputParameters
+
         params_model = ScenarioInputParameters(
             scenario_name=params.scenario_name,
             airfare_shock_pct=params.airfare_shock_pct,
@@ -51,6 +51,7 @@ def run_scenario_simulation(
         sim = PolicyScenarioSimulator()
         result = sim.run_simulation(params_model)
         from dataclasses import asdict
+
         return {"data_tag": "SIMULATED", **asdict(result)}
     except Exception as e:
         return {"error": str(e), "data_tag": "ERROR"}

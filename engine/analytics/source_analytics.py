@@ -6,11 +6,12 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 
 import datetime
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 import numpy as np
 
-from db.session import SessionLocal
 from db.models import RawQuote
+from db.session import SessionLocal
 
 logger = logging.getLogger("jetindex.sources")
 
@@ -29,29 +30,34 @@ AIRLINE_CARRIERS = [
 class SourceAnalyticsEngine:
     """Computes pricing behavior, dispersion, and market share metrics across airlines and OTAs."""
 
-    def get_analytics(self) -> Dict[str, Any]:
+    def get_analytics(self) -> dict[str, Any]:
         db = SessionLocal()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
 
         try:
             # Fetch airline breakdown from database
             from sqlalchemy import func
-            rows = db.query(
-                RawQuote.airline_code,
-                RawQuote.airline_name,
-                RawQuote.is_direct,
-                RawQuote.source_portal,
-                func.count().label("quote_count"),
-                func.avg(RawQuote.base_fare).label("avg_base"),
-                func.avg(RawQuote.total_fare).label("avg_total"),
-                func.min(RawQuote.total_fare).label("min_total"),
-                func.max(RawQuote.total_fare).label("max_total"),
-            ).group_by(
-                RawQuote.airline_code,
-                RawQuote.airline_name,
-                RawQuote.is_direct,
-                RawQuote.source_portal,
-            ).all()
+
+            rows = (
+                db.query(
+                    RawQuote.airline_code,
+                    RawQuote.airline_name,
+                    RawQuote.is_direct,
+                    RawQuote.source_portal,
+                    func.count().label("quote_count"),
+                    func.avg(RawQuote.base_fare).label("avg_base"),
+                    func.avg(RawQuote.total_fare).label("avg_total"),
+                    func.min(RawQuote.total_fare).label("min_total"),
+                    func.max(RawQuote.total_fare).label("max_total"),
+                )
+                .group_by(
+                    RawQuote.airline_code,
+                    RawQuote.airline_name,
+                    RawQuote.is_direct,
+                    RawQuote.source_portal,
+                )
+                .all()
+            )
 
             carrier_stats = []
             ota_stats = []
@@ -71,18 +77,20 @@ class SourceAnalyticsEngine:
                     q_count = 1450
                     coverage = "100% (20/20 Routes)"
 
-                carrier_stats.append({
-                    "carrier_code": a["code"],
-                    "carrier_name": a["name"],
-                    "category": a["category"],
-                    "dgca_market_share_pct": round(a["market_share"] * 100.0, 1),
-                    "average_fare_inr": avg_fare,
-                    "volatility_score": vol,
-                    "quotes_ingested_30d": q_count,
-                    "corridor_coverage": coverage,
-                    "source_agreement_score": 98.2,
-                    "data_status": "REAL_COMPUTED",
-                })
+                carrier_stats.append(
+                    {
+                        "carrier_code": a["code"],
+                        "carrier_name": a["name"],
+                        "category": a["category"],
+                        "dgca_market_share_pct": round(a["market_share"] * 100.0, 1),
+                        "average_fare_inr": avg_fare,
+                        "volatility_score": vol,
+                        "quotes_ingested_30d": q_count,
+                        "corridor_coverage": coverage,
+                        "source_agreement_score": 98.2,
+                        "data_status": "REAL_COMPUTED",
+                    }
+                )
 
             # Process OTAs
             ota_names = [
@@ -101,17 +109,19 @@ class SourceAnalyticsEngine:
                     avg_fare = 5950.0 + ofee
                     q_count = 980
 
-                ota_stats.append({
-                    "ota_name": oname,
-                    "portal_code": oportal,
-                    "portal_url": ourl,
-                    "average_convenience_fee_inr": ofee,
-                    "average_gross_fare_inr": avg_fare,
-                    "quotes_ingested_30d": q_count,
-                    "deduplication_prune_rate_pct": 94.5,
-                    "api_health_status": "ONLINE_HEALTHY",
-                    "data_status": "REAL_COMPUTED",
-                })
+                ota_stats.append(
+                    {
+                        "ota_name": oname,
+                        "portal_code": oportal,
+                        "portal_url": ourl,
+                        "average_convenience_fee_inr": ofee,
+                        "average_gross_fare_inr": avg_fare,
+                        "quotes_ingested_30d": q_count,
+                        "deduplication_prune_rate_pct": 94.5,
+                        "api_health_status": "ONLINE_HEALTHY",
+                        "data_status": "REAL_COMPUTED",
+                    }
+                )
 
             return {
                 "carriers_analytics": carrier_stats,
@@ -132,5 +142,5 @@ class SourceAnalyticsEngine:
 source_analytics_engine = SourceAnalyticsEngine()
 
 
-def get_sources_analytics() -> Dict[str, Any]:
+def get_sources_analytics() -> dict[str, Any]:
     return source_analytics_engine.get_analytics()

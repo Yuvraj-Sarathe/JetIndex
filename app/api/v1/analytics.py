@@ -21,8 +21,10 @@ def get_pressure_score(
     if settings.MOCK_MODE:
         return _mock_pressure_score()
     from engine.analytics import compute_pressure_score
+
     report = compute_pressure_score(db, target_date=target_date)
     from dataclasses import asdict
+
     return asdict(report)
 
 
@@ -35,8 +37,10 @@ def get_cpi_decomposition(
     if settings.MOCK_MODE:
         return _mock_cpi_decomposition()
     from engine.analytics import compute_cpi_decomposition
+
     report = compute_cpi_decomposition(db)
     from dataclasses import asdict
+
     return asdict(report)
 
 
@@ -103,11 +107,36 @@ def _mock_cpi_impact() -> dict:
             "effective_headline_weight": 0.003307,
         },
         "sensitivity_stress_matrix": [
-            {"airfare_swing_pct": -20.0, "transport_subgroup_impact_bps": -7.7, "headline_cpi_impact_bps": -0.6614, "monetary_policy_significance": "High"},
-            {"airfare_swing_pct": -10.0, "transport_subgroup_impact_bps": -3.85, "headline_cpi_impact_bps": -0.3307, "monetary_policy_significance": "Moderate"},
-            {"airfare_swing_pct": 10.0, "transport_subgroup_impact_bps": 3.85, "headline_cpi_impact_bps": 0.3307, "monetary_policy_significance": "Moderate"},
-            {"airfare_swing_pct": 20.0, "transport_subgroup_impact_bps": 7.7, "headline_cpi_impact_bps": 0.6614, "monetary_policy_significance": "High"},
-            {"airfare_swing_pct": 30.0, "transport_subgroup_impact_bps": 11.55, "headline_cpi_impact_bps": 0.9921, "monetary_policy_significance": "High"},
+            {
+                "airfare_swing_pct": -20.0,
+                "transport_subgroup_impact_bps": -7.7,
+                "headline_cpi_impact_bps": -0.6614,
+                "monetary_policy_significance": "High",
+            },
+            {
+                "airfare_swing_pct": -10.0,
+                "transport_subgroup_impact_bps": -3.85,
+                "headline_cpi_impact_bps": -0.3307,
+                "monetary_policy_significance": "Moderate",
+            },
+            {
+                "airfare_swing_pct": 10.0,
+                "transport_subgroup_impact_bps": 3.85,
+                "headline_cpi_impact_bps": 0.3307,
+                "monetary_policy_significance": "Moderate",
+            },
+            {
+                "airfare_swing_pct": 20.0,
+                "transport_subgroup_impact_bps": 7.7,
+                "headline_cpi_impact_bps": 0.6614,
+                "monetary_policy_significance": "High",
+            },
+            {
+                "airfare_swing_pct": 30.0,
+                "transport_subgroup_impact_bps": 11.55,
+                "headline_cpi_impact_bps": 0.9921,
+                "monetary_policy_significance": "High",
+            },
         ],
         "data_tag": "MOCK_DATA",
     }

@@ -4,30 +4,31 @@ Re-exports everything from the analytics_engine module so that
 `from engine.analytics import X` works for both the module's symbols
 and the package's symbols.
 """
+
 # Re-export analytics module contents (the .py file)
 from engine.analytics_engine import (
     _AIRFARE_SHARE,
     _TRANSPORT_WEIGHT,
-    compute_pressure_score,
-    compute_cpi_decomposition,
-    compute_heatmap,
-    compute_trust_score,
+    CPIDecomposition,
+    DailyHeatmapCell,
     HeatmapCell,
     HeatmapMatrix,
     PressureReport,
-    CPIDecomposition,
+    TemporalHeatmapResult,
     TrustScoreReport,
-    generate_temporal_heatmap,
+    compute_cpi_decomposition,
+    compute_heatmap,
+    compute_pressure_score,
+    compute_trust_score,
     generate_carrier_comparative_heatmap,
     generate_route_index_growth_heatmap,
-    TemporalHeatmapResult,
-    DailyHeatmapCell,
+    generate_temporal_heatmap,
 )
 
 # Package-level exports
 from .route_intelligence import RouteIntelligenceEngine, route_intel_engine
 from .source_analytics import SourceAnalyticsEngine
-from .source_consensus import SourceConsensusReport, SourcePriceEntry, RouteConsensusRecord
+from .source_consensus import RouteConsensusRecord, SourceConsensusReport, SourcePriceEntry
 from .source_telemetry import PORTAL_LABELS
 from .temporal import TemporalAnalyticsEngine
 

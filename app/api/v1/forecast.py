@@ -22,9 +22,10 @@ def get_national_forecast(
     try:
         report = generate_nowcast(db, horizon_days=horizon_days)
         from dataclasses import asdict
+
         return asdict(report)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/route/{route_code}")
@@ -41,16 +42,18 @@ def get_route_forecast(
     try:
         report = generate_nowcast(db, horizon_days=horizon_days)
         from dataclasses import asdict
+
         result = asdict(report)
         result["route_code"] = route_code.upper()
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 def _mock_national_forecast(horizon_days: int) -> dict:
     """Mock national forecast data."""
     from datetime import date, timedelta
+
     today = date.today()
     steps = []
     base_index = 105.5
@@ -58,16 +61,18 @@ def _mock_national_forecast(horizon_days: int) -> dict:
         forecast_date = today + timedelta(days=i)
         predicted = base_index + (i * 0.15)
         ci_width = 1.2 + (i * 0.08)
-        steps.append({
-            "forecast_date": forecast_date.isoformat(),
-            "horizon_days": i,
-            "predicted_index": round(predicted, 2),
-            "ci_lower_95": round(predicted - ci_width, 2),
-            "ci_upper_95": round(predicted + ci_width, 2),
-            "daily_change_pct": round(0.15, 4),
-            "transport_bps": round(0.058, 4),
-            "headline_bps": round(0.005, 4),
-        })
+        steps.append(
+            {
+                "forecast_date": forecast_date.isoformat(),
+                "horizon_days": i,
+                "predicted_index": round(predicted, 2),
+                "ci_lower_95": round(predicted - ci_width, 2),
+                "ci_upper_95": round(predicted + ci_width, 2),
+                "daily_change_pct": round(0.15, 4),
+                "transport_bps": round(0.058, 4),
+                "headline_bps": round(0.005, 4),
+            }
+        )
     return {
         "as_of_date": today.isoformat(),
         "current_index": base_index,

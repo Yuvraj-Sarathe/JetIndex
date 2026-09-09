@@ -5,28 +5,41 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 """
 
 import datetime
-import math
-import uuid
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+import uuid
+from dataclasses import dataclass
+from typing import Any
+
 from pydantic import BaseModel, Field
 
-from db.session import SessionLocal
 from db.models import NationalIndex
+from db.session import SessionLocal
 
 logger = logging.getLogger("jetindex.scenario")
 
 
 class ScenarioInputParameters(BaseModel):
     """Input parameters for macroeconomic policy scenario simulation."""
+
     scenario_name: str = Field(default="Custom Macro Shock Simulation", description="Descriptive scenario label")
-    airfare_shock_pct: float = Field(default=10.0, ge=-50.0, le=100.0, description="Exogenous airline tariff shock in %")
-    demand_change_pct: float = Field(default=5.0, ge=-50.0, le=100.0, description="Passenger demand elasticity shift in %")
-    capacity_change_pct: float = Field(default=-3.0, ge=-50.0, le=100.0, description="Airline seat capacity constraint shift in %")
-    atf_fuel_shock_pct: float = Field(default=12.0, ge=-50.0, le=150.0, description="Aviation Turbine Fuel price shock in %")
-    booking_horizon_shock: Optional[str] = Field(default=None, description="Optional target horizon: T+1, T+7, T+15, T+30, T+45")
-    seasonal_factor: float = Field(default=1.0, ge=0.5, le=2.0, description="Seasonal multiplier (e.g. 1.15 for festival peak)")
+    airfare_shock_pct: float = Field(
+        default=10.0, ge=-50.0, le=100.0, description="Exogenous airline tariff shock in %"
+    )
+    demand_change_pct: float = Field(
+        default=5.0, ge=-50.0, le=100.0, description="Passenger demand elasticity shift in %"
+    )
+    capacity_change_pct: float = Field(
+        default=-3.0, ge=-50.0, le=100.0, description="Airline seat capacity constraint shift in %"
+    )
+    atf_fuel_shock_pct: float = Field(
+        default=12.0, ge=-50.0, le=150.0, description="Aviation Turbine Fuel price shock in %"
+    )
+    booking_horizon_shock: str | None = Field(
+        default=None, description="Optional target horizon: T+1, T+7, T+15, T+30, T+45"
+    )
+    seasonal_factor: float = Field(
+        default=1.0, ge=0.5, le=2.0, description="Seasonal multiplier (e.g. 1.15 for festival peak)"
+    )
 
 
 @dataclass
@@ -45,7 +58,7 @@ class RouteScenarioImpact:
 class ScenarioSimulationResult:
     scenario_id: str
     scenario_name: str
-    inputs: Dict[str, Any]
+    inputs: dict[str, Any]
     baseline_airfare_index: float
     projected_airfare_index: float
     net_airfare_index_change_pct: float
@@ -53,8 +66,8 @@ class ScenarioSimulationResult:
     projected_headline_cpi_impact_bps: float
     projected_inflation_pressure_score: float
     projected_pressure_level: str
-    confidence_interval_95: Dict[str, float]
-    top_affected_corridors: List[RouteScenarioImpact]
+    confidence_interval_95: dict[str, float]
+    top_affected_corridors: list[RouteScenarioImpact]
     policy_implication_brief: str
     data_tag: str = "MODELLED / SIMULATED"
     simulated_at: str = ""
@@ -80,7 +93,7 @@ class PolicyScenarioSimulator:
 
     def run_simulation(self, params: ScenarioInputParameters) -> ScenarioSimulationResult:
         db = SessionLocal()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
         scenario_id = f"SIM-{uuid.uuid4().hex[:8].upper()}"
 
         try:
@@ -95,12 +108,7 @@ class PolicyScenarioSimulator:
         capacity_tightness_pct = (params.demand_change_pct - params.capacity_change_pct) * 0.45
         seasonal_shift_pct = (params.seasonal_factor - 1.0) * 100.0
 
-        net_airfare_pct = (
-            params.airfare_shock_pct +
-            fuel_contribution_pct +
-            capacity_tightness_pct +
-            seasonal_shift_pct
-        )
+        net_airfare_pct = params.airfare_shock_pct + fuel_contribution_pct + capacity_tightness_pct + seasonal_shift_pct
 
         projected_index = round(base_index * (1.0 + net_airfare_pct / 100.0), 2)
         effective_pct_change = round(((projected_index - base_index) / base_index) * 100.0, 2)
@@ -128,23 +136,25 @@ class PolicyScenarioSimulator:
         ci_upper = round(projected_index * 1.015, 2)
 
         # Corridor Impacts
-        affected_corridors: List[RouteScenarioImpact] = []
+        affected_corridors: list[RouteScenarioImpact] = []
         for rc, (origin, dest, weight, bm) in DGCA_ROUTES.items():
             b_fare = bm * 1.068
             p_fare = round(b_fare * (1.0 + net_airfare_pct / 100.0), 2)
             c_trans = round(net_airfare_pct * weight * w_airfare * 100.0, 4)
             c_head = round(c_trans * w_transport, 6)
 
-            affected_corridors.append(RouteScenarioImpact(
-                route_code=rc,
-                corridor_name=f"{origin} <-> {dest}",
-                route_weight_pct=round(weight * 100.0, 2),
-                baseline_indexed_fare=round(b_fare, 2),
-                projected_indexed_fare=p_fare,
-                projected_price_delta_pct=round(net_airfare_pct, 2),
-                marginal_transport_impact_bps=c_trans,
-                marginal_headline_cpi_bps=c_head,
-            ))
+            affected_corridors.append(
+                RouteScenarioImpact(
+                    route_code=rc,
+                    corridor_name=f"{origin} <-> {dest}",
+                    route_weight_pct=round(weight * 100.0, 2),
+                    baseline_indexed_fare=round(b_fare, 2),
+                    projected_indexed_fare=p_fare,
+                    projected_price_delta_pct=round(net_airfare_pct, 2),
+                    marginal_transport_impact_bps=c_trans,
+                    marginal_headline_cpi_bps=c_head,
+                )
+            )
 
         policy_brief = (
             f"Under scenario '{params.scenario_name}' (Airfare {params.airfare_shock_pct:+.1f}%, Fuel {params.atf_fuel_shock_pct:+.1f}%, "

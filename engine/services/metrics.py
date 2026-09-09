@@ -4,19 +4,19 @@ Ported from VayuSutra-V4. Uses prometheus_client for OpenMetrics exposure.
 """
 
 import logging
-from typing import Dict, Any
 
 logger = logging.getLogger("jetindex.metrics")
 
 try:
     from prometheus_client import (
+        CONTENT_TYPE_LATEST,
+        REGISTRY,
         Counter,
         Gauge,
         Histogram,
         generate_latest,
-        CONTENT_TYPE_LATEST,
-        REGISTRY,
     )
+
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -57,6 +57,7 @@ def update_system_gauges():
         return
     try:
         import psutil
+
         cpu = psutil.cpu_percent(interval=None)
         mem = psutil.virtual_memory().used / (1024 * 1024)
         SYSTEM_CPU_PERCENT.set(cpu)

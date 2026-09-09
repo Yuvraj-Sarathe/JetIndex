@@ -424,10 +424,30 @@ _MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 _CARRIER_PROFILES = {
     "IndiGo": {"base_multiplier": 1.0, "price_positioning": "LOW_COST", "market_share_pct": 42.0, "on_time_pct": 87.0},
-    "Vistara": {"base_multiplier": 1.12, "price_positioning": "FULL_SERVICE", "market_share_pct": 21.0, "on_time_pct": 82.0},
-    "Air India": {"base_multiplier": 1.05, "price_positioning": "FULL_SERVICE", "market_share_pct": 18.0, "on_time_pct": 75.0},
-    "SpiceJet": {"base_multiplier": 0.98, "price_positioning": "LOW_COST", "market_share_pct": 12.0, "on_time_pct": 78.0},
-    "Go First": {"base_multiplier": 0.95, "price_positioning": "ULTRA_LOW_COST", "market_share_pct": 7.0, "on_time_pct": 80.0},
+    "Vistara": {
+        "base_multiplier": 1.12,
+        "price_positioning": "FULL_SERVICE",
+        "market_share_pct": 21.0,
+        "on_time_pct": 82.0,
+    },
+    "Air India": {
+        "base_multiplier": 1.05,
+        "price_positioning": "FULL_SERVICE",
+        "market_share_pct": 18.0,
+        "on_time_pct": 75.0,
+    },
+    "SpiceJet": {
+        "base_multiplier": 0.98,
+        "price_positioning": "LOW_COST",
+        "market_share_pct": 12.0,
+        "on_time_pct": 78.0,
+    },
+    "Go First": {
+        "base_multiplier": 0.95,
+        "price_positioning": "ULTRA_LOW_COST",
+        "market_share_pct": 7.0,
+        "on_time_pct": 80.0,
+    },
 }
 
 _ROUTE_ADVANCE_PROFILES = {
@@ -508,7 +528,9 @@ def generate_temporal_heatmap(
     cells: list[DailyHeatmapCell] = []
     for route in route_codes:
         origin, dest = route.split("-")
-        advance_profile = _ROUTE_ADVANCE_PROFILES.get(route, {"T+1": 1.30, "T+7": 1.06, "T+15": 0.96, "T+30": 0.89, "T+45": 0.83})
+        advance_profile = _ROUTE_ADVANCE_PROFILES.get(
+            route, {"T+1": 1.30, "T+7": 1.06, "T+15": 0.96, "T+30": 0.89, "T+45": 0.83}
+        )
 
         for window in advance_windows:
             window_multiplier = advance_profile.get(window, 1.0)
@@ -521,9 +543,7 @@ def generate_temporal_heatmap(
             growth_pct = round((composite_fare_index - base_index) / base_index * 100.0, 2)
             confidence_lower = round(composite_fare_index * 0.975, 2)
             confidence_upper = round(composite_fare_index * 1.025, 2)
-            is_holiday_period = any(
-                h["start_date"] <= calculation_date <= h["end_date"] for h in _INDIAN_HOLIDAYS_2026
-            )
+            is_holiday_period = any(h["start_date"] <= calculation_date <= h["end_date"] for h in _INDIAN_HOLIDAYS_2026)
 
             if growth_pct > 15.0:
                 status = "CRITICAL_INFLATION"
@@ -536,16 +556,27 @@ def generate_temporal_heatmap(
             else:
                 status = "DISINFLATION"
 
-            cells.append(DailyHeatmapCell(
-                route_code=route, origin=origin, destination=dest,
-                date=calculation_date, day_of_week="Monday", month="Aug",
-                jevons_fare=jevons_fare, price_relative=price_relative,
-                composite_fare_index=composite_fare_index, day_of_week_effect=dow_effect,
-                monthly_seasonal_effect=monthly_effect, advance_purchase_effect=advance_effect,
-                route_index_growth_pct=growth_pct, heatmap_status=status,
-                confidence_band_lower=confidence_lower, confidence_band_upper=confidence_upper,
-                holiday_impact_flag=is_holiday_period,
-            ))
+            cells.append(
+                DailyHeatmapCell(
+                    route_code=route,
+                    origin=origin,
+                    destination=dest,
+                    date=calculation_date,
+                    day_of_week="Monday",
+                    month="Aug",
+                    jevons_fare=jevons_fare,
+                    price_relative=price_relative,
+                    composite_fare_index=composite_fare_index,
+                    day_of_week_effect=dow_effect,
+                    monthly_seasonal_effect=monthly_effect,
+                    advance_purchase_effect=advance_effect,
+                    route_index_growth_pct=growth_pct,
+                    heatmap_status=status,
+                    confidence_band_lower=confidence_lower,
+                    confidence_band_upper=confidence_upper,
+                    holiday_impact_flag=is_holiday_period,
+                )
+            )
 
     dow_multipliers = {d: round(1.0 + np.random.normal(0, 0.02), 4) for d in _DOW_NAMES}
     monthly_multipliers = {m: round(1.0 + np.random.normal(0, 0.03), 4) for m in _MONTH_NAMES}
@@ -561,10 +592,14 @@ def generate_temporal_heatmap(
     }
 
     return TemporalHeatmapResult(
-        calculation_date=calculation_date, route_count=len(route_codes),
-        heatmap_cells=cells, day_of_week_multipliers=dow_multipliers,
-        monthly_seasonal_multipliers=monthly_multipliers, advance_purchase_yield_curve=advance_yield,
-        summary_statistics=stats, high_inflation_corridors=[],
+        calculation_date=calculation_date,
+        route_count=len(route_codes),
+        heatmap_cells=cells,
+        day_of_week_multipliers=dow_multipliers,
+        monthly_seasonal_multipliers=monthly_multipliers,
+        advance_purchase_yield_curve=advance_yield,
+        summary_statistics=stats,
+        high_inflation_corridors=[],
         holiday_period_impacts=_INDIAN_HOLIDAYS_2026,
         statistical_metadata={"data_tag": "REAL_COMPUTED", "methodology": "Jevons + Seasonal + Advance Yield"},
     )
@@ -580,7 +615,7 @@ def generate_carrier_comparative_heatmap(route_code: str = "DEL-BOM") -> dict:
             "on_time_performance_pct": profile["on_time_pct"],
             "advance_windows": {
                 w: round(5200.0 * profile["base_multiplier"] * m, 2)
-                for w, m in zip(["T+1", "T+7", "T+15", "T+30", "T+45"], [1.35, 1.08, 0.96, 0.88, 0.82])
+                for w, m in zip(["T+1", "T+7", "T+15", "T+30", "T+45"], [1.35, 1.08, 0.96, 0.88, 0.82], strict=False)
             },
         }
     return {"route_code": route_code, "data_tag": "REAL_COMPUTED", "carrier_heatmap": heatmap}

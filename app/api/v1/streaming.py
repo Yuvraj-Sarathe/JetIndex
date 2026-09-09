@@ -1,7 +1,8 @@
 """WebSocket Real-Time Streaming API."""
 
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from engine.services.streaming import stream_manager
 
@@ -22,10 +23,14 @@ async def websocket_stream(websocket: WebSocket):
                 if msg_type == "ping":
                     await websocket.send_text(json.dumps({"type": "pong", "timestamp": "now"}))
                 elif msg_type == "subscribe":
-                    await websocket.send_text(json.dumps({
-                        "type": "subscribed",
-                        "channels": msg.get("channels", ["national_index"]),
-                    }))
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "subscribed",
+                                "channels": msg.get("channels", ["national_index"]),
+                            }
+                        )
+                    )
             except json.JSONDecodeError:
                 await websocket.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
 

@@ -349,10 +349,7 @@ def compute_all_indices(
     )
 
     # Chained index
-    if previous_index and previous_index > 0:
-        chained = previous_index * (i_l / previous_index)
-    else:
-        chained = i_l
+    chained = previous_index * (i_l / previous_index) if previous_index and previous_index > 0 else i_l
 
     return {
         "laspeyres": i_l,
@@ -563,10 +560,7 @@ def regional_breakdown(
         r_indices = {r: route_indices[r] for r in iatas if r in route_indices}
         r_weights = {r: weights.get(r, 0) for r in r_indices}
         total_w = sum(r_weights.values())
-        if total_w > 0:
-            idx = sum(r_indices[r] * r_weights[r] for r in r_indices) / total_w
-        else:
-            idx = 100.0
+        idx = sum(r_indices[r] * r_weights[r] for r in r_indices) / total_w if total_w > 0 else 100.0
         region_data[region] = {
             "index": round(idx, 4),
             "weight": round(total_w, 6),

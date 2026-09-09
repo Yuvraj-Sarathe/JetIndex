@@ -7,13 +7,12 @@ Ported from VayuSutra-V4 with SQLAlchemy adaptation.
 import csv
 import datetime
 import io
-import json
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
-from db.session import SessionLocal
 from db.models import NationalIndex
+from db.session import SessionLocal
 
 logger = logging.getLogger("jetindex.reports")
 
@@ -31,25 +30,25 @@ class DailyIntelligenceReport:
     report_title: str
     publication_date: str
     executive_summary: str
-    national_airfare_index: Dict[str, Any]
-    cpi_inflation_transmission: Dict[str, Any]
-    inflation_pressure_score: Dict[str, Any]
-    data_trust_and_quality: Dict[str, Any]
-    top_moving_corridors: Dict[str, Any]
-    active_market_anomalies: List[Dict[str, Any]]
-    forward_14d_nowcast: Dict[str, Any]
-    cross_source_consensus: Dict[str, Any]
-    methodology_metadata: Dict[str, str]
-    data_tags: Dict[str, str]
+    national_airfare_index: dict[str, Any]
+    cpi_inflation_transmission: dict[str, Any]
+    inflation_pressure_score: dict[str, Any]
+    data_trust_and_quality: dict[str, Any]
+    top_moving_corridors: dict[str, Any]
+    active_market_anomalies: list[dict[str, Any]]
+    forward_14d_nowcast: dict[str, Any]
+    cross_source_consensus: dict[str, Any]
+    methodology_metadata: dict[str, str]
+    data_tags: dict[str, str]
     generated_at: str
 
 
 class DailyReportGenerator:
     """Assembles real-time econometric signals into executive daily briefs."""
 
-    def generate_report(self, target_date: Optional[str] = None) -> DailyIntelligenceReport:
+    def generate_report(self, target_date: str | None = None) -> DailyIntelligenceReport:
         db = SessionLocal()
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
 
         try:
             if not target_date:
@@ -121,21 +120,51 @@ class DailyReportGenerator:
         writer.writerow(["Executive_Summary", report.executive_summary])
         writer.writerow([])
         writer.writerow(["Metric", "Value", "Unit", "Data_Tag"])
-        writer.writerow(["Master_Laspeyres_Index", report.national_airfare_index["master_laspeyres_index"], "Index (2026=100)", "REAL_COMPUTED"])
-        writer.writerow(["Fisher_Ideal_Index", report.national_airfare_index["fisher_ideal_index"], "Index (2026=100)", "REAL_COMPUTED"])
-        writer.writerow(["Daily_Change_Pct", report.national_airfare_index["daily_percentage_change"], "%", "REAL_COMPUTED"])
-        writer.writerow(["CPI_Transport_Impact", report.cpi_inflation_transmission["transport_subgroup_impact_bps"], "Basis Points", "REAL_COMPUTED"])
-        writer.writerow(["Headline_CPI_Impact", report.cpi_inflation_transmission["headline_cpi_impact_bps"], "Basis Points", "REAL_COMPUTED"])
+        writer.writerow(
+            [
+                "Master_Laspeyres_Index",
+                report.national_airfare_index["master_laspeyres_index"],
+                "Index (2026=100)",
+                "REAL_COMPUTED",
+            ]
+        )
+        writer.writerow(
+            [
+                "Fisher_Ideal_Index",
+                report.national_airfare_index["fisher_ideal_index"],
+                "Index (2026=100)",
+                "REAL_COMPUTED",
+            ]
+        )
+        writer.writerow(
+            ["Daily_Change_Pct", report.national_airfare_index["daily_percentage_change"], "%", "REAL_COMPUTED"]
+        )
+        writer.writerow(
+            [
+                "CPI_Transport_Impact",
+                report.cpi_inflation_transmission["transport_subgroup_impact_bps"],
+                "Basis Points",
+                "REAL_COMPUTED",
+            ]
+        )
+        writer.writerow(
+            [
+                "Headline_CPI_Impact",
+                report.cpi_inflation_transmission["headline_cpi_impact_bps"],
+                "Basis Points",
+                "REAL_COMPUTED",
+            ]
+        )
         return output.getvalue()
 
 
 report_generator = DailyReportGenerator()
 
 
-def get_daily_intelligence_report(target_date: Optional[str] = None) -> DailyIntelligenceReport:
+def get_daily_intelligence_report(target_date: str | None = None) -> DailyIntelligenceReport:
     return report_generator.generate_report(target_date=target_date)
 
 
-def export_intelligence_report(target_date: Optional[str] = None) -> str:
+def export_intelligence_report(target_date: str | None = None) -> str:
     rep = report_generator.generate_report(target_date=target_date)
     return report_generator.export_csv_summary(rep)
