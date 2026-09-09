@@ -32,6 +32,11 @@ from .source_consensus import RouteConsensusRecord, SourceConsensusReport, Sourc
 from .source_telemetry import PORTAL_LABELS
 from .temporal import TemporalAnalyticsEngine
 
+# Standalone modules (ported from VayuSutra-APIx)
+from .pressure_score import PressureScoreEngine, PressureScoreReport, get_inflation_pressure_score
+from .cpi_decomposition import CPIDecompositionEngine, CPIDecompositionReport, get_cpi_decomposition
+from .heatmap import AirfareHeatmapEngine, HeatmapReport, get_airfare_heatmap
+
 __all__ = [
     "_AIRFARE_SHARE",
     "_TRANSPORT_WEIGHT",
@@ -57,4 +62,14 @@ __all__ = [
     "RouteConsensusRecord",
     "PORTAL_LABELS",
     "TemporalAnalyticsEngine",
+    # Standalone modules
+    "PressureScoreEngine",
+    "PressureScoreReport",
+    "get_inflation_pressure_score",
+    "CPIDecompositionEngine",
+    "CPIDecompositionReport",
+    "get_cpi_decomposition",
+    "AirfareHeatmapEngine",
+    "HeatmapReport",
+    "get_airfare_heatmap",
 ]

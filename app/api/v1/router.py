@@ -6,12 +6,15 @@ from app.api.v1.admin import router as admin_router
 from app.api.v1.ai_analyst import router as ai_analyst_router
 from app.api.v1.alerts import router as alerts_router
 from app.api.v1.analytics import router as analytics_router
+from app.api.v1.analytics_standalone import router as analytics_standalone_router
 from app.api.v1.anomalies import router as anomalies_router
 from app.api.v1.apix import router as apix_router
+from app.api.v1.auth import router as auth_router
 from app.api.v1.backtest import router as backtest_router
 from app.api.v1.data_quality import router as data_quality_router
 from app.api.v1.elasticity import router as elasticity_router
 from app.api.v1.forecast import router as forecast_router
+from app.api.v1.ml import router as ml_router
 from app.api.v1.provenance import router as provenance_router
 from app.api.v1.quotes import router as quotes_router
 from app.api.v1.reports import router as reports_router
@@ -28,6 +31,9 @@ from app.api.v1.validation import router as validation_router
 router = APIRouter()
 
 router.include_router(admin_router)
+router.include_router(auth_router, prefix="/auth", tags=["auth"])
+router.include_router(ml_router, prefix="/ml", tags=["ml"])
+router.include_router(analytics_standalone_router, prefix="/analytics", tags=["analytics"])
 router.include_router(apix_router, prefix="/apix", tags=["apix"])
 router.include_router(routes_router, prefix="/routes", tags=["routes"])
 router.include_router(elasticity_router, prefix="/elasticity", tags=["elasticity"])
