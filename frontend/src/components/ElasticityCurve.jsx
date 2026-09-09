@@ -25,12 +25,30 @@ function ElasticityCurve({ routeId }) {
     );
   }
 
-  const chartData = (data || []).map((d) => ({
-    leadTime: d.lead_time,
-    totalFare: d.avg_total_fare,
-    baseFare: d.avg_base_fare,
-    n: d.n,
-  }));
+  // The live DB query (get_elasticity_data) returns median_fare/median_base_fare/n_quotes,
+  // while MOCK_MODE data returns avg_total_fare/avg_base_fare/n. Support both without
+  // inventing a field that isn't actually there.
+  const chartData = (data || [])
+    .map((d) => ({
+      leadTime: d.lead_time,
+      totalFare: d.avg_total_fare ?? d.median_fare,
+      baseFare: d.avg_base_fare ?? d.median_base_fare,
+      n: d.n ?? d.n_quotes,
+    }))
+    .filter((d) => d.totalFare != null);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Lead-Time Elasticity</h3>
+        <p className="text-slate-500">
+          {routeId
+            ? 'No elasticity data available for this route.'
+            : 'Select a route to see fare vs. lead-time elasticity.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">

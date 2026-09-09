@@ -49,24 +49,32 @@ function Heatmap({ date }) {
               : null;
             if (!origin || !dest) return null;
 
+            // The heatmap endpoint's destination field name differs between
+            // MOCK_MODE ("dest") and the live DB query ("destination") — support both.
+            const destLabel = route.dest ?? route.destination;
+
             // Color by volatility (lower = green, higher = red)
             const volatility = route.volatility || 0;
             const color = volatility > 0.1 ? '#f43f5e' : volatility > 0.05 ? '#f59e0b' : '#10b981';
 
+            // index_contrib is only present in mock data today; fall back to a
+            // flat weight rather than fabricating a number when it's absent.
+            const weight = route.index_contrib != null ? Math.max(2, route.index_contrib * 3) : 3;
+
             return (
-              <div key={idx}>
+              <div key={route.route_id ?? route.route_code ?? idx}>
                 <CircleMarker center={origin} radius={8} fillColor="#6366f1" fillOpacity={0.8} color="#4f46e5">
                   <Popup>{route.origin}</Popup>
                 </CircleMarker>
                 <CircleMarker center={dest} radius={8} fillColor="#6366f1" fillOpacity={0.8} color="#4f46e5">
-                  <Popup>{route.dest}</Popup>
+                  <Popup>{destLabel}</Popup>
                 </CircleMarker>
                 <Polyline
                   positions={[origin, dest]}
-                  pathOptions={{ color, weight: Math.max(2, (route.index_contrib || 1) * 3), opacity: 0.7 }}
+                  pathOptions={{ color, weight, opacity: 0.7 }}
                 >
                   <Popup>
-                    <strong>{route.origin} → {route.dest}</strong><br />
+                    <strong>{route.origin} → {destLabel}</strong><br />
                     Avg Fare: ₹{route.avg_fare?.toLocaleString()}<br />
                     Volatility: {(volatility * 100).toFixed(1)}%
                   </Popup>
