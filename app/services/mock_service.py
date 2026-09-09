@@ -99,3 +99,11 @@ def get_mock_backtest() -> dict:
     if isinstance(data, dict):
         return data
     return {"monthly": [], "summary": {"mape": 0.0, "rmse": 0.0, "corr": 0.0}}
+
+
+def get_mock_scraped_vs_dgca() -> list[dict]:
+    """Return scraped vs DGCA comparison mock data."""
+    data = _load_mock("scraped_vs_dgca.json")
+    if isinstance(data, list):
+        return data
+    return []

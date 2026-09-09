@@ -11,6 +11,7 @@ from app.services.mock_service import (
     get_mock_apix_daily,
     get_mock_apix_monthly,
     get_mock_apix_weekly,
+    get_mock_scraped_vs_dgca,
 )
 from db.queries import get_apix_daily as db_get_apix_daily
 from db.queries import get_apix_monthly as db_get_apix_monthly
@@ -65,4 +66,9 @@ def get_scraped_vs_dgca(
     db=Depends(get_db),
 ) -> list[dict]:
     """Monthly comparison: avg scraped fare vs DGCA benchmark."""
-    return db_get_scraped_vs_dgca(db)
+    if settings.MOCK_MODE:
+        return get_mock_scraped_vs_dgca()
+    try:
+        return db_get_scraped_vs_dgca(db)
+    except Exception:
+        return []
