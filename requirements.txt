@@ -21,3 +21,4 @@ httpx
 python-dotenv
 loguru
 tenacity
+scikit-learn

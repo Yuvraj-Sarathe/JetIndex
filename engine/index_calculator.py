@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 # ──────────────────────────────────────────────────────────────────────────────
 # CPI Basket Weights (from config/cpi_weights.yaml, hardcoded for speed)
 # ──────────────────────────────────────────────────────────────────────────────
-_AIRFARE_SHARE_IN_TRANSPORT = 0.0385   # 3.85%
-_TRANSPORT_CPI_WEIGHT = 0.0859         # 8.59%
-_DEMAND_ELASTICITY = -0.85             # Paasche substitution parameter
+_AIRFARE_SHARE_IN_TRANSPORT = 0.0385  # 3.85%
+_TRANSPORT_CPI_WEIGHT = 0.0859  # 8.59%
+_DEMAND_ELASTICITY = -0.85  # Paasche substitution parameter
 
 
 def laspeyres(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float]) -> float:
@@ -110,7 +110,9 @@ def jevons(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float]) 
     return round(index, 4)
 
 
-def paasche(p_t: dict[str, float], p_0: dict[str, float], q_t: dict[str, float], elasticity: float = _DEMAND_ELASTICITY) -> float:
+def paasche(
+    p_t: dict[str, float], p_0: dict[str, float], q_t: dict[str, float], elasticity: float = _DEMAND_ELASTICITY
+) -> float:
     """
     Compute Paasche price index with demand substitution.
 
@@ -147,7 +149,13 @@ def paasche(p_t: dict[str, float], p_0: dict[str, float], q_t: dict[str, float],
     return round(index, 4)
 
 
-def fisher(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+def fisher(
+    p_t: dict[str, float],
+    p_0: dict[str, float],
+    q_0: dict[str, float],
+    q_t: dict[str, float] | None = None,
+    elasticity: float = _DEMAND_ELASTICITY,
+) -> float:
     """
     Compute Fisher Ideal index (geometric mean of Laspeyres and Paasche).
 
@@ -173,7 +181,13 @@ def fisher(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], 
     return round(index, 4)
 
 
-def tornqvist(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+def tornqvist(
+    p_t: dict[str, float],
+    p_0: dict[str, float],
+    q_0: dict[str, float],
+    q_t: dict[str, float] | None = None,
+    elasticity: float = _DEMAND_ELASTICITY,
+) -> float:
     """
     Compute Törnqvist superlative index.
 
@@ -218,7 +232,13 @@ def tornqvist(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float
     return round(index, 4)
 
 
-def walsh(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+def walsh(
+    p_t: dict[str, float],
+    p_0: dict[str, float],
+    q_0: dict[str, float],
+    q_t: dict[str, float] | None = None,
+    elasticity: float = _DEMAND_ELASTICITY,
+) -> float:
     """
     Compute Walsh geometric weight superlative index.
 
@@ -318,11 +338,15 @@ def compute_all_indices(
     sub_bias_bps = sub_bias_points * _AIRFARE_SHARE_IN_TRANSPORT * 100.0
 
     # CPI transmission
-    cpi = cpi_transmission_bps(i_l, previous_index) if previous_index else {
-        "daily_pct_change": 0.0,
-        "transport_bps": 0.0,
-        "headline_bps": 0.0,
-    }
+    cpi = (
+        cpi_transmission_bps(i_l, previous_index)
+        if previous_index
+        else {
+            "daily_pct_change": 0.0,
+            "transport_bps": 0.0,
+            "headline_bps": 0.0,
+        }
+    )
 
     # Chained index
     if previous_index and previous_index > 0:
@@ -489,3 +513,98 @@ def compute_daily(
     finally:
         if owns_session:
             session.close()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Chained Index
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def chained_index(period_indices: list[float]) -> float:
+    """Compute chained (link) index from a sequence of period-to-period indices.
+
+    Each entry in *period_indices* is a percentage change relative to the
+    previous period (e.g. 102.3 means +2.3 %).  The chained index is the
+    product of all periodic indices, with base = 100.
+
+    Chaining corrects substitution bias that accumulates in a fixed-basket
+    (Laspeyres) index over long horizons.
+    """
+    chained = 100.0
+    for idx in period_indices:
+        chained *= idx / 100.0
+    return round(chained, 4)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Regional Breakdown
+# ──────────────────────────────────────────────────────────────────────────────
+
+_REGION_MAP: dict[str, list[str]] = {
+    "Delhi NCR": ["DEL"],
+    "Mumbai MMR": ["BOM"],
+    "Bengaluru Karnataka": ["BLR"],
+    "Eastern Hub": ["CCU"],
+    "Southern Hub": ["MAA", "HYD"],
+}
+
+
+def regional_breakdown(
+    route_indices: dict[str, float],
+    weights: dict[str, float],
+) -> dict[str, dict]:
+    """Aggregate route-level indices into five broad regions.
+
+    Returns a dict keyed by region name with sub-keys: index, weight,
+    routes, route_count.
+    """
+    region_data: dict[str, dict] = {}
+    for region, iatas in _REGION_MAP.items():
+        r_indices = {r: route_indices[r] for r in iatas if r in route_indices}
+        r_weights = {r: weights.get(r, 0) for r in r_indices}
+        total_w = sum(r_weights.values())
+        if total_w > 0:
+            idx = sum(r_indices[r] * r_weights[r] for r in r_indices) / total_w
+        else:
+            idx = 100.0
+        region_data[region] = {
+            "index": round(idx, 4),
+            "weight": round(total_w, 6),
+            "routes": list(r_indices.keys()),
+            "route_count": len(r_indices),
+        }
+    return region_data
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Substitution Bias Measurement
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def substitution_bias(laspeyres_index: float, fisher_index: float) -> dict:
+    """Quantify the substitution bias captured by Laspeyres vs Fisher ideal.
+
+    Laspeyres systematically overstates inflation because consumers
+    substitute away from routes that become relatively more expensive.
+    Fisher (geometric mean of Laspeyres and Paasche) corrects for this.
+
+    Returns bias in index points and CPI basis points.
+    """
+    bias_index_points = round(laspeyres_index - fisher_index, 4)
+    bias_pct = (laspeyres_index - fisher_index) / fisher_index * 100 if fisher_index else 0
+    bias_cpi_bps = round(bias_pct * _TRANSPORT_CPI_WEIGHT * 100, 2)
+
+    return {
+        "laspeyres_index": laspeyres_index,
+        "fisher_index": fisher_index,
+        "bias_index_points": bias_index_points,
+        "bias_pct": round(bias_pct, 4),
+        "bias_transport_cpi_bps": bias_cpi_bps,
+        "interpretation": (
+            "Laspeyres overstates inflation"
+            if bias_index_points > 0
+            else "Laspeyres understates inflation"
+            if bias_index_points < 0
+            else "No substitution bias detected"
+        ),
+    }

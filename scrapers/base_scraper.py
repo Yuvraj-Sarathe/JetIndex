@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import random
 import time
+import urllib.parse
+import urllib.robotparser
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -23,6 +25,123 @@ from tenacity import (
 # NOTE: scrapers.fingerprints.get_random_profile and scrapers.storage.save_raw
 # are imported lazily inside fetch() to avoid circular imports
 # (storage.py imports ScrapeResult from this module).
+
+
+# ---------------------------------------------------------------------------
+# Ethical scraping infrastructure (ported from VayuSutra-V4)
+# ---------------------------------------------------------------------------
+
+
+class EthicalRateLimiter:
+    """Token-bucket rate limiter with jitter to prevent server pulse spikes.
+
+    Unlike a simple ``time.sleep(1/rps)`` loop, the token-bucket algorithm
+    allows short bursts (up to ``burst_capacity``) while maintaining a
+    long-term average of ``rate_limit_rps`` requests per second.  After
+    consuming a token, a random jitter (default 50-180 ms) is injected so
+    that concurrent workers don't hammer the server at exactly the same
+    instant.
+    """
+
+    def __init__(
+        self,
+        rate_limit_rps: float = 1.5,
+        burst_capacity: float = 2.0,
+        min_jitter_sec: float = 0.05,
+        max_jitter_sec: float = 0.18,
+    ):
+        self.rate = float(rate_limit_rps)
+        self.capacity = float(burst_capacity)
+        self.tokens = float(burst_capacity)
+        self.last_refill = time.monotonic()
+        self.min_jitter = min_jitter_sec
+        self.max_jitter = max_jitter_sec
+
+    def _refill(self) -> None:
+        """Add tokens based on elapsed monotonic time."""
+        now = time.monotonic()
+        elapsed = now - self.last_refill
+        if elapsed > 0:
+            self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+            self.last_refill = now
+
+    def acquire(self, tokens_requested: float = 1.0) -> float:
+        """Block until enough tokens are available, then inject jitter.
+
+        Returns the total sleep duration in seconds.
+        """
+        total_slept = 0.0
+        while True:
+            self._refill()
+            if self.tokens >= tokens_requested:
+                self.tokens -= tokens_requested
+                break
+            needed = tokens_requested - self.tokens
+            wait_time = needed / self.rate
+            time.sleep(wait_time)
+            total_slept += wait_time
+
+        jitter = random.uniform(self.min_jitter, self.max_jitter)
+        time.sleep(jitter)
+        total_slept += jitter
+        return total_slept
+
+    def get_token_count(self) -> float:
+        """Inspect current available tokens."""
+        self._refill()
+        return self.tokens
+
+
+class RobotsChecker:
+    """Automatic robots.txt parsing, caching, and compliance validator.
+
+    Fetches ``robots.txt`` once per domain, caches it for 24 hours, and
+    checks ``can_fetch()`` before every request.  If the file is
+    unreachable the checker defaults to permissive (standard convention).
+    """
+
+    def __init__(self, cache_ttl_sec: int = 86400):
+        self.cache_ttl = cache_ttl_sec
+        self._parsers: dict[str, urllib.robotparser.RobotFileParser] = {}
+        self._cache_timestamps: dict[str, float] = {}
+
+    def is_allowed(
+        self,
+        target_url: str,
+        user_agent: str = "JetIndex-Bot/1.0 (+https://github.com/Yuvraj-Sarathe/JetIndex)",
+    ) -> bool:
+        """Check if scraping *target_url* is permitted under the domain robots.txt."""
+        parsed = urllib.parse.urlparse(target_url)
+        domain = parsed.netloc
+        now = time.time()
+
+        if domain not in self._parsers or (now - self._cache_timestamps.get(domain, 0)) > self.cache_ttl:
+            robots_url = f"{parsed.scheme}://{domain}/robots.txt"
+            rp = urllib.robotparser.RobotFileParser()
+            try:
+                import requests as _req
+
+                resp = _req.get(
+                    robots_url,
+                    headers={"User-Agent": user_agent},
+                    timeout=4.0,
+                )
+                if resp.status_code == 200:
+                    rp.parse(resp.text.splitlines())
+                else:
+                    rp.allow_all = True
+            except Exception as exc:
+                logger.debug(
+                    "Failed to fetch robots.txt for {}: {}. Defaulting to permissive.",
+                    domain,
+                    exc,
+                )
+                rp.allow_all = True
+
+            self._parsers[domain] = rp
+            self._cache_timestamps[domain] = now
+
+        return self._parsers[domain].can_fetch(user_agent, target_url)
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +236,8 @@ class BaseScraper(ABC):
     def __init__(self, proxy_manager=None, session_manager=None):
         self.proxy_manager = proxy_manager
         self.session_manager = session_manager
+        self.limiter = EthicalRateLimiter(rate_limit_rps=self.rate_limit_rps)
+        self.robots = RobotsChecker()
 
     @abstractmethod
     def build_request(self, job: ScrapeJob) -> RequestSpec:
@@ -175,6 +296,13 @@ class BaseScraper(ABC):
             profile_info = current_profile[0]
             proxy = current_proxy[0]
 
+            # Ethical: check robots.txt before requesting
+            if not self.robots.is_allowed(spec.url, profile_info["headers"].get("User-Agent", "")):
+                logger.debug("robots.txt disallows {}, skipping", spec.url)
+                # Return a synthetic 403-like response to trigger fallback logic
+                # We can't easily fake a Response, so raise to skip
+                raise RetryableStatusError(403, "Blocked by robots.txt")
+
             merged_headers = {**profile_info["headers"], **spec.headers}
 
             proxy_dict = {"https": proxy, "http": proxy} if proxy else None
@@ -201,8 +329,8 @@ class BaseScraper(ABC):
             finally:
                 sess.close()
 
-            # Rate-limiting jitter after each request
-            time.sleep(random.uniform(1.0, 4.0))
+            # Token-bucket rate limiting with ethical jitter
+            self.limiter.acquire()
 
             if _is_retryable(resp.status_code):
                 # Mark the proxy as bad on 403/429

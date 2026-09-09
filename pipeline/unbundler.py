@@ -39,6 +39,15 @@ SOURCE_MAPS = {
     "easemytrip": MMT_FEE_MAP,
 }
 
+# Statutory fee constants (INR) — used by reverse-decompose fallback
+_STATUTORY_FEES = {
+    "asf": 200.0,
+    "psf": 91.0,
+    "udf": 420.0,
+    "gst_rate": 0.05,
+    "base_fuel_split": (0.65, 0.35),  # 65% base, 35% fuel surcharge
+}
+
 
 def _match_label(label: str, fee_map: dict[str, str]) -> str | None:
     """Match a vendor label against a fee map, returning canonical field or None."""
@@ -119,3 +128,40 @@ def unbundle(q: RawQuote) -> CleanQuote:
         quality_flag=quality_flag,
         raw_ref=q.raw_ref,
     )
+
+
+def reverse_decompose(total_fare: float, is_ota: bool = False) -> dict[str, float]:
+    """Reverse-engineer statutory components from a total fare.
+
+    Use this when a scraper only provides a single total fare number
+    (no breakdown).  The approach:
+
+    1. Subtract statutory airport fees (ASF + PSF + UDF) and convenience fee
+    2. The remainder is base + fuel + GST
+    3. Remove GST (5% on base + fuel) to get net base+fuel
+    4. Split base vs fuel 65/35 (typical Indian aviation split)
+
+    Returns a dict with: base_fare, fuel_surcharge, asf, psf, udf,
+    gst, convenience_fee, total_fare.
+    """
+    f = _STATUTORY_FEES
+    conv_fee = 300.0 if is_ota else 0.0
+
+    net_after_fees = max(1000.0, total_fare - (f["asf"] + f["psf"] + f["udf"] + conv_fee))
+    base_plus_fuel = net_after_fees / (1.0 + f["gst_rate"])
+    gst = net_after_fees - base_plus_fuel
+
+    base_share, fuel_share = f["base_fuel_split"]
+    base_fare = round(base_plus_fuel * base_share, 2)
+    fuel_surcharge = round(base_plus_fuel * fuel_share, 2)
+
+    return {
+        "base_fare": base_fare,
+        "fuel_surcharge": fuel_surcharge,
+        "udf": f["udf"],
+        "psf": f["psf"],
+        "asf": f["asf"],
+        "gst": round(gst, 2),
+        "convenience_fee": round(conv_fee, 2),
+        "total_fare": round(total_fare, 2),
+    }
