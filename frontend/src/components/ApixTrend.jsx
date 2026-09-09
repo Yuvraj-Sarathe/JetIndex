@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 
 /**
  * ApixTrend — Recharts LineChart showing daily/weekly/monthly APIx trend.
@@ -40,9 +40,15 @@ function ApixTrend({ data }) {
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
-          <YAxis stroke="#94a3b8" fontSize={12} />
+          <YAxis stroke="#94a3b8" fontSize={12} domain={['auto', 'auto']} />
           <Tooltip />
           <Legend />
+          <ReferenceLine
+            y={100}
+            stroke="#cbd5e1"
+            strokeDasharray="4 4"
+            label={{ value: 'Baseline (100)', position: 'insideTopLeft', fill: '#94a3b8', fontSize: 11 }}
+          />
           <Line
             type="monotone"
             dataKey="apix"
