@@ -1,7 +1,11 @@
-"""Backtest — compare APIx vs DGCA benchmark, compute MAPE/RMSE."""
+"""Backtest — compare APIx vs DGCA benchmark, compute MAPE/RMSE.
+
+Also compares APIx against real MoSPI CPI transport data.
+"""
 
 from __future__ import annotations
 
+import csv
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -12,6 +16,8 @@ from loguru import logger
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+_MOSPI_CSV = Path("data/reference/mospi_esankhyiki_cpi_actual.csv")
 
 
 def run_backtest(session: Session | None = None) -> dict:
@@ -134,3 +140,97 @@ def compute_correlation(actual: np.ndarray, predicted: np.ndarray) -> float:
     if len(actual) < 2:
         return 0.0
     return float(np.corrcoef(actual, predicted)[0, 1])
+
+
+def load_mospi_cpi_data() -> list[dict]:
+    """Load MoSPI eSankhyiki CPI data from CSV."""
+    if not _MOSPI_CSV.exists():
+        logger.warning("MoSPI CPI CSV not found at {}", _MOSPI_CSV)
+        return []
+    with open(_MOSPI_CSV, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        return list(reader)
+
+
+def compare_with_mospi_cpi(session: Session | None = None) -> dict:
+    """Compare APIx index movements against real MoSPI Transport CPI data.
+
+    Uses YoY inflation rates from MoSPI to validate that APIx captures
+    the same inflationary trends as official government statistics.
+    """
+    from db import queries as db_queries
+    from db.session import SessionLocal
+
+    owns_session = False
+    if session is None:
+        session = SessionLocal()
+        owns_session = True
+
+    try:
+        cpi_data = load_mospi_cpi_data()
+        if not cpi_data:
+            return {"status": "NO_DATA", "message": "MoSPI CPI CSV not found"}
+
+        # Get APIx monthly data
+        apix_monthly = db_queries.get_apix_monthly(session)
+        apix_map = {}
+        for row in apix_monthly:
+            if "month_start" in row and row["month_start"]:
+                ms = row["month_start"]
+                m_str = ms.strftime("%Y-%m") if hasattr(ms, "strftime") else str(ms)[:7]
+                apix_map[m_str] = float(row.get("apix") or 0.0)
+
+        # Parse CPI data
+        cpi_by_month = {}
+        for row in cpi_data:
+            month_str = f"{row['Year']}-{int(row['Month']):02d}"
+            cpi_by_month[month_str] = {
+                "transport_combined": float(row["Transport_Combined"]),
+                "headline_cpi": float(row["Headline_CPI_Combined"]),
+                "airfare_subgroup": float(row["Airfare_SubGroup_Index"]),
+                "yoy_transport_pct": float(row["YoY_Inflation_Transport_Pct"]),
+                "yoy_headline_pct": float(row["YoY_Inflation_Headline_Pct"]),
+            }
+
+        # Compare YoY inflation rates
+        common_months = sorted(set(apix_map.keys()) & set(cpi_by_month.keys()))
+
+        comparisons = []
+        for month in common_months:
+            apix_val = apix_map[month]
+            cpi_info = cpi_by_month[month]
+
+            # Compute APIx YoY change if we have 12-month lookback
+            prev_year = f"{int(month[:4]) - 1}-{month[5:]}"
+            if prev_year in apix_map:
+                apix_yoy_pct = ((apix_val - apix_map[prev_year]) / apix_map[prev_year]) * 100.0
+            else:
+                apix_yoy_pct = None
+
+            comparisons.append({
+                "month": month,
+                "apix_index": round(apix_val, 2),
+                "mospi_transport_cpi": cpi_info["transport_combined"],
+                "mospi_airfare_subgroup": cpi_info["airfare_subgroup"],
+                "mospi_yoy_transport_pct": cpi_info["yoy_transport_pct"],
+                "apix_yoy_pct": round(apix_yoy_pct, 2) if apix_yoy_pct is not None else None,
+            })
+
+        # Compute correlation between APIx and transport CPI
+        if len(comparisons) > 2:
+            apix_vals = np.array([c["apix_index"] for c in comparisons])
+            transport_vals = np.array([c["mospi_transport_cpi"] for c in comparisons])
+            correlation = compute_correlation(apix_vals, transport_vals)
+        else:
+            correlation = 0.0
+
+        return {
+            "status": "SUCCESS",
+            "correlation_with_transport_cpi": round(correlation, 4),
+            "months_compared": len(comparisons),
+            "data_tag": "REAL_MOSPI_DATA",
+            "comparisons": comparisons,
+        }
+    finally:
+        if owns_session:
+            session.close()
