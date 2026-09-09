@@ -1,4 +1,8 @@
-"""Index calculation — Laspeyres, Geometric Young, and daily computation."""
+"""Index calculation — Laspeyres, Geometric Young, Jevons, Paasche, Fisher, Törnqvist, Walsh, and daily computation.
+
+Superlative index formulas ported from VayuSutra-V4 for ILO CPI Manual compliance.
+CPI transmission (bps) calculation included.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,13 @@ from loguru import logger
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CPI Basket Weights (from config/cpi_weights.yaml, hardcoded for speed)
+# ──────────────────────────────────────────────────────────────────────────────
+_AIRFARE_SHARE_IN_TRANSPORT = 0.0385   # 3.85%
+_TRANSPORT_CPI_WEIGHT = 0.0859         # 8.59%
+_DEMAND_ELASTICITY = -0.85             # Paasche substitution parameter
 
 
 def laspeyres(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float]) -> float:
@@ -66,6 +77,273 @@ def geometric_young(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str,
 
     index = math.exp(log_sum) * 100
     return round(index, 4)
+
+
+def jevons(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float]) -> float:
+    """
+    Compute Jevons (geometric mean of price relatives) index.
+
+    J_r = (∏ p_1k / p_0k)^(1/n)
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_0: Base period quantities/weights (unused, kept for signature consistency)
+
+    Returns:
+        Index value (base period = 100)
+    """
+    log_sum = 0.0
+    n = 0
+
+    for route in p_0:
+        if route in p_t and p_0[route] > 0:
+            ratio = p_t[route] / p_0[route]
+            log_sum += math.log(max(1e-6, ratio))
+            n += 1
+
+    if n == 0:
+        logger.error("Jevons: no valid price relatives")
+        return 100.0
+
+    index = math.exp(log_sum / n) * 100
+    return round(index, 4)
+
+
+def paasche(p_t: dict[str, float], p_0: dict[str, float], q_t: dict[str, float], elasticity: float = _DEMAND_ELASTICITY) -> float:
+    """
+    Compute Paasche price index with demand substitution.
+
+    I_P = Σ(p_1 × q_1) / Σ(p_0 × q_1) × 100
+
+    Uses current-period quantity weights derived from price elasticity:
+        q_1r ∝ w_r × R_r^(1+ε)  where R_r = p_1r/p_0r
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_t: Current period quantities/weights {route_code: weight}
+        elasticity: Demand price elasticity (default -0.85)
+
+    Returns:
+        Index value (base period = 100)
+    """
+    numerator = 0.0
+    denominator = 0.0
+
+    for route in p_0:
+        if route in p_t and route in q_t and p_0[route] > 0:
+            ratio = p_t[route] / p_0[route]
+            # Current-period expenditure weight: w_r × R_r^(1+ε)
+            current_weight = q_t[route] * (ratio ** (1.0 + elasticity))
+            numerator += p_t[route] * current_weight
+            denominator += p_0[route] * current_weight
+
+    if denominator == 0:
+        logger.error("Paasche: denominator is zero")
+        return 100.0
+
+    index = (numerator / denominator) * 100
+    return round(index, 4)
+
+
+def fisher(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+    """
+    Compute Fisher Ideal index (geometric mean of Laspeyres and Paasche).
+
+    I_F = sqrt(I_L × I_P)
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_0: Base period quantities/weights {route_code: weight}
+        q_t: Current period quantities/weights (defaults to q_0 if None)
+        elasticity: Demand price elasticity for Paasche calculation
+
+    Returns:
+        Index value (base period = 100)
+    """
+    if q_t is None:
+        q_t = q_0
+
+    i_l = laspeyres(p_t, p_0, q_0)
+    i_p = paasche(p_t, p_0, q_t, elasticity)
+
+    index = math.sqrt(i_l * i_p)
+    return round(index, 4)
+
+
+def tornqvist(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+    """
+    Compute Törnqvist superlative index.
+
+    I_T = ∏(p_1/p_0)^((s_0+s_1)/2) × 100
+
+    Where s_0 and s_1 are base and current period expenditure shares.
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_0: Base period quantities/weights {route_code: weight}
+        q_t: Current period quantities/weights (defaults to q_0 if None)
+        elasticity: Demand price elasticity for current weight derivation
+
+    Returns:
+        Index value (base period = 100)
+    """
+    if q_t is None:
+        q_t = q_0
+
+    # Compute expenditure shares (s_0 and s_1)
+    total_base = sum(q_0[r] * p_0.get(r, 0) for r in q_0 if r in p_0)
+    total_current = 0.0
+
+    current_weights: dict[str, float] = {}
+    for route in p_0:
+        if route in p_t and route in q_0 and p_0[route] > 0:
+            ratio = p_t[route] / p_0[route]
+            cw = q_t.get(route, q_0[route]) * (ratio ** (1.0 + elasticity))
+            current_weights[route] = cw
+            total_current += cw
+
+    log_sum = 0.0
+    for route in p_0:
+        if route in p_t and route in q_0 and p_0[route] > 0 and total_base > 0 and total_current > 0:
+            s_0 = (q_0[route] * p_0[route]) / total_base
+            s_1 = current_weights.get(route, 0) / total_current
+            ratio = p_t[route] / p_0[route]
+            log_sum += ((s_0 + s_1) / 2.0) * math.log(max(1e-6, ratio))
+
+    index = math.exp(log_sum) * 100
+    return round(index, 4)
+
+
+def walsh(p_t: dict[str, float], p_0: dict[str, float], q_0: dict[str, float], q_t: dict[str, float] | None = None, elasticity: float = _DEMAND_ELASTICITY) -> float:
+    """
+    Compute Walsh geometric weight superlative index.
+
+    I_W = Σ(p_1 × √(q_0 × q_1)) / Σ(p_0 × √(q_0 × q_1)) × 100
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_0: Base period quantities/weights {route_code: weight}
+        q_t: Current period quantities/weights (defaults to q_0 if None)
+        elasticity: Demand price elasticity for current weight derivation
+
+    Returns:
+        Index value (base period = 100)
+    """
+    if q_t is None:
+        q_t = q_0
+
+    numerator = 0.0
+    denominator = 0.0
+
+    for route in p_0:
+        if route in p_t and route in q_0 and p_0[route] > 0:
+            ratio = p_t[route] / p_0[route]
+            cw = q_t.get(route, q_0[route]) * (ratio ** (1.0 + elasticity))
+            geometric_weight = math.sqrt(q_0[route] * max(1e-6, cw))
+            numerator += p_t[route] * geometric_weight
+            denominator += p_0[route] * geometric_weight
+
+    if denominator == 0:
+        logger.error("Walsh: denominator is zero")
+        return 100.0
+
+    index = (numerator / denominator) * 100
+    return round(index, 4)
+
+
+def cpi_transmission_bps(
+    current_index: float,
+    previous_index: float,
+) -> dict[str, float]:
+    """
+    Calculate CPI transmission in basis points.
+
+    Δ% = (current_index - previous_index) / previous_index × 100
+    transport_bps = Δ% × 3.85 / 100 × 10000
+    headline_bps = transport_bps × 8.59 / 100
+
+    Args:
+        current_index: Current period index value
+        previous_index: Previous period index value
+
+    Returns:
+        Dict with daily_pct_change, transport_bps, headline_bps
+    """
+    if previous_index == 0:
+        return {"daily_pct_change": 0.0, "transport_bps": 0.0, "headline_bps": 0.0}
+
+    daily_pct = ((current_index - previous_index) / previous_index) * 100.0
+    transport_bps = daily_pct * _AIRFARE_SHARE_IN_TRANSPORT * 100.0
+    headline_bps = transport_bps * _TRANSPORT_CPI_WEIGHT
+
+    return {
+        "daily_pct_change": round(daily_pct, 4),
+        "transport_bps": round(transport_bps, 4),
+        "headline_bps": round(headline_bps, 4),
+    }
+
+
+def compute_all_indices(
+    p_t: dict[str, float],
+    p_0: dict[str, float],
+    q_0: dict[str, float],
+    previous_index: float | None = None,
+) -> dict[str, float]:
+    """
+    Compute all 6 index formulas and CPI transmission in one call.
+
+    Args:
+        p_t: Current period prices {route_code: price}
+        p_0: Base period prices {route_code: price}
+        q_0: Base period quantities/weights {route_code: weight}
+        previous_index: Previous period Laspeyres index (for chaining and CPI calc)
+
+    Returns:
+        Dict with all index values, substitution bias, and CPI transmission bps
+    """
+    i_l = laspeyres(p_t, p_0, q_0)
+    i_j = jevons(p_t, p_0, q_0)
+    i_p = paasche(p_t, p_0, q_0)
+    i_f = fisher(p_t, p_0, q_0)
+    i_t = tornqvist(p_t, p_0, q_0)
+    i_w = walsh(p_t, p_0, q_0)
+
+    # Substitution bias: Laspeyres overstates relative to Fisher
+    sub_bias_points = i_l - i_f
+    sub_bias_bps = sub_bias_points * _AIRFARE_SHARE_IN_TRANSPORT * 100.0
+
+    # CPI transmission
+    cpi = cpi_transmission_bps(i_l, previous_index) if previous_index else {
+        "daily_pct_change": 0.0,
+        "transport_bps": 0.0,
+        "headline_bps": 0.0,
+    }
+
+    # Chained index
+    if previous_index and previous_index > 0:
+        chained = previous_index * (i_l / previous_index)
+    else:
+        chained = i_l
+
+    return {
+        "laspeyres": i_l,
+        "jevons": i_j,
+        "paasche": i_p,
+        "fisher": i_f,
+        "tornqvist": i_t,
+        "walsh": i_w,
+        "chained": round(chained, 4),
+        "substitution_bias_points": round(sub_bias_points, 4),
+        "substitution_bias_bps": round(sub_bias_bps, 4),
+        "daily_pct_change": cpi["daily_pct_change"],
+        "transport_bps": cpi["transport_bps"],
+        "headline_bps": cpi["headline_bps"],
+    }
 
 
 def compute_daily(
