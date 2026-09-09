@@ -1,0 +1,20 @@
+# Statutory Taxes, Fees & Surcharges (Indian Aviation)
+# Source: VayuSutra-V4/config/routes.py — TAX_RULES
+
+gst:
+  rate_economy: 0.05       # 5% GST on Economy (Base + Fuel Surcharge)
+  rate_business: 0.12      # 12% GST on Business Class
+
+fees:
+  aviation_security_fee: 200.0   # ASF — ₹200 per passenger
+  passenger_service_fee: 91.0    # PSF — ₹91 per passenger
+
+udf:
+  metro_avg: 420.0              # Metro User Development Fee — ₹420 avg
+  non_metro_avg: 260.0          # Non-Metro User Development Fee — ₹260 avg
+
+convenience:
+  ota_min: 249.0                # Minimum OTA convenience fee
+  ota_max: 349.0                # Maximum OTA convenience fee
+  ota_avg: 299.0                # Average OTA convenience fee
+  direct: 0.0                   # Direct airline booking — no fee

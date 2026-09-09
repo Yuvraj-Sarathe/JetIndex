@@ -1,0 +1,42 @@
+# Advance Purchase Windows (5 Horizons)
+# Source: VayuSutra-V4/config/routes.py — ADVANCE_PURCHASE_WINDOWS
+# Weights sum strictly to 1.0
+
+windows:
+  - id: "T+1"
+    days_advance: 1
+    name: "Spot / Emergency"
+    weight: 0.2200
+    description: "Emergency and immediate spot bookings (<24h to departure)"
+    benchmark_multiplier: 2.45
+
+  - id: "T+7"
+    days_advance: 7
+    name: "Urgent Business"
+    weight: 0.3400
+    description: "Short-notice corporate and urgent business travel"
+    benchmark_multiplier: 1.60
+
+  - id: "T+15"
+    days_advance: 15
+    name: "Standard Planned"
+    weight: 0.2400
+    description: "Standard corporate and pre-planned individual travel"
+    benchmark_multiplier: 1.18
+
+  - id: "T+30"
+    days_advance: 30
+    name: "Planned Leisure"
+    weight: 0.1400
+    description: "Leisure, holiday, and vacation family bookings"
+    benchmark_multiplier: 1.00
+
+  - id: "T+45"
+    days_advance: 45
+    name: "Early Bird"
+    weight: 0.0600
+    description: "Advance promotional and discounted baseline bookings"
+    benchmark_multiplier: 0.92
+
+# Total weights must sum to 1.0
+total_weight: 1.0

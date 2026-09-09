@@ -1,0 +1,18 @@
+# CPI Basket Linkage Parameters (MoSPI / NSO CPI Base 2012=100)
+# Source: VayuSutra-V4/config/routes.py — CPI_WEIGHTS
+
+# Transport & Communication sub-group weight in Headline All-India CPI
+transport_and_communication_cpi_weight: 0.0859   # 8.59%
+
+# Airfare component weight within the Transport & Communication sub-group
+airfare_share_within_transport: 0.0385            # 3.85%
+
+# Effective Headline CPI weight for Air Travel (0.0859 × 0.0385 = 0.003307)
+effective_headline_cpi_weight: 0.003307
+
+# Price elasticity of domestic air passenger demand (substitution parameter for Paasche)
+demand_price_elasticity: -0.85
+
+# Reference: MoSPI eSankhyiki CPI data
+# Full series: data/reference/mospi_esankhyiki_cpi_actual.csv
+# Transport (Combined/Urban/Rural), Headline CPI, Airfare Sub-Group Index

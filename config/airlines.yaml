@@ -1,0 +1,48 @@
+# Airline Market Shares (DGCA Domestic, FY 2024-2025)
+# Source: VayuSutra-V4/config/routes.py — AIRLINE_MARKET_SHARES
+
+airlines:
+  - code: "6E"
+    name: "IndiGo"
+    market_share: 0.625
+    category: LCC
+    base_multiplier: 1.00
+    description: "Largest domestic carrier, LCC model"
+
+  - code: "AI"
+    name: "Air India"
+    market_share: 0.145
+    category: FSC
+    base_multiplier: 1.16
+    description: "Full-service carrier, Tata group"
+
+  - code: "IX"
+    name: "Air India Express"
+    market_share: 0.075
+    category: LCC
+    base_multiplier: 0.98
+    description: "LCC subsidiary of Air India"
+
+  - code: "QP"
+    name: "Akasa Air"
+    market_share: 0.048
+    category: LCC
+    base_multiplier: 0.95
+    description: "Newest LCC entrant"
+
+  - code: "SG"
+    name: "SpiceJet"
+    market_share: 0.032
+    category: LCC
+    base_multiplier: 0.94
+    description: "Budget carrier"
+
+  - code: "OTHER"
+    name: "Alliance/Regional"
+    market_share: 0.075
+    category: Regional
+    base_multiplier: 1.02
+    description: "All other carriers combined"
+
+# Total market share must sum to 1.0
+total_market_share: 1.0
