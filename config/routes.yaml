@@ -2,53 +2,279 @@ routes:
   - origin: DEL
     destination: BOM
     route_code: DEL-BOM
+    city_name: "New Delhi → Mumbai"
+    weight: 0.1092
+    distance_km: 1148
+    is_metro: true
+    base_fare_benchmark: 4850.0
     o_lat: 28.5562
     o_lon: 77.1000
     d_lat: 19.0896
     d_lon: 72.8656
     lead_times: [1, 7, 15, 30, 45]
 
+  - origin: BOM
+    destination: DEL
+    route_code: BOM-DEL
+    city_name: "Mumbai → New Delhi"
+    weight: 0.1073
+    distance_km: 1148
+    is_metro: true
+    base_fare_benchmark: 4850.0
+    o_lat: 19.0896
+    o_lon: 72.8656
+    d_lat: 28.5562
+    d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
   - origin: DEL
     destination: BLR
     route_code: DEL-BLR
+    city_name: "New Delhi → Bengaluru"
+    weight: 0.0805
+    distance_km: 1708
+    is_metro: true
+    base_fare_benchmark: 5650.0
     o_lat: 28.5562
     o_lon: 77.1000
     d_lat: 13.1986
     d_lon: 77.7066
     lead_times: [1, 7, 15, 30, 45]
 
+  - origin: BLR
+    destination: DEL
+    route_code: BLR-DEL
+    city_name: "Bengaluru → New Delhi"
+    weight: 0.0785
+    distance_km: 1708
+    is_metro: true
+    base_fare_benchmark: 5650.0
+    o_lat: 13.1986
+    o_lon: 77.7066
+    d_lat: 28.5562
+    d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
   - origin: BOM
     destination: BLR
     route_code: BOM-BLR
+    city_name: "Mumbai → Bengaluru"
+    weight: 0.0584
+    distance_km: 842
+    is_metro: true
+    base_fare_benchmark: 3950.0
     o_lat: 19.0896
     o_lon: 72.8656
     d_lat: 13.1986
     d_lon: 77.7066
     lead_times: [1, 7, 15, 30, 45]
 
+  - origin: BLR
+    destination: BOM
+    route_code: BLR-BOM
+    city_name: "Bengaluru → Mumbai"
+    weight: 0.0575
+    distance_km: 842
+    is_metro: true
+    base_fare_benchmark: 3950.0
+    o_lat: 13.1986
+    o_lon: 77.7066
+    d_lat: 19.0896
+    d_lon: 72.8656
+    lead_times: [1, 7, 15, 30, 45]
+
   - origin: DEL
     destination: CCU
     route_code: DEL-CCU
+    city_name: "New Delhi → Kolkata"
+    weight: 0.0498
+    distance_km: 1305
+    is_metro: true
+    base_fare_benchmark: 4950.0
     o_lat: 28.5562
     o_lon: 77.1000
     d_lat: 22.6520
     d_lon: 88.4463
     lead_times: [1, 7, 15, 30, 45]
 
+  - origin: CCU
+    destination: DEL
+    route_code: CCU-DEL
+    city_name: "Kolkata → New Delhi"
+    weight: 0.0489
+    distance_km: 1305
+    is_metro: true
+    base_fare_benchmark: 4950.0
+    o_lat: 22.6520
+    o_lon: 88.4463
+    d_lat: 28.5562
+    d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: DEL
+    destination: HYD
+    route_code: DEL-HYD
+    city_name: "New Delhi → Hyderabad"
+    weight: 0.0460
+    distance_km: 1253
+    is_metro: true
+    base_fare_benchmark: 4650.0
+    o_lat: 28.5562
+    o_lon: 77.1000
+    d_lat: 17.2403
+    d_lon: 78.4294
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: HYD
+    destination: DEL
+    route_code: HYD-DEL
+    city_name: "Hyderabad → New Delhi"
+    weight: 0.0450
+    distance_km: 1253
+    is_metro: true
+    base_fare_benchmark: 4650.0
+    o_lat: 17.2403
+    o_lon: 78.4294
+    d_lat: 28.5562
+    d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
   - origin: BLR
     destination: HYD
     route_code: BLR-HYD
+    city_name: "Bengaluru → Hyderabad"
+    weight: 0.0402
+    distance_km: 501
+    is_metro: true
+    base_fare_benchmark: 3250.0
     o_lat: 13.1986
     o_lon: 77.7066
     d_lat: 17.2403
     d_lon: 78.4294
     lead_times: [1, 7, 15, 30, 45]
 
+  - origin: HYD
+    destination: BLR
+    route_code: HYD-BLR
+    city_name: "Hyderabad → Bengaluru"
+    weight: 0.0393
+    distance_km: 501
+    is_metro: true
+    base_fare_benchmark: 3250.0
+    o_lat: 17.2403
+    o_lon: 78.4294
+    d_lat: 13.1986
+    d_lon: 77.7066
+    lead_times: [1, 7, 15, 30, 45]
+
   - origin: MAA
     destination: DEL
     route_code: MAA-DEL
+    city_name: "Chennai → New Delhi"
+    weight: 0.0364
+    distance_km: 1756
+    is_metro: true
+    base_fare_benchmark: 5750.0
     o_lat: 12.9941
     o_lon: 80.1709
     d_lat: 28.5562
     d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: DEL
+    destination: MAA
+    route_code: DEL-MAA
+    city_name: "New Delhi → Chennai"
+    weight: 0.0354
+    distance_km: 1756
+    is_metro: true
+    base_fare_benchmark: 5750.0
+    o_lat: 28.5562
+    o_lon: 77.1000
+    d_lat: 12.9941
+    d_lon: 80.1709
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: BOM
+    destination: GOI
+    route_code: BOM-GOI
+    city_name: "Mumbai → Goa"
+    weight: 0.0335
+    distance_km: 435
+    is_metro: false
+    base_fare_benchmark: 3100.0
+    o_lat: 19.0896
+    o_lon: 72.8656
+    d_lat: 15.3809
+    d_lon: 73.8314
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: GOI
+    destination: BOM
+    route_code: GOI-BOM
+    city_name: "Goa → Mumbai"
+    weight: 0.0326
+    distance_km: 435
+    is_metro: false
+    base_fare_benchmark: 3100.0
+    o_lat: 15.3809
+    o_lon: 73.8314
+    d_lat: 19.0896
+    d_lon: 72.8656
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: DEL
+    destination: PNQ
+    route_code: DEL-PNQ
+    city_name: "New Delhi → Pune"
+    weight: 0.0278
+    distance_km: 1173
+    is_metro: false
+    base_fare_benchmark: 4550.0
+    o_lat: 28.5562
+    o_lon: 77.1000
+    d_lat: 18.5822
+    d_lon: 73.9197
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: PNQ
+    destination: DEL
+    route_code: PNQ-DEL
+    city_name: "Pune → New Delhi"
+    weight: 0.0268
+    distance_km: 1173
+    is_metro: false
+    base_fare_benchmark: 4550.0
+    o_lat: 18.5822
+    o_lon: 73.9197
+    d_lat: 28.5562
+    d_lon: 77.1000
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: BOM
+    destination: CCU
+    route_code: BOM-CCU
+    city_name: "Mumbai → Kolkata"
+    weight: 0.0239
+    distance_km: 1654
+    is_metro: true
+    base_fare_benchmark: 5450.0
+    o_lat: 19.0896
+    o_lon: 72.8656
+    d_lat: 22.6520
+    d_lon: 88.4463
+    lead_times: [1, 7, 15, 30, 45]
+
+  - origin: CCU
+    destination: BOM
+    route_code: CCU-BOM
+    city_name: "Kolkata → Mumbai"
+    weight: 0.0230
+    distance_km: 1654
+    is_metro: true
+    base_fare_benchmark: 5450.0
+    o_lat: 22.6520
+    o_lon: 88.4463
+    d_lat: 19.0896
+    d_lon: 72.8656
     lead_times: [1, 7, 15, 30, 45]
