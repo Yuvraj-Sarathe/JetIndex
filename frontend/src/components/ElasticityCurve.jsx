@@ -9,25 +9,22 @@ function ElasticityCurve({ routeId }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Lead-Time Elasticity</h3>
-        <p className="text-slate-500">Loading...</p>
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-2">Lead-Time Elasticity Curve</h3>
+        <p className="text-xs text-ink-muted">Analyzing booking advance curve...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Lead-Time Elasticity</h3>
-        <p className="text-rose-500">Error: {error}</p>
+      <div className="bg-card border border-rose-500/30 rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-2">Lead-Time Elasticity Curve</h3>
+        <p className="text-xs text-rose-400">Error: {error}</p>
       </div>
     );
   }
 
-  // The live DB query (get_elasticity_data) returns median_fare/median_base_fare/n_quotes,
-  // while MOCK_MODE data returns avg_total_fare/avg_base_fare/n. Support both without
-  // inventing a field that isn't actually there.
   const chartData = (data || [])
     .map((d) => ({
       leadTime: d.lead_time,
@@ -39,46 +36,59 @@ function ElasticityCurve({ routeId }) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Lead-Time Elasticity</h3>
-        <p className="text-slate-500">
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-2">Lead-Time Elasticity Curve</h3>
+        <p className="text-xs text-ink-muted">
           {routeId
             ? 'No elasticity data available for this route.'
-            : 'Select a route to see fare vs. lead-time elasticity.'}
+            : 'Select a route to view lead-time elasticity.'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">Lead-Time Elasticity</h3>
-      <ResponsiveContainer width="100%" height={300}>
+    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-white">Booking Lead-Time Elasticity</h3>
+        <p className="text-xs text-ink-muted">Average fare progression from T+60 to T+0 departure</p>
+      </div>
+      <ResponsiveContainer width="100%" height={320}>
         <ScatterChart>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#261c3d" />
           <XAxis
             dataKey="leadTime"
             name="Lead Time (days)"
-            stroke="#94a3b8"
-            fontSize={12}
-            label={{ value: 'Lead Time (days)', position: 'bottom', offset: -5 }}
+            stroke="#786c91"
+            fontSize={11}
+            tickLine={false}
+            label={{ value: 'Days Prior to Departure', position: 'bottom', offset: -2, fill: '#786c91', fontSize: 10 }}
           />
           <YAxis
             dataKey="totalFare"
             name="Fare (₹)"
-            stroke="#94a3b8"
-            fontSize={12}
-            label={{ value: 'Fare (₹)', angle: -90, position: 'insideLeft' }}
+            stroke="#786c91"
+            fontSize={11}
+            tickLine={false}
+            label={{ value: 'Fare (₹)', angle: -90, position: 'insideLeft', fill: '#786c91', fontSize: 10 }}
           />
           <Tooltip
-            formatter={(value, name) => [`₹${value.toLocaleString()}`, name]}
+            contentStyle={{
+              backgroundColor: '#1f1633',
+              borderColor: '#362d59',
+              borderRadius: '8px',
+              color: '#ffffff',
+              fontSize: '12px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+            }}
+            formatter={(value, name) => [`₹${Number(value).toLocaleString()}`, name]}
           />
-          <Legend />
+          <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
           <Scatter
-            name="Total Fare"
+            name="All-In Fare"
             data={chartData}
-            fill="#6366f1"
-            line={{ stroke: '#6366f1', strokeWidth: 2 }}
+            fill="#c2ef4e"
+            line={{ stroke: '#6a5fc1', strokeWidth: 2 }}
           />
         </ScatterChart>
       </ResponsiveContainer>

@@ -31,12 +31,15 @@ export default function ScenarioSimulator() {
   return (
     <div className="space-y-6">
       {/* Presets */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Scenarios</h3>
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-3">Policy Shock Presets</h3>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => (
-            <button key={p.name} onClick={() => applyPreset(p)}
-              className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+            <button
+              key={p.name}
+              onClick={() => applyPreset(p)}
+              className="px-3 py-1.5 text-xs font-mono rounded-lg bg-card-elevated border border-ink-border text-ink-muted hover:text-white hover:border-accent-lime/60 transition-all font-medium"
+            >
               {p.name}
             </button>
           ))}
@@ -44,65 +47,82 @@ export default function ScenarioSimulator() {
       </div>
 
       {/* Input Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Custom Parameters</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <form onSubmit={handleSubmit} className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-4">Macro Shock Parameters</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { key: 'airfare_shock_pct', label: 'Airfare Shock (%)', min: -50, max: 100 },
             { key: 'demand_change_pct', label: 'Demand Change (%)', min: -50, max: 100 },
             { key: 'capacity_change_pct', label: 'Capacity Change (%)', min: -50, max: 100 },
             { key: 'atf_fuel_shock_pct', label: 'ATF Fuel Shock (%)', min: -50, max: 150 },
-            { key: 'seasonal_factor', label: 'Seasonal Factor', min: 0.5, max: 2.0 },
+            { key: 'seasonal_factor', label: 'Seasonal Multiplier', min: 0.5, max: 2.0 },
           ].map(({ key, label, min, max }) => (
             <div key={key}>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-              <input type="number" value={params[key]} min={min} max={max} step="0.1"
+              <label className="block text-xs font-mono uppercase text-ink-muted mb-1.5">{label}</label>
+              <input
+                type="number"
+                value={params[key]}
+                min={min}
+                max={max}
+                step="0.1"
                 onChange={(e) => setParams({ ...params, [key]: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                className="w-full px-3 py-2 bg-canvas border border-ink-border rounded-lg text-sm font-mono text-white focus:outline-none focus:border-accent-lime focus:ring-1 focus:ring-accent-lime transition-colors"
+              />
             </div>
           ))}
         </div>
-        <button type="submit" disabled={loading}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium">
-          {loading ? 'Simulating...' : 'Run Simulation'}
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-5 px-5 py-2.5 bg-accent-violet hover:bg-accent-violet/90 text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm"
+        >
+          <span>⚡</span>
+          <span>{loading ? 'Simulating Dynamic Shocks...' : 'Simulate Policy Impact'}</span>
         </button>
       </form>
 
-      {error && <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 text-rose-700">{error}</div>}
+      {error && <div className="bg-card border border-rose-500/40 rounded-xl p-4 text-rose-300">{error}</div>}
 
       {/* Results */}
       {result && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Simulation Results</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-white">Dynamic Policy Shock Projections</h3>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/40">
+              SIMULATION ENGINE
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Baseline Index', value: result.baseline_airfare_index?.toFixed(2) },
-              { label: 'Projected Index', value: result.projected_airfare_index?.toFixed(2) },
-              { label: 'Net Change', value: `${result.net_airfare_index_change_pct >= 0 ? '+' : ''}${result.net_airfare_index_change_pct?.toFixed(2)}%` },
-              { label: 'Pressure Level', value: result.projected_pressure_level },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center p-3 bg-slate-50 rounded-lg">
-                <p className="text-xs text-slate-500">{label}</p>
-                <p className="text-lg font-bold text-slate-900">{value}</p>
+              { label: 'Baseline Index', value: result.baseline_airfare_index?.toFixed(2), unit: 'pts' },
+              { label: 'Projected Index', value: result.projected_airfare_index?.toFixed(2), unit: 'pts' },
+              { label: 'Net Index Swing', value: `${result.net_airfare_index_change_pct >= 0 ? '+' : ''}${result.net_airfare_index_change_pct?.toFixed(2)}%`, unit: '' },
+              { label: 'Surveillance Level', value: result.projected_pressure_level, unit: '' },
+            ].map(({ label, value, unit }) => (
+              <div key={label} className="p-3 bg-card-elevated border border-ink-border/70 rounded-xl text-center">
+                <p className="text-[11px] font-mono uppercase text-ink-muted">{label}</p>
+                <p className="text-lg font-mono font-bold text-accent-lime mt-0.5">{value} <span className="text-xs text-ink-faint font-normal">{unit}</span></p>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-600">Transport CPI Impact</p>
-              <p className="text-lg font-bold text-blue-900">{result.projected_transport_subgroup_impact_bps?.toFixed(2)} bps</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 bg-card-elevated border border-ink-border/80 rounded-xl">
+              <p className="text-xs font-mono uppercase text-accent-cyan">Transport CPI Transmission</p>
+              <p className="text-2xl font-mono font-bold text-white mt-1">{result.projected_transport_subgroup_impact_bps?.toFixed(2)} bps</p>
+              <p className="text-[11px] text-ink-faint mt-0.5">Contribution to official monthly transport CPI subgroup</p>
             </div>
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <p className="text-xs text-purple-600">Headline CPI Impact</p>
-              <p className="text-lg font-bold text-purple-900">{result.projected_headline_cpi_impact_bps?.toFixed(4)} bps</p>
+            <div className="p-3.5 bg-card-elevated border border-ink-border/80 rounded-xl">
+              <p className="text-xs font-mono uppercase text-accent-pink">Headline CPI Transmission</p>
+              <p className="text-2xl font-mono font-bold text-white mt-1">{result.projected_headline_cpi_impact_bps?.toFixed(4)} bps</p>
+              <p className="text-[11px] text-ink-faint mt-0.5">Direct headline basket passthrough</p>
             </div>
           </div>
           {result.policy_implication_brief && (
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-700 leading-relaxed">{result.policy_implication_brief}</p>
+            <div className="p-4 bg-canvas/80 border border-ink-border/60 rounded-xl text-xs text-ink-muted leading-relaxed font-sans">
+              <p className="text-[11px] font-mono uppercase text-accent-lime mb-1">Executive Policy Implication</p>
+              {result.policy_implication_brief}
             </div>
           )}
-          <p className="text-xs text-slate-400 mt-3">Data Tag: {result.data_tag}</p>
         </div>
       )}
     </div>
