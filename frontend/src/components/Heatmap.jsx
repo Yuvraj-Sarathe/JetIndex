@@ -9,38 +9,51 @@ function Heatmap({ date }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Route Heatmap</h3>
-        <p className="text-slate-500">Loading...</p>
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-2">Route Heatmap & Volatility</h3>
+        <p className="text-xs text-ink-muted">Loading geospatial network...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Route Heatmap</h3>
-        <p className="text-rose-500">Error: {error}</p>
+      <div className="bg-card border border-rose-500/30 rounded-xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-white mb-2">Route Heatmap & Volatility</h3>
+        <p className="text-xs text-rose-400">Error: {error}</p>
       </div>
     );
   }
 
   const routes = data || [];
-
-  // Center on India
   const center = [20.5937, 78.9629];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">Route Heatmap</h3>
-      <div className="h-[300px] rounded-lg overflow-hidden">
-        <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }}>
+    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-white">Route Volatility Radar</h3>
+          <p className="text-xs text-ink-muted">Inter-city pair dispersion & price volatility</p>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] font-mono">
+          <span className="flex items-center gap-1 text-ink-muted">
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-violet"></span> Low (&lt;5%)
+          </span>
+          <span className="flex items-center gap-1 text-ink-muted">
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-lime"></span> Med (5-10%)
+          </span>
+          <span className="flex items-center gap-1 text-ink-muted">
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-pink"></span> High (&gt;10%)
+          </span>
+        </div>
+      </div>
+      <div className="h-[320px] rounded-lg overflow-hidden border border-ink-border/70">
+        <MapContainer center={center} zoom={4.5} style={{ height: '100%', width: '100%', background: '#150f23' }}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           />
           {routes.map((route, idx) => {
-            // Use API-provided coordinates, fall back to null
             const origin = route.o_lat != null && route.o_lon != null
               ? [route.o_lat, route.o_lon]
               : null;
@@ -49,34 +62,29 @@ function Heatmap({ date }) {
               : null;
             if (!origin || !dest) return null;
 
-            // The heatmap endpoint's destination field name differs between
-            // MOCK_MODE ("dest") and the live DB query ("destination") — support both.
             const destLabel = route.dest ?? route.destination;
-
-            // Color by volatility (lower = green, higher = red)
             const volatility = route.volatility || 0;
-            const color = volatility > 0.1 ? '#f43f5e' : volatility > 0.05 ? '#f59e0b' : '#10b981';
-
-            // index_contrib is only present in mock data today; fall back to a
-            // flat weight rather than fabricating a number when it's absent.
-            const weight = route.index_contrib != null ? Math.max(2, route.index_contrib * 3) : 3;
+            const color = volatility > 0.1 ? '#fa7faa' : volatility > 0.05 ? '#c2ef4e' : '#6a5fc1';
+            const weight = route.index_contrib != null ? Math.max(2, route.index_contrib * 3) : 2.5;
 
             return (
               <div key={route.route_id ?? route.route_code ?? idx}>
-                <CircleMarker center={origin} radius={8} fillColor="#6366f1" fillOpacity={0.8} color="#4f46e5">
+                <CircleMarker center={origin} radius={5} fillColor="#c2ef4e" fillOpacity={0.9} color="#150f23" weight={1}>
                   <Popup>{route.origin}</Popup>
                 </CircleMarker>
-                <CircleMarker center={dest} radius={8} fillColor="#6366f1" fillOpacity={0.8} color="#4f46e5">
+                <CircleMarker center={dest} radius={5} fillColor="#c2ef4e" fillOpacity={0.9} color="#150f23" weight={1}>
                   <Popup>{destLabel}</Popup>
                 </CircleMarker>
                 <Polyline
                   positions={[origin, dest]}
-                  pathOptions={{ color, weight, opacity: 0.7 }}
+                  pathOptions={{ color, weight, opacity: 0.85 }}
                 >
                   <Popup>
-                    <strong>{route.origin} → {destLabel}</strong><br />
-                    Avg Fare: ₹{route.avg_fare?.toLocaleString()}<br />
-                    Volatility: {(volatility * 100).toFixed(1)}%
+                    <div className="text-xs font-sans text-slate-900">
+                      <strong>{route.origin} → {destLabel}</strong><br />
+                      Avg Fare: ₹{route.avg_fare?.toLocaleString()}<br />
+                      Volatility: {(volatility * 100).toFixed(1)}%
+                    </div>
                   </Popup>
                 </Polyline>
               </div>
