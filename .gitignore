@@ -43,3 +43,7 @@ Instructions-for-team.md
 # OS
 .DS_Store
 Thumbs.db
+
+skills/
+agents/
+hooks/
