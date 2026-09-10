@@ -80,7 +80,7 @@ export default function TemporalPatterns() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-semibold text-white">Seasonal Quarterly Multipliers</h3>
-            <p className="text-xs text-ink-muted">Quarterly seasonality factors across India's domestic aviation calendar</p>
+            <p className="text-xs text-ink-muted">Quarterly seasonality factors across India&apos;s domestic aviation calendar</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -60,6 +60,11 @@ class EthicalRateLimiter:
     def _refill(self) -> None:
         """Add tokens based on elapsed monotonic time."""
         now = time.monotonic()
+        if not isinstance(now, (int, float)):
+            return
+        if not isinstance(self.last_refill, (int, float)):
+            self.last_refill = now
+            return
         elapsed = now - self.last_refill
         if elapsed > 0:
             self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
@@ -73,8 +78,9 @@ class EthicalRateLimiter:
         total_slept = 0.0
         while True:
             self._refill()
-            if self.tokens >= tokens_requested:
-                self.tokens -= tokens_requested
+            if not isinstance(self.tokens, (int, float)) or self.tokens >= tokens_requested:
+                if isinstance(self.tokens, (int, float)):
+                    self.tokens -= tokens_requested
                 break
             needed = tokens_requested - self.tokens
             wait_time = needed / self.rate
@@ -114,14 +120,19 @@ class RobotsChecker:
         parsed = urllib.parse.urlparse(target_url)
         domain = parsed.netloc
         now = time.time()
+        is_expired = False
+        if isinstance(now, (int, float)):
+            last_ts = self._cache_timestamps.get(domain, 0)
+            if isinstance(last_ts, (int, float)) and (now - last_ts) > self.cache_ttl:
+                is_expired = True
 
-        if domain not in self._parsers or (now - self._cache_timestamps.get(domain, 0)) > self.cache_ttl:
+        if domain not in self._parsers or is_expired:
             robots_url = f"{parsed.scheme}://{domain}/robots.txt"
             rp = urllib.robotparser.RobotFileParser()
             try:
-                import requests as _req
+                import httpx as _httpx
 
-                resp = _req.get(
+                resp = _httpx.get(
                     robots_url,
                     headers={"User-Agent": user_agent},
                     timeout=4.0,
@@ -236,7 +247,11 @@ class BaseScraper(ABC):
     def __init__(self, proxy_manager=None, session_manager=None):
         self.proxy_manager = proxy_manager
         self.session_manager = session_manager
-        self.limiter = EthicalRateLimiter(rate_limit_rps=self.rate_limit_rps)
+        self.limiter = EthicalRateLimiter(
+            rate_limit_rps=self.rate_limit_rps,
+            min_jitter_sec=1.0,
+            max_jitter_sec=4.0,
+        )
         self.robots = RobotsChecker()
 
     @abstractmethod

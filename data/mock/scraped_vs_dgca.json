@@ -1,22 +1,142 @@
 [
-  {"month": "2025-01", "avg_scraped": 6842.50, "n_scraped": 1240, "avg_dgca": 6720.00, "n_dgca": 20},
-  {"month": "2025-02", "avg_scraped": 7125.30, "n_scraped": 1180, "avg_dgca": 6980.00, "n_dgca": 20},
-  {"month": "2025-03", "avg_scraped": 7850.75, "n_scraped": 1320, "avg_dgca": 7650.00, "n_dgca": 20},
-  {"month": "2025-04", "avg_scraped": 8210.20, "n_scraped": 1450, "avg_dgca": 8100.00, "n_dgca": 20},
-  {"month": "2025-05", "avg_scraped": 7540.60, "n_scraped": 1280, "avg_dgca": 7420.00, "n_dgca": 20},
-  {"month": "2025-06", "avg_scraped": 6980.40, "n_scraped": 1150, "avg_dgca": 6850.00, "n_dgca": 20},
-  {"month": "2025-07", "avg_scraped": 7250.80, "n_scraped": 1380, "avg_dgca": 7100.00, "n_dgca": 20},
-  {"month": "2025-08", "avg_scraped": 7680.25, "n_scraped": 1420, "avg_dgca": 7520.00, "n_dgca": 20},
-  {"month": "2025-09", "avg_scraped": 8120.50, "n_scraped": 1500, "avg_dgca": 7980.00, "n_dgca": 20},
-  {"month": "2025-10", "avg_scraped": 8540.30, "n_scraped": 1580, "avg_dgca": 8400.00, "n_dgca": 20},
-  {"month": "2025-11", "avg_scraped": 7920.70, "n_scraped": 1350, "avg_dgca": 7780.00, "n_dgca": 20},
-  {"month": "2025-12", "avg_scraped": 8650.45, "n_scraped": 1620, "avg_dgca": 8520.00, "n_dgca": 20},
-  {"month": "2026-01", "avg_scraped": 7280.15, "n_scraped": 1290, "avg_dgca": 7150.00, "n_dgca": 20},
-  {"month": "2026-02", "avg_scraped": 7580.90, "n_scraped": 1340, "avg_dgca": 7450.00, "n_dgca": 20},
-  {"month": "2026-03", "avg_scraped": 8320.60, "n_scraped": 1480, "avg_dgca": 8200.00, "n_dgca": 20},
-  {"month": "2026-04", "avg_scraped": 8750.25, "n_scraped": 1550, "avg_dgca": 8620.00, "n_dgca": 20},
-  {"month": "2026-05", "avg_scraped": 7980.40, "n_scraped": 1380, "avg_dgca": 7850.00, "n_dgca": 20},
-  {"month": "2026-06", "avg_scraped": 7350.80, "n_scraped": 1260, "avg_dgca": 7220.00, "n_dgca": 20},
-  {"month": "2026-07", "avg_scraped": 7620.55, "n_scraped": 1400, "avg_dgca": 7480.00, "n_dgca": 20},
-  {"month": "2026-08", "avg_scraped": null, "n_scraped": 0, "avg_dgca": 7800.00, "n_dgca": 20}
+  {
+    "month": "2024-01",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 8370.5,
+    "n_dgca": 1
+  },
+  {
+    "month": "2024-03",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 5304.33,
+    "n_dgca": 3
+  },
+  {
+    "month": "2024-04",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 11677.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2024-05",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 6901.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2024-07",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 6083.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2024-08",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 10105.5,
+    "n_dgca": 2
+  },
+  {
+    "month": "2024-09",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 5168.5,
+    "n_dgca": 3
+  },
+  {
+    "month": "2024-10",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 4558.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2024-11",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 7604.5,
+    "n_dgca": 2
+  },
+  {
+    "month": "2024-12",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 6478.5,
+    "n_dgca": 2
+  },
+  {
+    "month": "2025-02",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 5154.5,
+    "n_dgca": 2
+  },
+  {
+    "month": "2025-03",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 4091.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2025-04",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 10402.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2025-05",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 5305.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2025-06",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 6511.25,
+    "n_dgca": 2
+  },
+  {
+    "month": "2025-07",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 6760.0,
+    "n_dgca": 2
+  },
+  {
+    "month": "2025-08",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 9746.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2025-09",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 10916.0,
+    "n_dgca": 1
+  },
+  {
+    "month": "2025-10",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 8158.67,
+    "n_dgca": 3
+  },
+  {
+    "month": "2025-11",
+    "avg_scraped": null,
+    "n_scraped": 0,
+    "avg_dgca": 8042.0,
+    "n_dgca": 1
+  }
 ]

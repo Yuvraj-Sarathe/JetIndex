@@ -1,32 +1,32 @@
 [
   {
     "lead_time": 1,
-    "avg_total_fare": 10233.27,
-    "avg_base_fare": 7589.49,
-    "n": 23
+    "avg_total_fare": 5568.21,
+    "avg_base_fare": 3820.75,
+    "n": 7
   },
   {
     "lead_time": 7,
-    "avg_total_fare": 8087.1,
-    "avg_base_fare": 6425.42,
-    "n": 24
+    "avg_total_fare": 5621.29,
+    "avg_base_fare": 3847.68,
+    "n": 7
   },
   {
     "lead_time": 15,
-    "avg_total_fare": 7011.31,
-    "avg_base_fare": 5727.59,
-    "n": 14
+    "avg_total_fare": 5526.07,
+    "avg_base_fare": 3799.39,
+    "n": 7
   },
   {
     "lead_time": 30,
-    "avg_total_fare": 6086.06,
-    "avg_base_fare": 4578.93,
-    "n": 17
+    "avg_total_fare": 5510.43,
+    "avg_base_fare": 3796.0,
+    "n": 7
   },
   {
     "lead_time": 45,
-    "avg_total_fare": 5514.15,
-    "avg_base_fare": 4534.14,
-    "n": 16
+    "avg_total_fare": 5600.64,
+    "avg_base_fare": 3773.53,
+    "n": 7
   }
 ]
