@@ -19,7 +19,7 @@ const TYPE_ICONS = {
 function AnomalyFeed({ anomalies }) {
   if (!anomalies || anomalies.length === 0) {
     return (
-      <div className="bg-card border border-ink-border rounded-xl p-8 text-center">
+      <div className="bg-card border border-hairline rounded-xl p-8 text-center">
         <p className="text-ink-muted text-sm">No active volatility anomalies detected across 20 DGCA corridors.</p>
       </div>
     );
@@ -30,11 +30,11 @@ function AnomalyFeed({ anomalies }) {
       {anomalies.map((anomaly, idx) => (
         <div
           key={anomaly.anomaly_id || idx}
-          className="bg-card rounded-xl border border-ink-border p-4 hover:border-accent-violet/60 transition-all group"
+          className="bg-card rounded-xl border border-hairline p-4 hover:border-hairline-strong transition-all group"
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-2xl p-2 rounded-lg bg-card-elevated border border-ink-border/80">
+              <span className="text-2xl p-2 rounded-lg bg-card-elevated border border-hairline">
                 {TYPE_ICONS[anomaly.type] || '❓'}
               </span>
               <div>
@@ -43,7 +43,7 @@ function AnomalyFeed({ anomalies }) {
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${SEVERITY_COLORS[anomaly.severity] || 'bg-canvas text-ink-muted'}`}>
                     {anomaly.severity}
                   </span>
-                  <span className="text-xs font-mono text-accent-cyan uppercase tracking-wider">
+                  <span className="text-xs font-mono text-accent-blue uppercase tracking-wider">
                     {anomaly.type?.replace(/_/g, ' ')}
                   </span>
                 </div>
@@ -51,16 +51,16 @@ function AnomalyFeed({ anomalies }) {
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="text-base font-mono font-bold text-accent-lime">₹{anomaly.detected_value?.toLocaleString()}</p>
+              <p className="text-base font-mono font-bold text-primary">₹{anomaly.detected_value?.toLocaleString()}</p>
               {anomaly.z_score && (
                 <p className="text-[11px] font-mono text-ink-faint">z-score: {anomaly.z_score}</p>
               )}
             </div>
           </div>
           {anomaly.expected_range && (
-            <div className="mt-2.5 pt-2.5 border-t border-ink-border/40 text-[11px] font-mono text-ink-faint flex items-center justify-between">
+            <div className="mt-2.5 pt-2.5 border-t border-hairline text-[11px] font-mono text-ink-faint flex items-center justify-between">
               <span>Expected Range: ₹{anomaly.expected_range[0]?.toLocaleString()} – ₹{anomaly.expected_range[1]?.toLocaleString()}</span>
-              <span className="text-accent-violet">Statistical Bound: ±2.5σ</span>
+              <span className="text-primary">Statistical Bound: ±2.5σ</span>
             </div>
           )}
         </div>

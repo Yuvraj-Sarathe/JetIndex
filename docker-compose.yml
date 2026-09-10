@@ -86,10 +86,15 @@ services:
     image: node:20-alpine
     working_dir: /app/frontend
     command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      - VITE_API_PROXY=http://api:8000
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app/frontend
+    depends_on:
+      api:
+        condition: service_healthy
 
   minio:
     image: minio/minio

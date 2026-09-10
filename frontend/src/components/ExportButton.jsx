@@ -31,14 +31,14 @@ function ExportButton({ data, filename = 'export' }) {
       <button
         onClick={downloadCSV}
         disabled={!data || data.length === 0}
-        className="px-3.5 py-1.5 text-xs font-semibold bg-card border border-ink-border text-ink-muted hover:text-white hover:border-accent-violet/70 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+        className="px-3.5 py-1.5 text-xs font-semibold bg-card border border-hairline text-ink-muted hover:text-white hover:border-primary/50 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
       >
         <span>↓</span> CSV
       </button>
       <button
         onClick={downloadJSON}
         disabled={!data || data.length === 0}
-        className="px-3.5 py-1.5 text-xs font-semibold bg-card border border-ink-border text-ink-muted hover:text-white hover:border-accent-violet/70 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+        className="px-3.5 py-1.5 text-xs font-semibold bg-card border border-hairline text-ink-muted hover:text-white hover:border-primary/50 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
       >
         <span>↓</span> JSON
       </button>

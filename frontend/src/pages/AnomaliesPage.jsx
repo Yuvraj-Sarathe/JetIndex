@@ -12,15 +12,15 @@ function AnomaliesPage() {
           <p className="text-xs text-ink-muted">Algorithmic divergence detection across price spikes, yield inversions, and route corridors</p>
         </div>
         {data && (
-          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-card border border-ink-border text-accent-pink">
+          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-card border border-hairline text-accent-rose">
             {data.count} Active Anomal{data.count === 1 ? 'y' : 'ies'}
           </span>
         )}
       </div>
       
       {loading && (
-        <div className="text-center py-16 bg-card border border-ink-border rounded-xl">
-          <div className="w-8 h-8 border-2 border-accent-violet border-t-accent-lime rounded-full animate-spin mx-auto mb-3"></div>
+        <div className="text-center py-16 bg-card border border-hairline rounded-xl">
+          <div className="w-8 h-8 border-2 border-hairline border-t-primary rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-sm font-medium text-white">Scanning cross-corridor telemetry for statistical outliers...</p>
         </div>
       )}
@@ -34,12 +34,12 @@ function AnomaliesPage() {
       {data && !loading && (
         <>
           {/* Summary */}
-          <div className="bg-card border border-ink-border rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-card border border-hairline rounded-xl p-4 flex items-center justify-between">
             <p className="text-xs text-ink-muted">
               Active corridor surveillance state: <span className="font-semibold text-white font-mono">{data.count} anomalies detected</span>
               {data.as_of_date && ` as of published sweep date ${data.as_of_date}`}
             </p>
-            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-accent-violet/20 text-accent-lime border border-accent-violet/40">
+            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">
               Confidence: 99.5%
             </span>
           </div>

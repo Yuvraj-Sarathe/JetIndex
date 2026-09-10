@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-10T22:24:09.893Z",
+        "reason": "ClickHouse DESIGN.md mandates Inter as primary typography"
+      }
+    ]
+  }
+}

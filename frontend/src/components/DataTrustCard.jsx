@@ -15,26 +15,25 @@ const DIMENSION_KEYS = ['freshness', 'completeness', 'route_coverage', 'source_h
 
 function getRatingColor(rating) {
   switch (rating) {
-    case 'A+': return '#10b981';
+    case 'A+': return '#22c55e';
     case 'A': return '#22c55e';
-    case 'B': return '#eab308';
-    case 'C': return '#f97316';
+    case 'B': return '#faff69';
+    case 'C': return '#f59e0b';
     case 'D': return '#ef4444';
-    default: return '#94a3b8';
+    default: return '#888888';
   }
 }
 
 function getScoreColor(score) {
-  if (score >= 90) return '#10b981';
-  if (score >= 80) return '#22c55e';
-  if (score >= 70) return '#eab308';
-  if (score >= 60) return '#f97316';
+  if (score >= 90) return '#22c55e';
+  if (score >= 80) return '#faff69';
+  if (score >= 70) return '#f59e0b';
   return '#ef4444';
 }
 
 function DataTrustCard({ data }) {
   if (!data) {
-    return <div className="text-center py-8 text-slate-500">No data quality data</div>;
+    return <div className="text-center py-8 text-ink-muted font-mono text-xs">No data quality data</div>;
   }
 
   const score = data.overall_score || 0;
@@ -43,7 +42,7 @@ function DataTrustCard({ data }) {
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+    <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
       <div className="flex flex-col md:flex-row gap-8 items-center">
         {/* Gauge */}
         <div className="flex flex-col items-center">
@@ -54,7 +53,7 @@ function DataTrustCard({ data }) {
               cy="60"
               r="45"
               fill="none"
-              stroke="#261c3d"
+              stroke="#242424"
               strokeWidth="10"
             />
             {/* Score arc */}
@@ -96,7 +95,7 @@ function DataTrustCard({ data }) {
                   <span className="text-ink-muted">{DIMENSION_LABELS[key]}</span>
                   <span className="font-mono font-medium text-white">{displayValue.toFixed(1)}%</span>
                 </div>
-                <div className="h-2 bg-canvas rounded-full overflow-hidden border border-ink-border/40">
+                <div className="h-2 bg-canvas rounded-full overflow-hidden border border-hairline">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{

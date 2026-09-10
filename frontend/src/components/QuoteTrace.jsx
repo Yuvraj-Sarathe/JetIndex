@@ -40,14 +40,14 @@ export default function QuoteTrace() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => setMode('quote')}
             className={`px-3 py-1.5 text-xs font-mono rounded-lg transition-all ${
               mode === 'quote'
-                ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                : 'bg-card-elevated text-ink-muted border border-ink-border hover:text-white'
+                ? 'bg-primary text-black shadow-sm font-bold border border-primary'
+                : 'bg-card-elevated text-ink-muted border border-hairline hover:text-white'
             }`}
           >
             Quote Audit Trace
@@ -56,8 +56,8 @@ export default function QuoteTrace() {
             onClick={() => setMode('cell')}
             className={`px-3 py-1.5 text-xs font-mono rounded-lg transition-all ${
               mode === 'cell'
-                ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                : 'bg-card-elevated text-ink-muted border border-ink-border hover:text-white'
+                ? 'bg-primary text-black shadow-sm font-bold border border-primary'
+                : 'bg-card-elevated text-ink-muted border border-hairline hover:text-white'
             }`}
           >
             Corridor Cell Drilldown
@@ -70,12 +70,12 @@ export default function QuoteTrace() {
               value={quoteId}
               onChange={(e) => setQuoteId(e.target.value)}
               placeholder="Quote ID (e.g. Q-20260826-DEL-BOM-...)"
-              className="flex-1 px-3 py-2 bg-canvas border border-ink-border rounded-lg text-sm font-mono text-white focus:outline-none focus:border-accent-lime transition-colors"
+              className="flex-1 px-3 py-2 bg-canvas border border-hairline rounded-lg text-sm font-mono text-white focus:outline-none focus:border-primary transition-colors"
             />
             <button
               onClick={traceQuote}
               disabled={loading}
-              className="px-4 py-2 bg-accent-violet hover:bg-accent-violet/90 text-white text-xs font-semibold uppercase tracking-wider rounded-lg disabled:opacity-50 transition-all shadow-sm"
+              className="px-4 py-2 bg-primary hover:bg-primary-active text-black text-xs font-bold uppercase tracking-wider rounded-lg disabled:opacity-50 transition-all shadow-sm"
             >
               {loading ? 'Tracing...' : 'Trace Quote'}
             </button>
@@ -86,12 +86,12 @@ export default function QuoteTrace() {
               value={routeCode}
               onChange={(e) => setRouteCode(e.target.value)}
               placeholder="Route (e.g. DEL-BOM)"
-              className="w-48 px-3 py-2 bg-canvas border border-ink-border rounded-lg text-sm font-mono text-white focus:outline-none focus:border-accent-lime transition-colors uppercase"
+              className="w-48 px-3 py-2 bg-canvas border border-hairline rounded-lg text-sm font-mono text-white focus:outline-none focus:border-primary transition-colors uppercase"
             />
             <button
               onClick={drillCell}
               disabled={loading}
-              className="px-4 py-2 bg-accent-violet hover:bg-accent-violet/90 text-white text-xs font-semibold uppercase tracking-wider rounded-lg disabled:opacity-50 transition-all shadow-sm"
+              className="px-4 py-2 bg-primary hover:bg-primary-active text-black text-xs font-bold uppercase tracking-wider rounded-lg disabled:opacity-50 transition-all shadow-sm"
             >
               {loading ? 'Drilling...' : 'Drill Cell'}
             </button>
@@ -102,17 +102,17 @@ export default function QuoteTrace() {
       {error && <div className="bg-card border border-rose-500/40 rounded-xl p-4 text-rose-300">{error}</div>}
 
       {result && (
-        <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-white">Cryptographic Audit Result</h3>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/40">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/30">
               VERIFIED RECORD
             </span>
           </div>
           {result.provenance ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(result.provenance).map(([k, v]) => (
-                <div key={k} className="p-2.5 bg-card-elevated border border-ink-border/60 rounded-lg">
+                <div key={k} className="p-2.5 bg-card-elevated border border-hairline rounded-lg">
                   <p className="text-[10px] font-mono uppercase text-ink-faint">{k}</p>
                   <p className="text-xs font-mono font-medium text-white truncate mt-0.5">{String(v)}</p>
                 </div>
@@ -122,16 +122,16 @@ export default function QuoteTrace() {
             <div>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {Object.entries(result.cell_hierarchy).map(([k, v]) => (
-                  <div key={k} className="p-2.5 bg-card-elevated border border-ink-border/60 rounded-lg">
+                  <div key={k} className="p-2.5 bg-card-elevated border border-hairline rounded-lg">
                     <p className="text-[10px] font-mono uppercase text-ink-faint">{k}</p>
-                    <p className="text-xs font-mono font-medium text-accent-lime mt-0.5">{String(v)}</p>
+                    <p className="text-xs font-mono font-medium text-primary mt-0.5">{String(v)}</p>
                   </div>
                 ))}
               </div>
               <p className="text-xs text-ink-muted">{result.quotes?.length || 0} underlying quotes</p>
             </div>
           ) : (
-            <pre className="text-xs font-mono text-ink-muted bg-canvas border border-ink-border p-3 rounded-lg overflow-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
+            <pre className="text-xs font-mono text-ink-muted bg-canvas border border-hairline p-3 rounded-lg overflow-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
           )}
           <p className="text-[11px] font-mono text-ink-faint">Data Tag: {result.data_tag}</p>
         </div>

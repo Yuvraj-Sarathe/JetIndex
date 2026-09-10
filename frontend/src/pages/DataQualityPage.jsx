@@ -14,8 +14,8 @@ function DataQualityPage() {
       </div>
       
       {loading && (
-        <div className="text-center py-16 bg-card border border-ink-border rounded-xl">
-          <div className="w-8 h-8 border-2 border-accent-violet border-t-accent-lime rounded-full animate-spin mx-auto mb-3"></div>
+        <div className="text-center py-16 bg-card border border-hairline rounded-xl">
+          <div className="w-8 h-8 border-2 border-hairline border-t-primary rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-sm font-medium text-white">Auditing ingestion freshness and outlier rates...</p>
         </div>
       )}

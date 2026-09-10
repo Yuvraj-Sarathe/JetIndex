@@ -13,31 +13,31 @@ const CARRIER_NAMES = {
   'I5': 'AIX Connect',
 };
 
-// Refined, feasible financial & aviation color palette
+// Refined ClickHouse financial & aviation color palette
 const COMPONENT_CONFIG = {
   base_fare: {
     label: 'Base Fare',
-    color: '#4f46e5', // Deep Indigo
+    color: '#faff69', // ClickHouse Electric Yellow
     desc: 'Core airline inventory tariff',
   },
   udf: {
     label: 'Airport UDF',
-    color: '#0284c7', // Sky Blue
+    color: '#3b82f6', // Accent Blue
     desc: 'Airport User Development Fee',
   },
   taxes: {
     label: 'Statutory Taxes',
-    color: '#f59e0b', // Warm Amber Gold
+    color: '#22c55e', // Accent Emerald
     desc: 'GST and government regulatory levies',
   },
   convenience_fee: {
     label: 'Convenience Fee',
-    color: '#f43f5e', // Coral Rose
+    color: '#ef4444', // Accent Rose
     desc: 'Online ticketing & payment processing',
   },
   other_fees: {
     label: 'Other Surcharges',
-    color: '#8b5cf6', // Muted Violet
+    color: '#a855f7', // Purple
     desc: 'Fuel, baggage & miscellaneous ancillaries',
   },
 };
@@ -52,10 +52,10 @@ function CustomUnbundlingTooltip({ active, payload, label, viewMode }) {
   const total = payload.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
 
   return (
-    <div className="bg-[#18112b]/95 backdrop-blur-md border border-[#3b3260] rounded-xl p-3.5 shadow-2xl min-w-[240px] text-xs">
-      <div className="flex items-center justify-between border-b border-ink-border/50 pb-2 mb-2.5">
+    <div className="bg-surface-card/95 backdrop-blur-md border border-hairline rounded-xl p-3.5 shadow-2xl min-w-[240px] text-xs">
+      <div className="flex items-center justify-between border-b border-hairline pb-2 mb-2.5">
         <div className="flex items-center gap-2">
-          <span className="font-mono font-bold text-white bg-white/10 px-1.5 py-0.5 rounded text-[11px]">
+          <span className="font-mono font-bold text-black bg-primary px-1.5 py-0.5 rounded text-[11px]">
             {label}
           </span>
           <span className="font-semibold text-white">{carrierName}</span>
@@ -225,13 +225,13 @@ function UnbundlingInspector() {
   });
 
   return (
-    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+    <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
       {/* Header section with view toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base font-semibold text-white">Carrier Fare Unbundling Inspector</h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-violet/15 text-accent-violet border border-accent-violet/40">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/30">
               DGCA REVENUE DECOMPOSITION
             </span>
           </div>
@@ -241,13 +241,13 @@ function UnbundlingInspector() {
         </div>
 
         {/* View mode toggle */}
-        <div className="flex items-center gap-1 bg-canvas/80 p-0.5 rounded-lg border border-ink-border/50 self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-1 bg-surface-card p-0.5 rounded-lg border border-hairline self-start sm:self-auto shrink-0">
           <button
             onClick={() => setViewMode('rupees')}
             className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
               viewMode === 'rupees'
-                ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                : 'text-ink-muted hover:text-white hover:bg-ink-border/40'
+                ? 'bg-primary text-black shadow-sm font-bold'
+                : 'text-ink-muted hover:text-white hover:bg-card-hover'
             }`}
           >
             Absolute (₹)
@@ -256,8 +256,8 @@ function UnbundlingInspector() {
             onClick={() => setViewMode('percent')}
             className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
               viewMode === 'percent'
-                ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                : 'text-ink-muted hover:text-white hover:bg-ink-border/40'
+                ? 'bg-primary text-black shadow-sm font-bold'
+                : 'text-ink-muted hover:text-white hover:bg-card-hover'
             }`}
           >
             Share (%)
@@ -272,7 +272,7 @@ function UnbundlingInspector() {
           {/* Main Visual Layout: Chart (Sleek & Thin) + Executive Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
             {/* Chart Area */}
-            <div className="lg:col-span-7 xl:col-span-8 bg-canvas/40 border border-ink-border/40 rounded-xl p-4">
+            <div className="lg:col-span-7 xl:col-span-8 bg-canvas border border-hairline rounded-xl p-4">
               <div className="flex items-center justify-between mb-3 px-1">
                 <span className="text-[11px] font-mono uppercase tracking-wider text-ink-muted">
                   {viewMode === 'percent' ? 'Stacked Fare Breakdown (100% Normalized)' : 'Stacked Fare Breakdown (₹ Amount)'}
@@ -289,16 +289,16 @@ function UnbundlingInspector() {
                     barSize={32}
                     margin={{ top: 12, right: 16, left: 0, bottom: 4 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#261c3d" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#242424" vertical={false} />
                     <XAxis
                       dataKey="carrier"
-                      stroke="#786c91"
+                      stroke="#888888"
                       fontSize={11}
                       tickLine={false}
                       tickFormatter={(code) => `${code} · ${CARRIER_NAMES[code] || ''}`}
                     />
                     <YAxis
-                      stroke="#786c91"
+                      stroke="#888888"
                       fontSize={11}
                       tickLine={false}
                       domain={viewMode === 'percent' ? [0, 100] : ['auto', 'auto']}
@@ -384,10 +384,10 @@ function UnbundlingInspector() {
                 {carriers.map((c) => (
                   <div
                     key={c.carrier}
-                    className="bg-card border border-ink-border/60 hover:border-accent-violet/40 transition-all rounded-lg p-3 flex items-center justify-between gap-3"
+                    className="bg-card border border-hairline hover:border-hairline-strong transition-all rounded-lg p-3 flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-canvas/80 border border-ink-border flex items-center justify-center font-mono font-bold text-xs text-white shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-surface-card border border-hairline flex items-center justify-center font-mono font-bold text-xs text-white shrink-0">
                         {c.carrier}
                       </div>
                       <div className="truncate">
@@ -401,10 +401,10 @@ function UnbundlingInspector() {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="font-mono font-bold text-xs text-accent-lime">
+                      <div className="font-mono font-bold text-xs text-primary">
                         ₹{Math.round(c.total).toLocaleString('en-IN')}
                       </div>
-                      <div className="text-[10px] font-mono text-amber-400">
+                      <div className="text-[10px] font-mono text-accent-emerald">
                         +₹{Math.round(c.total - c.base_fare).toLocaleString('en-IN')} fees
                       </div>
                     </div>
@@ -415,26 +415,26 @@ function UnbundlingInspector() {
           </div>
 
           {/* Detailed Audit Table */}
-          <div className="overflow-x-auto mt-6 rounded-lg border border-ink-border/70">
+          <div className="overflow-x-auto mt-6 rounded-lg border border-hairline">
             <table className="w-full text-xs font-mono">
               <thead>
-                <tr className="bg-canvas/80 border-b border-ink-border text-ink-muted uppercase tracking-wider text-[11px]">
+                <tr className="bg-surface-card border-b border-hairline text-ink-muted uppercase tracking-wider text-[11px]">
                   <th className="text-left py-2.5 px-3 font-semibold font-sans">Carrier</th>
                   <th className="text-right py-2.5 px-3 font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-sm bg-indigo-600" />
+                      <span className="w-2 h-2 rounded-sm bg-primary" />
                       Base Fare
                     </span>
                   </th>
                   <th className="text-right py-2.5 px-3 font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-sm bg-sky-600" />
+                      <span className="w-2 h-2 rounded-sm bg-blue-500" />
                       UDF
                     </span>
                   </th>
                   <th className="text-right py-2.5 px-3 font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-sm bg-amber-500" />
+                      <span className="w-2 h-2 rounded-sm bg-emerald-500" />
                       Taxes
                     </span>
                   </th>
@@ -450,17 +450,17 @@ function UnbundlingInspector() {
                       Other Fees
                     </span>
                   </th>
-                  <th className="text-right py-2.5 px-3 font-semibold text-accent-lime">
+                  <th className="text-right py-2.5 px-3 font-semibold text-primary">
                     Avg Total
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-border/30">
+              <tbody className="divide-y divide-hairline">
                 {carriers.map((c) => (
-                  <tr key={c.carrier} className="hover:bg-card-hover/40 transition-colors">
+                  <tr key={c.carrier} className="hover:bg-card-hover transition-colors">
                     <td className="py-2.5 px-3 font-sans font-medium text-white">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-accent-violet bg-canvas px-1.5 py-0.5 rounded border border-ink-border/60">
+                        <span className="font-mono text-xs font-bold text-black bg-primary px-1.5 py-0.5 rounded border border-primary">
                           {c.carrier}
                         </span>
                         <span>{c.carrierName}</span>
@@ -491,7 +491,7 @@ function UnbundlingInspector() {
                         ? `${c.other_fees_pct.toFixed(1)}%`
                         : `₹${Math.round(c.other_fees).toLocaleString('en-IN')}`}
                     </td>
-                    <td className="text-right py-2.5 px-3 font-bold text-accent-lime">
+                    <td className="text-right py-2.5 px-3 font-bold text-primary">
                       {viewMode === 'percent'
                         ? '100.0%'
                         : `₹${Math.round(c.total).toLocaleString('en-IN')}`}

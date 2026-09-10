@@ -36,15 +36,15 @@ function BacktestChart() {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-white">DGCA Official Backtest</h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/40 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse"></span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-blue/15 text-accent-blue border border-accent-blue/30 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse"></span>
               PUBLISHED ACTUALS
             </span>
           </div>
           <p className="text-xs text-ink-muted">Historical alignment against official published civil aviation statistics</p>
         </div>
         {summary.mape !== undefined && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/30 self-start sm:self-auto">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-primary/10 text-primary border border-primary/30 self-start sm:self-auto">
             MAPE: {summary.mape.toFixed(1)}%
           </span>
         )}
@@ -55,17 +55,17 @@ function BacktestChart() {
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#261c3d" />
-            <XAxis dataKey="month" stroke="#786c91" fontSize={11} tickLine={false} />
-            <YAxis stroke="#786c91" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
+            <XAxis dataKey="month" stroke="#888888" fontSize={11} tickLine={false} />
+            <YAxis stroke="#888888" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1f1633',
-                borderColor: '#362d59',
+                backgroundColor: '#1a1a1a',
+                borderColor: '#2a2a2a',
                 borderRadius: '8px',
                 color: '#ffffff',
                 fontSize: '12px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.6)',
               }}
               formatter={(value, name) => [
                 `₹${Number(value).toLocaleString()}`,
@@ -76,19 +76,19 @@ function BacktestChart() {
             <Line
               type="monotone"
               dataKey="implied_fare"
-              stroke="#c2ef4e"
+              stroke="#faff69"
               strokeWidth={2}
-              dot={{ r: 3, fill: '#c2ef4e' }}
+              dot={{ r: 3, fill: '#faff69' }}
               name="APIx Implied Fare"
               connectNulls={false}
             />
             <Line
               type="monotone"
               dataKey="dgca_avg_fare"
-              stroke="#4ecdc4"
+              stroke="#3b82f6"
               strokeWidth={2.5}
-              dot={{ r: 4, fill: '#4ecdc4', stroke: '#150f23', strokeWidth: 1.5 }}
-              activeDot={{ r: 6, fill: '#4ecdc4', stroke: '#ffffff', strokeWidth: 2 }}
+              dot={{ r: 4, fill: '#3b82f6', stroke: '#0a0a0a', strokeWidth: 1.5 }}
+              activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 }}
               name="DGCA (Official Published)"
               connectNulls={false}
             />
@@ -98,21 +98,21 @@ function BacktestChart() {
 
       <div className="mt-4 flex flex-wrap gap-2.5">
         {summary.mape !== undefined && (
-          <div className="bg-canvas/70 border border-ink-border/80 rounded-lg px-3 py-1.5 text-xs font-mono">
+          <div className="bg-surface-card border border-hairline rounded-lg px-3 py-1.5 text-xs font-mono">
             <span className="text-ink-muted">Mean Absolute Error: </span>
             <span className="text-white font-semibold">{summary.mape?.toFixed(2)}%</span>
           </div>
         )}
         {summary.rmse !== undefined && (
-          <div className="bg-canvas/70 border border-ink-border/80 rounded-lg px-3 py-1.5 text-xs font-mono">
+          <div className="bg-surface-card border border-hairline rounded-lg px-3 py-1.5 text-xs font-mono">
             <span className="text-ink-muted">RMSE: </span>
             <span className="text-white font-semibold">₹{summary.rmse?.toFixed(0)}</span>
           </div>
         )}
         {summary.corr !== undefined && (
-          <div className="bg-canvas/70 border border-ink-border/80 rounded-lg px-3 py-1.5 text-xs font-mono">
+          <div className="bg-surface-card border border-hairline rounded-lg px-3 py-1.5 text-xs font-mono">
             <span className="text-ink-muted">Pearson r: </span>
-            <span className="text-accent-lime font-semibold">{summary.corr?.toFixed(4)}</span>
+            <span className="text-primary font-semibold">{summary.corr?.toFixed(4)}</span>
           </div>
         )}
       </div>

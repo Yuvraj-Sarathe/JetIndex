@@ -64,8 +64,8 @@ function RouteComparator() {
             onClick={() => toggleRoute(code)}
             className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
               selectedRoutes.includes(code)
-                ? 'bg-accent-violet text-white shadow-sm border border-accent-violet'
-                : 'bg-canvas border border-ink-border text-ink-muted hover:text-white hover:border-ink-borderLight'
+                ? 'bg-primary text-black font-bold shadow-sm border border-primary'
+                : 'bg-surface-card border border-hairline text-ink-muted hover:text-white hover:border-hairline-strong'
             }`}
           >
             {code}
@@ -77,23 +77,23 @@ function RouteComparator() {
       {loading && <p className="text-xs text-ink-muted py-4">Recomputing corridor metrics...</p>}
       
       {routeData && !loading && (
-        <div className="overflow-x-auto rounded-lg border border-ink-border/70">
+        <div className="overflow-x-auto rounded-lg border border-hairline">
           <table className="w-full text-xs font-mono">
             <thead>
-              <tr className="bg-canvas/80 border-b border-ink-border text-ink-muted uppercase tracking-wider text-[11px]">
+              <tr className="bg-surface-card border-b border-hairline text-ink-muted uppercase tracking-wider text-[11px]">
                 <th className="text-left py-2.5 px-3 font-semibold">Route</th>
                 <th className="text-right py-2.5 px-3 font-semibold">DGCA Weight</th>
                 <th className="text-right py-2.5 px-3 font-semibold">Base Benchmark</th>
-                <th className="text-right py-2.5 px-3 font-semibold text-accent-lime">Current Index</th>
+                <th className="text-right py-2.5 px-3 font-semibold text-primary">Current Index</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink-border/30">
+            <tbody className="divide-y divide-hairline">
               {(routeData.routes || []).map((route) => (
-                <tr key={route.route_code} className="hover:bg-card-hover/40 transition-colors">
+                <tr key={route.route_code} className="hover:bg-card-hover transition-colors">
                   <td className="py-2 px-3 font-sans font-medium text-white">{route.route_code}</td>
                   <td className="py-2 px-3 text-right text-ink-muted">{route.weight_pct}%</td>
                   <td className="py-2 px-3 text-right text-ink-muted">₹{route.base_fare_benchmark?.toLocaleString()}</td>
-                  <td className="py-2 px-3 text-right font-bold text-accent-lime">{route.latest_indexed_fare?.toFixed(2)}</td>
+                  <td className="py-2 px-3 text-right font-bold text-primary">{route.latest_indexed_fare?.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

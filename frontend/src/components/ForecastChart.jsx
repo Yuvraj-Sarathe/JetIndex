@@ -50,7 +50,7 @@ function ForecastChart({ data }) {
               y1={toY(val)}
               x2={width - padding.right}
               y2={toY(val)}
-              stroke="#261c3d"
+              stroke="#242424"
               strokeWidth="1"
             />
             <text
@@ -58,7 +58,7 @@ function ForecastChart({ data }) {
               y={toY(val) + 3}
               textAnchor="end"
               fontSize="10"
-              fill="#786c91"
+              fill="#888888"
               className="font-mono"
             >
               {val.toFixed(1)}
@@ -67,14 +67,14 @@ function ForecastChart({ data }) {
         ))}
 
         {/* CI band */}
-        <path d={areaPath} fill="#6a5fc1" fillOpacity="0.25" />
+        <path d={areaPath} fill="#3b82f6" fillOpacity="0.15" />
 
         {/* Upper/lower bounds */}
-        <path d={upperPath} fill="none" stroke="#fa7faa" strokeWidth="1" strokeDasharray="3,3" />
-        <path d={lowerPath} fill="none" stroke="#fa7faa" strokeWidth="1" strokeDasharray="3,3" />
+        <path d={upperPath} fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" />
+        <path d={lowerPath} fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" />
 
         {/* Main forecast line */}
-        <path d={linePath} fill="none" stroke="#c2ef4e" strokeWidth="2.5" />
+        <path d={linePath} fill="none" stroke="#faff69" strokeWidth="2.5" />
 
         {/* X-axis labels */}
         {xLabels.map((d, i) => (
@@ -84,7 +84,7 @@ function ForecastChart({ data }) {
             y={height - 12}
             textAnchor="middle"
             fontSize="10"
-            fill="#786c91"
+            fill="#888888"
             className="font-mono"
           >
             {d.forecast_date.slice(5)}
@@ -93,10 +93,10 @@ function ForecastChart({ data }) {
 
         {/* Legend */}
         <g transform={`translate(${padding.left + 10}, ${padding.top + 5})`}>
-          <line x1="0" y1="0" x2="20" y2="0" stroke="#c2ef4e" strokeWidth="2.5" />
-          <text x="26" y="3" fontSize="10" fill="#b3a8c9" className="font-mono">Predicted</text>
-          <rect x="0" y="10" width="20" height="8" fill="#6a5fc1" fillOpacity="0.25" />
-          <text x="26" y="17" fontSize="10" fill="#b3a8c9" className="font-mono">95% CI Band</text>
+          <line x1="0" y1="0" x2="20" y2="0" stroke="#faff69" strokeWidth="2.5" />
+          <text x="26" y="3" fontSize="10" fill="#cccccc" className="font-mono">Predicted</text>
+          <rect x="0" y="10" width="20" height="8" fill="#3b82f6" fillOpacity="0.15" />
+          <text x="26" y="17" fontSize="10" fill="#cccccc" className="font-mono">95% CI Band</text>
         </g>
       </svg>
     </div>

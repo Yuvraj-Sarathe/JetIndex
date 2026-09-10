@@ -5,7 +5,7 @@ function severityColor(severity) {
     case 'CRITICAL': return 'bg-rose-500/15 text-rose-300 border-rose-500/40';
     case 'HIGH': return 'bg-orange-500/15 text-orange-300 border-orange-500/40';
     case 'MEDIUM': return 'bg-amber-500/15 text-amber-300 border-amber-500/40';
-    default: return 'bg-accent-violet/15 text-accent-lime border-accent-violet/40';
+    default: return 'bg-primary/10 text-primary border-primary/30';
   }
 }
 
@@ -19,8 +19,8 @@ export default function AlertFeed() {
   const { rules, liveAlerts, loading, error } = useAlerts();
 
   if (loading) return (
-    <div className="text-center py-16 bg-card border border-ink-border rounded-xl">
-      <div className="w-8 h-8 border-2 border-accent-violet border-t-accent-lime rounded-full animate-spin mx-auto mb-3"></div>
+    <div className="text-center py-16 bg-card border border-hairline rounded-xl">
+      <div className="w-8 h-8 border-2 border-hairline border-t-primary rounded-full animate-spin mx-auto mb-3"></div>
       <p className="text-sm font-medium text-white">Connecting to real-time statutory alert engine...</p>
     </div>
   );
@@ -29,11 +29,11 @@ export default function AlertFeed() {
   return (
     <div className="space-y-6">
       {/* Active Alerts */}
-      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-white">Live Policy & Threat Feed</h3>
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/40 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-lime animate-pulse"></span>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/30 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
             ACTIVE MONITORING
           </span>
         </div>
@@ -58,7 +58,7 @@ export default function AlertFeed() {
       </div>
 
       {/* Alert Rules */}
-      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-semibold text-white">Statutory Surveillance Rules</h3>
@@ -68,7 +68,7 @@ export default function AlertFeed() {
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm font-mono text-xs">
             <thead>
-              <tr className="border-b border-ink-border text-left uppercase text-[11px] tracking-wider text-ink-faint">
+              <tr className="border-b border-hairline text-left uppercase text-[11px] tracking-wider text-ink-faint">
                 <th className="pb-3 pr-4 font-sans">Rule Name</th>
                 <th className="pb-3 pr-4">Metric Target</th>
                 <th className="pb-3 pr-4">Condition</th>
@@ -77,11 +77,11 @@ export default function AlertFeed() {
                 <th className="pb-3">Enabled</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink-border/40">
+            <tbody className="divide-y divide-hairline">
               {rules?.rules?.map((rule) => (
                 <tr key={rule.rule_id} className="hover:bg-card-hover transition-colors">
                   <td className="py-3 pr-4 font-sans font-medium text-white">{rule.rule_name}</td>
-                  <td className="py-3 pr-4 text-accent-cyan">{rule.metric_target}</td>
+                  <td className="py-3 pr-4 text-accent-blue">{rule.metric_target}</td>
                   <td className="py-3 pr-4 text-ink-muted">{rule.condition}</td>
                   <td className="py-3 pr-4 text-white font-bold">{rule.threshold}</td>
                   <td className="py-3 pr-4">
@@ -89,7 +89,7 @@ export default function AlertFeed() {
                       {rule.severity}
                     </span>
                   </td>
-                  <td className="py-3 text-accent-lime font-bold">{rule.is_enabled ? '✓ ACTIVE' : '— OFF'}</td>
+                  <td className="py-3 text-primary font-bold">{rule.is_enabled ? '✓ ACTIVE' : '— OFF'}</td>
                 </tr>
               ))}
             </tbody>

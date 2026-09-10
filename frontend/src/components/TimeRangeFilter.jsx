@@ -29,17 +29,17 @@ function TimeRangeFilter({ onChange }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 bg-card border border-ink-border rounded-xl p-1.5 text-xs">
+    <div className="flex flex-wrap items-center gap-2 bg-card border border-hairline rounded-xl p-1.5 text-xs">
       <span className="text-ink-muted font-medium px-2 uppercase tracking-wider text-[11px]">Range:</span>
-      <div className="flex items-center gap-1 bg-canvas/80 p-0.5 rounded-lg border border-ink-border/50">
+      <div className="flex items-center gap-1 bg-surface-card p-0.5 rounded-lg border border-hairline">
         {Object.entries(presets).map(([key, { days, label }]) => (
           <button
             key={key}
             onClick={() => handlePreset(key, days)}
             className={`px-3 py-1 rounded-md font-medium transition-all ${
               active === key
-                ? 'bg-accent-violet text-white shadow-sm'
-                : 'text-ink-muted hover:text-white hover:bg-ink-border/40'
+                ? 'bg-primary text-black font-bold shadow-sm'
+                : 'text-ink-muted hover:text-white hover:bg-card-hover'
             }`}
           >
             {label}
@@ -51,18 +51,18 @@ function TimeRangeFilter({ onChange }) {
           type="date"
           value={customFrom}
           onChange={(e) => setCustomFrom(e.target.value)}
-          className="bg-canvas border border-ink-border text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-accent-violet transition-colors"
+          className="bg-canvas border border-hairline text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary transition-colors"
         />
         <span className="text-ink-faint">→</span>
         <input
           type="date"
           value={customTo}
           onChange={(e) => setCustomTo(e.target.value)}
-          className="bg-canvas border border-ink-border text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-accent-violet transition-colors"
+          className="bg-canvas border border-hairline text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary transition-colors"
         />
         <button
           onClick={handleCustom}
-          className="px-3 py-1 rounded-md font-medium bg-ink-border/50 text-white hover:bg-accent-violet transition-colors"
+          className="px-3 py-1 rounded-md font-semibold bg-card-elevated border border-hairline text-white hover:bg-primary hover:text-black hover:border-primary transition-colors"
         >
           Apply
         </button>

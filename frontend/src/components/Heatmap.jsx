@@ -29,7 +29,7 @@ function Heatmap({ date }) {
   const center = [20.5937, 78.9629];
 
   return (
-    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+    <div className="bg-card border border-hairline rounded-xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-semibold text-white">Route Volatility Radar</h3>
@@ -37,21 +37,21 @@ function Heatmap({ date }) {
         </div>
         <div className="flex items-center gap-3 text-[11px] font-mono">
           <span className="flex items-center gap-1 text-ink-muted">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-violet"></span> Low (&lt;5%)
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-blue"></span> Low (&lt;5%)
           </span>
           <span className="flex items-center gap-1 text-ink-muted">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-lime"></span> Med (5-10%)
+            <span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Med (5-10%)
           </span>
           <span className="flex items-center gap-1 text-ink-muted">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-pink"></span> High (&gt;10%)
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-rose"></span> High (&gt;10%)
           </span>
         </div>
       </div>
-      <div className="h-[320px] rounded-lg overflow-hidden border border-ink-border/70">
-        <MapContainer center={center} zoom={4.5} style={{ height: '100%', width: '100%', background: '#150f23' }}>
+      <div className="h-[320px] rounded-lg overflow-hidden border border-hairline">
+        <MapContainer center={center} zoom={4.5} style={{ height: '100%', width: '100%', background: '#0a0a0a' }}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
           />
           {routes.map((route, idx) => {
             const origin = route.o_lat != null && route.o_lon != null
@@ -64,15 +64,15 @@ function Heatmap({ date }) {
 
             const destLabel = route.dest ?? route.destination;
             const volatility = route.volatility || 0;
-            const color = volatility > 0.1 ? '#fa7faa' : volatility > 0.05 ? '#c2ef4e' : '#6a5fc1';
+            const color = volatility > 0.1 ? '#ef4444' : volatility > 0.05 ? '#faff69' : '#3b82f6';
             const weight = route.index_contrib != null ? Math.max(2, route.index_contrib * 3) : 2.5;
 
             return (
               <div key={route.route_id ?? route.route_code ?? idx}>
-                <CircleMarker center={origin} radius={5} fillColor="#c2ef4e" fillOpacity={0.9} color="#150f23" weight={1}>
+                <CircleMarker center={origin} radius={5} fillColor="#faff69" fillOpacity={0.95} color="#0a0a0a" weight={1}>
                   <Popup>{route.origin}</Popup>
                 </CircleMarker>
-                <CircleMarker center={dest} radius={5} fillColor="#c2ef4e" fillOpacity={0.9} color="#150f23" weight={1}>
+                <CircleMarker center={dest} radius={5} fillColor="#faff69" fillOpacity={0.95} color="#0a0a0a" weight={1}>
                   <Popup>{destLabel}</Popup>
                 </CircleMarker>
                 <Polyline

@@ -22,22 +22,22 @@ function ApixTrend({ data }) {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-white">APIx Price Index Trend</h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/40 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-lime animate-pulse"></span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/30 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
               PUBLISHED DAILY SERIES
             </span>
           </div>
           <p className="text-xs text-ink-muted">DGCA Laspeyres weighted airfare index · Base 100 benchmark</p>
         </div>
-        <div className="flex gap-1 bg-canvas/80 p-0.5 rounded-lg border border-ink-border/50 self-start sm:self-auto">
+        <div className="flex gap-1 bg-surface-card p-0.5 rounded-lg border border-hairline self-start sm:self-auto">
           {['daily', 'weekly', 'monthly'].map((g) => (
             <button
               key={g}
               onClick={() => setGranularity(g)}
               className={`px-2.5 py-1 text-xs rounded-md font-medium capitalize transition-all ${
                 granularity === g
-                  ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                  : 'text-ink-muted hover:text-white hover:bg-ink-border/40'
+                  ? 'bg-primary text-black shadow-sm font-bold'
+                  : 'text-ink-muted hover:text-white hover:bg-card-hover'
               }`}
             >
               {g}
@@ -47,17 +47,17 @@ function ApixTrend({ data }) {
       </div>
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#261c3d" />
-          <XAxis dataKey="date" stroke="#786c91" fontSize={11} tickLine={false} />
-          <YAxis stroke="#786c91" fontSize={11} domain={['auto', 'auto']} tickLine={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
+          <XAxis dataKey="date" stroke="#888888" fontSize={11} tickLine={false} />
+          <YAxis stroke="#888888" fontSize={11} domain={['auto', 'auto']} tickLine={false} />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#1f1633',
-              borderColor: '#362d59',
+              backgroundColor: '#1a1a1a',
+              borderColor: '#2a2a2a',
               borderRadius: '8px',
               color: '#ffffff',
               fontSize: '12px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.6)',
             }}
             itemStyle={{ color: '#ffffff' }}
             formatter={(value, name) => [`${Number(value).toFixed(2)} pts`, name]}
@@ -65,24 +65,24 @@ function ApixTrend({ data }) {
           <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
           <ReferenceLine
             y={100}
-            stroke="#362d59"
+            stroke="#2a2a2a"
             strokeDasharray="4 4"
-            label={{ value: 'Base 100', position: 'insideTopLeft', fill: '#786c91', fontSize: 10 }}
+            label={{ value: 'Base 100', position: 'insideTopLeft', fill: '#888888', fontSize: 10 }}
           />
           <Line
             type="monotone"
             dataKey="apix"
-            stroke="#c2ef4e"
+            stroke="#faff69"
             strokeWidth={2.5}
-            dot={{ r: 2, fill: '#c2ef4e' }}
-            activeDot={{ r: 5, fill: '#c2ef4e', stroke: '#ffffff', strokeWidth: 2 }}
+            dot={{ r: 2, fill: '#faff69' }}
+            activeDot={{ r: 5, fill: '#faff69', stroke: '#0a0a0a', strokeWidth: 2 }}
             name="APIx (Published All-In)"
           />
           {data[0]?.apix_base_only !== undefined && (
             <Line
               type="monotone"
               dataKey="apix_base_only"
-              stroke="#6a5fc1"
+              stroke="#3b82f6"
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}

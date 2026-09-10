@@ -4,9 +4,11 @@
 
 @layer base {
   body {
-    font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #150f23;
-    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #0a0a0a;
+    color: #cccccc;
   }
 
   /* Tabular numbers for all analytical figures */
@@ -20,13 +22,13 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #150f23;
+    background: #0a0a0a;
   }
   ::-webkit-scrollbar-thumb {
-    background: #362d59;
+    background: #2a2a2a;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #6a5fc1;
+    background: #3a3a3a;
   }
 }
