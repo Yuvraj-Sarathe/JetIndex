@@ -138,18 +138,18 @@ def test_makemytrip_build_request(mmt_scrape_job):
     req = scraper.build_request(mmt_scrape_job)
 
     assert req.method == "POST"
-    assert req.url == "https://flights.makemytrip.com/makemytrip/flight/search"
+    assert "flights-cb.makemytrip.com/api/postSearch" in req.url
     assert req.headers["content-type"] == "application/json"
     assert "makemytrip.com" in req.headers["origin"]
+    assert "x-flt" in req.headers  # Base64 encoded search metadata
 
     body = req.json_body
     assert body is not None
-    assert body["tripType"] == "OW"
-    assert body["itinerary"][0]["from"] == "DEL"
-    assert body["itinerary"][0]["to"] == "BOM"
-    assert body["itinerary"][0]["departureDate"] == "2026-10-13"
-    assert body["paxInfo"]["adults"] == 1
-    assert body["cabinClass"] == "E"
+    assert body["cc"] == "E"
+    assert body["it"] == "DEL-BOM-20261013"
+    assert body["pax"] == "A-1_C-0_I-0"
+    assert body["sortBy"] == "rhino"
+    assert body["forwardFlowRequired"] is True
 
 
 def test_makemytrip_build_request_with_session_manager(mmt_scrape_job):
@@ -159,7 +159,9 @@ def test_makemytrip_build_request_with_session_manager(mmt_scrape_job):
     scraper = MakeMyTripScraper(session_manager=session_mgr)
     req = scraper.build_request(mmt_scrape_job)
 
-    assert req.headers["authorization"] == "Bearer mock_mmt_token_456"
+    # New MMT scraper doesn't use Bearer token — it uses x-flt header
+    assert "x-flt" in req.headers
+    assert req.headers["pfm"] == "DESKTOP"
 
 
 def test_makemytrip_parse_ok_with_fixture():

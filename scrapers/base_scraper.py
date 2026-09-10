@@ -411,13 +411,50 @@ class BaseScraper(ABC):
                 )
 
         except Exception as exc:
-            logger.error("Unexpected error fetching {}: {}", job.source, exc)
-            result = ScrapeResult(
-                job=job,
-                ok=False,
-                error=str(exc),
-                method="curl_cffi",
+            # Connection errors (SSL, timeout, DNS) — also trigger Playwright fallback
+            is_connection_error = any(
+                keyword in str(exc).lower()
+                for keyword in ("ssl", "connect", "timeout", "connection", "errno", "curl")
             )
+            if is_connection_error:
+                use_pw = source_cfg.get("use_playwright_fallback", False)
+                if use_pw:
+                    logger.info(
+                        "Connection error for {} {}-{} ({}); falling back to Playwright",
+                        self.source,
+                        job.origin,
+                        job.destination,
+                        type(exc).__name__,
+                    )
+                    import asyncio
+
+                    from scrapers.playwright_fallback import fetch_with_browser
+
+                    try:
+                        result = asyncio.run(fetch_with_browser(job, self))
+                    except Exception as pw_err:
+                        logger.error("Playwright fallback also failed: {}", pw_err)
+                        result = ScrapeResult(
+                            job=job,
+                            ok=False,
+                            error=f"Connection error + Playwright failed: {exc} / {pw_err}",
+                            method="playwright",
+                        )
+                else:
+                    result = ScrapeResult(
+                        job=job,
+                        ok=False,
+                        error=f"Connection error (Playwright disabled): {exc}",
+                        method="curl_cffi",
+                    )
+            else:
+                logger.error("Unexpected error fetching {}: {}", job.source, exc)
+                result = ScrapeResult(
+                    job=job,
+                    ok=False,
+                    error=str(exc),
+                    method="curl_cffi",
+                )
 
         # Persist successful payloads
         if result.ok and result.payload is not None:

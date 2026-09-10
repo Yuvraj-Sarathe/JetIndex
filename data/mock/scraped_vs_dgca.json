@@ -138,5 +138,12 @@
     "n_scraped": 0,
     "avg_dgca": 8042.0,
     "n_dgca": 1
+  },
+  {
+    "month": "2026-09",
+    "avg_scraped": 7941.06,
+    "n_scraped": 106,
+    "avg_dgca": null,
+    "n_dgca": 0
   }
 ]

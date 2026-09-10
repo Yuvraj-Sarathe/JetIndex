@@ -14,6 +14,7 @@ SCRAPERS: dict[str, type[BaseScraper]] = {
     "indigo": IndigoScraper,
     "makemytrip": MakeMyTripScraper,
     "airindia": AirIndiaScraper,
+    # "google_flights": GoogleFlightsScraper,  # Async — run via google_flights.py directly
     # "akasa": AkasaScraper,       # Post-MVP: not yet implemented
     # "easemytrip": EaseMyTripScraper,  # Post-MVP: not yet implemented
 }

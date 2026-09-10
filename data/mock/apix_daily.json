@@ -278,5 +278,13 @@
     "pct_change_dod": -1.7929,
     "n_quotes": 495,
     "n_routes": 20
+  },
+  {
+    "date": "2026-09-10",
+    "apix": 161.6553,
+    "apix_base_only": 160.0387,
+    "pct_change_dod": 0,
+    "n_quotes": 106,
+    "n_routes": 3
   }
 ]

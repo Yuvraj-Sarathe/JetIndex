@@ -18,6 +18,28 @@ from scrapers.base_scraper import ScrapeJob, ScrapeResult
 ALLOW_FIXTURE_FALLBACK = os.getenv("JETINDEX_ALLOW_FIXTURE_FALLBACK", "").strip().lower() in ("1", "true", "yes")
 
 
+def _build_search_url(job: ScrapeJob, spec) -> str | None:
+    """Build a navigable search URL for the airline/OTA website.
+
+    Instead of hitting the API directly (which gets blocked by anti-bot),
+    we navigate to the search page and let the browser make its own API calls.
+    The response interceptor captures the API responses.
+    """
+    origin, dest = job.origin, job.destination
+    date_str = job.depart_date.strftime("%Y-%m-%d")
+
+    url_templates = {
+        "indigo": f"https://www.goindigo.in/search?origin={origin}&destination={dest}&date={date_str}&adults=1&children=0&infants=0&class=E",
+        "makemytrip": f"https://www.makemytrip.com/flight/search?itinerary={origin}-{dest}-{date_str}&tripType=O&paxType=A-1_C-0_I-0&intl=false&cabinClass=E",
+        "airindia": f"https://www.airindia.com/in/en/flight-search.html?origin={origin}&destination={dest}&departureDate={date_str}&adults=1&children=0&infants=0&class=ECONOMY",
+        "easemytrip": f"https://www.easemytrip.com/flight/{origin}-{dest}-{date_str}?tripType=O&adults=1&childs=0&infants=0&class=E",
+        "cleartrip": f"https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&depart_date={date_str}&from={origin}&to={dest}&carrier=&intl=false&return_date=&currency=INR",
+        "akasa": f"https://www.akasaair.com/book?origin={origin}&destination={dest}&departure={date_str}&pax=1&class=E",
+    }
+
+    return url_templates.get(job.source)
+
+
 def _build_fixture_fallback_result(job: ScrapeJob, scraper_instance) -> ScrapeResult:
     """Build a ScrapeResult using route-specific fixtures (TEST/DEBUG ONLY)."""
     fixture_map = {
@@ -156,13 +178,17 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
     async def _handle_response(response) -> None:
         """Capture JSON responses whose URL overlaps with the target endpoint."""
         try:
-            if spec.url and spec.url.split("?")[0] in response.url:
-                content_type = response.headers.get("content-type", "")
-                if "json" in content_type:
+            content_type = response.headers.get("content-type", "")
+            if "json" in content_type:
+                url = response.url
+                # Log all JSON responses for debugging
+                logger.debug("Intercepted JSON response: {} (status={})", url[:120], response.status)
+                if spec.url and spec.url.split("?")[0] in url:
                     body = await response.json()
                     if scraper_instance.parse_ok(body):
                         captured_payload.append(body)
                         capture_event.set()
+                        logger.info("Captured matching fare response from {}", url[:120])
         except Exception as e:
             logger.debug("Response handler ignored: {}", e)
 
@@ -197,35 +223,21 @@ async def fetch_with_browser(job: ScrapeJob, scraper_instance) -> ScrapeResult:
                         await page.goto(origin, wait_until="domcontentloaded", timeout=30_000)
 
                 logger.debug("Playwright issuing {} to {}", spec.method, spec.url)
-                # Execute in-page fetch so browser fingerprint and session tokens apply
-                try:
-                    eval_result = await page.evaluate(
-                        """async ({ url, method, headers, body }) => {
-                            const res = await fetch(url, {
-                                method: method,
-                                headers: headers,
-                                body: body ? JSON.stringify(body) : undefined,
-                            });
-                            const contentType = res.headers.get("content-type") || "";
-                            if (contentType.includes("json")) {
-                                return await res.json();
-                            }
-                            return null;
-                        }""",
-                        {
-                            "url": spec.url,
-                            "method": spec.method,
-                            "headers": spec.headers,
-                            "body": spec.json_body,
-                        },
-                    )
-                    if eval_result and scraper_instance.parse_ok(eval_result):
-                        captured_payload.append(eval_result)
-                        capture_event.set()
-                except Exception as eval_err:
-                    logger.debug("In-page fetch evaluation failed: {}", eval_err)
 
-                # If in-page evaluate didn't succeed, attempt via page.request API
+                # Strategy 1: Navigate to the airline/OTA search page directly.
+                # This lets the browser handle all anti-bot measures (cookies, tokens,
+                # Akamai challenges) and we intercept the API responses it makes.
+                search_url = _build_search_url(job, spec)
+                if search_url:
+                    logger.debug("Playwright navigating to search page: {}", search_url)
+                    try:
+                        await page.goto(search_url, wait_until="networkidle", timeout=45_000)
+                        # Give extra time for dynamic content to load
+                        await asyncio.sleep(3)
+                    except Exception as nav_err:
+                        logger.debug("Navigation-based search failed: {}", nav_err)
+
+                # If navigation didn't capture anything, try page.request.fetch()
                 if not captured_payload:
                     try:
                         req_headers = {
