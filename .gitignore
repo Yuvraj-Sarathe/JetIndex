@@ -44,6 +44,6 @@ Instructions-for-team.md
 .DS_Store
 Thumbs.db
 
-skills/
-agents/
-hooks/
+/skills/
+/agents/
+/hooks/
