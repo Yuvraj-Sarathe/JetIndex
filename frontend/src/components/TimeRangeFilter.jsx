@@ -29,40 +29,44 @@ function TimeRangeFilter({ onChange }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-slate-600 mr-1">Range:</span>
-      {Object.entries(presets).map(([key, { days, label }]) => (
+    <div className="flex flex-wrap items-center gap-2 bg-card border border-ink-border rounded-xl p-1.5 text-xs">
+      <span className="text-ink-muted font-medium px-2 uppercase tracking-wider text-[11px]">Range:</span>
+      <div className="flex items-center gap-1 bg-canvas/80 p-0.5 rounded-lg border border-ink-border/50">
+        {Object.entries(presets).map(([key, { days, label }]) => (
+          <button
+            key={key}
+            onClick={() => handlePreset(key, days)}
+            className={`px-3 py-1 rounded-md font-medium transition-all ${
+              active === key
+                ? 'bg-accent-violet text-white shadow-sm'
+                : 'text-ink-muted hover:text-white hover:bg-ink-border/40'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 ml-1">
+        <input
+          type="date"
+          value={customFrom}
+          onChange={(e) => setCustomFrom(e.target.value)}
+          className="bg-canvas border border-ink-border text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-accent-violet transition-colors"
+        />
+        <span className="text-ink-faint">→</span>
+        <input
+          type="date"
+          value={customTo}
+          onChange={(e) => setCustomTo(e.target.value)}
+          className="bg-canvas border border-ink-border text-ink-muted focus:text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:border-accent-violet transition-colors"
+        />
         <button
-          key={key}
-          onClick={() => handlePreset(key, days)}
-          className={`px-3 py-1 text-xs rounded ${
-            active === key
-              ? 'bg-indigo-500 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
+          onClick={handleCustom}
+          className="px-3 py-1 rounded-md font-medium bg-ink-border/50 text-white hover:bg-accent-violet transition-colors"
         >
-          {label}
+          Apply
         </button>
-      ))}
-      <input
-        type="date"
-        value={customFrom}
-        onChange={(e) => setCustomFrom(e.target.value)}
-        className="px-2 py-1 text-xs border border-slate-200 rounded"
-      />
-      <span className="text-slate-400">—</span>
-      <input
-        type="date"
-        value={customTo}
-        onChange={(e) => setCustomTo(e.target.value)}
-        className="px-2 py-1 text-xs border border-slate-200 rounded"
-      />
-      <button
-        onClick={handleCustom}
-        className="px-3 py-1 text-xs rounded bg-slate-100 text-slate-600 hover:bg-slate-200"
-      >
-        Apply
-      </button>
+      </div>
     </div>
   );
 }
