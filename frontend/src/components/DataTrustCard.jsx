@@ -43,18 +43,18 @@ function DataTrustCard({ data }) {
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <div className="flex flex-col md:flex-row gap-8">
+    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-8 items-center">
         {/* Gauge */}
         <div className="flex flex-col items-center">
-          <svg width="140" height="140" viewBox="0 0 120 120">
+          <svg width="150" height="150" viewBox="0 0 120 120">
             {/* Background circle */}
             <circle
               cx="60"
               cy="60"
               r="45"
               fill="none"
-              stroke="#e2e8f0"
+              stroke="#261c3d"
               strokeWidth="10"
             />
             {/* Score arc */}
@@ -71,18 +71,18 @@ function DataTrustCard({ data }) {
               transform="rotate(-90 60 60)"
             />
             {/* Score text */}
-            <text x="60" y="55" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#1e293b">
+            <text x="60" y="54" textAnchor="middle" fontSize="22" fontWeight="bold" fill="#ffffff" className="font-mono">
               {score.toFixed(1)}
             </text>
-            <text x="60" y="72" textAnchor="middle" fontSize="12" fill="#64748b">
-              {rating}
+            <text x="60" y="72" textAnchor="middle" fontSize="13" fontWeight="bold" fill={getRatingColor(rating)} className="font-mono">
+              Rating: {rating}
             </text>
           </svg>
-          <p className="mt-2 text-sm font-medium text-slate-700">Data Trust Score</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">Composite Trust Index</p>
         </div>
 
         {/* Dimension bars */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 w-full space-y-2.5">
           {DIMENSION_KEYS.map((key) => {
             const value = data[key] || 0;
             // For duplicate_rate and outlier_rate, lower is better
@@ -92,11 +92,11 @@ function DataTrustCard({ data }) {
             
             return (
               <div key={key}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">{DIMENSION_LABELS[key]}</span>
-                  <span className="font-medium text-slate-900">{displayValue.toFixed(1)}%</span>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-ink-muted">{DIMENSION_LABELS[key]}</span>
+                  <span className="font-mono font-medium text-white">{displayValue.toFixed(1)}%</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-canvas rounded-full overflow-hidden border border-ink-border/40">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -112,7 +112,7 @@ function DataTrustCard({ data }) {
       </div>
 
       {data.as_of_date && (
-        <p className="mt-4 text-xs text-slate-400 text-right">As of {data.as_of_date}</p>
+        <p className="mt-4 text-[11px] font-mono text-ink-faint text-right">As of {data.as_of_date}</p>
       )}
     </div>
   );

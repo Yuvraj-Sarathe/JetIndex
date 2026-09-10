@@ -10,58 +10,68 @@ function CPIImpactCard({ data }) {
   const scenarios = data.sensitivity_stress_matrix || [];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h3 className="text-lg font-medium text-slate-900 mb-4">CPI Transmission Matrix</h3>
+    <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-white">CPI Transmission Matrix</h3>
+          <p className="text-xs text-ink-muted">Sensitivity analysis of airfare inflation passthrough to headline CPI</p>
+        </div>
+      </div>
       
       {/* Current Index */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-600">Current Airfare Index</p>
-        <p className="text-2xl font-bold text-blue-700">{data.current_airfare_index}</p>
+      <div className="mb-5 p-3.5 bg-card-elevated border border-ink-border/80 rounded-xl flex items-center justify-between">
+        <div>
+          <p className="text-xs font-mono uppercase text-ink-muted">Current Published Airfare Index</p>
+          <p className="text-2xl font-mono font-bold text-accent-lime mt-0.5">{data.current_airfare_index}</p>
+        </div>
+        <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-accent-lime/15 text-accent-lime border border-accent-lime/40">
+          MoSPI BASKET
+        </span>
       </div>
 
       {/* Weights Structure */}
       <div className="mb-6">
-        <h4 className="text-sm font-medium text-slate-700 mb-2">CPI Weight Structure</h4>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-slate-500">Transport & Comm</p>
-            <p className="font-medium text-slate-900">{(weights.cpi_transport_and_communication_weight * 100).toFixed(2)}%</p>
+        <h4 className="text-xs font-mono uppercase text-ink-faint mb-2.5">Official CPI Weight Structure</h4>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="p-3 bg-canvas/60 border border-ink-border/60 rounded-lg">
+            <p className="text-ink-muted">Transport & Comm</p>
+            <p className="font-mono font-bold text-white text-sm mt-0.5">{(weights.cpi_transport_and_communication_weight * 100).toFixed(2)}%</p>
           </div>
-          <div>
-            <p className="text-slate-500">Airfare in Transport</p>
-            <p className="font-medium text-slate-900">{(weights.airfare_share_in_transport * 100).toFixed(2)}%</p>
+          <div className="p-3 bg-canvas/60 border border-ink-border/60 rounded-lg">
+            <p className="text-ink-muted">Airfare in Transport</p>
+            <p className="font-mono font-bold text-white text-sm mt-0.5">{(weights.airfare_share_in_transport * 100).toFixed(2)}%</p>
           </div>
-          <div>
-            <p className="text-slate-500">Effective Headline</p>
-            <p className="font-medium text-slate-900">{(weights.effective_headline_weight * 100).toFixed(4)}%</p>
+          <div className="p-3 bg-canvas/60 border border-ink-border/60 rounded-lg">
+            <p className="text-ink-muted">Effective Headline</p>
+            <p className="font-mono font-bold text-accent-lime text-sm mt-0.5">{(weights.effective_headline_weight * 100).toFixed(4)}%</p>
           </div>
         </div>
       </div>
 
       {/* Shock Scenarios */}
       <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-2">Sensitivity Stress Matrix</h4>
+        <h4 className="text-xs font-mono uppercase text-ink-faint mb-2.5">Sensitivity Stress Matrix</h4>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm font-mono text-xs">
             <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-2 px-2 font-medium text-slate-600">Airfare Swing</th>
-                <th className="text-right py-2 px-2 font-medium text-slate-600">Transport (bps)</th>
-                <th className="text-right py-2 px-2 font-medium text-slate-600">Headline (bps)</th>
-                <th className="text-left py-2 px-2 font-medium text-slate-600 hidden md:table-cell">Significance</th>
+              <tr className="border-b border-ink-border text-left uppercase text-[11px] text-ink-faint">
+                <th className="py-2.5 px-2">Airfare Swing</th>
+                <th className="text-right py-2.5 px-2">Transport (bps)</th>
+                <th className="text-right py-2.5 px-2">Headline (bps)</th>
+                <th className="py-2.5 px-2 hidden md:table-cell">Policy Significance</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-ink-border/40">
               {scenarios.map((s, i) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="py-2 px-2 font-mono">{s.airfare_swing_pct > 0 ? '+' : ''}{s.airfare_swing_pct}%</td>
-                  <td className="py-2 px-2 text-right font-mono">{s.transport_subgroup_impact_bps > 0 ? '+' : ''}{s.transport_subgroup_impact_bps}</td>
-                  <td className="py-2 px-2 text-right font-mono">{s.headline_cpi_impact_bps > 0 ? '+' : ''}{s.headline_cpi_impact_bps}</td>
-                  <td className="py-2 px-2 hidden md:table-cell">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      s.monetary_policy_significance === 'High' ? 'bg-red-100 text-red-700' :
-                      s.monetary_policy_significance === 'Moderate' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-green-100 text-green-700'
+                <tr key={i} className="hover:bg-card-hover transition-colors">
+                  <td className="py-2.5 px-2 font-bold text-white">{s.airfare_swing_pct > 0 ? '+' : ''}{s.airfare_swing_pct}%</td>
+                  <td className="py-2.5 px-2 text-right text-accent-cyan font-bold">{s.transport_subgroup_impact_bps > 0 ? '+' : ''}{s.transport_subgroup_impact_bps}</td>
+                  <td className="py-2.5 px-2 text-right text-accent-pink font-bold">{s.headline_cpi_impact_bps > 0 ? '+' : ''}{s.headline_cpi_impact_bps}</td>
+                  <td className="py-2.5 px-2 hidden md:table-cell">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
+                      s.monetary_policy_significance === 'High' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                      s.monetary_policy_significance === 'Moderate' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     }`}>
                       {s.monetary_policy_significance}
                     </span>
