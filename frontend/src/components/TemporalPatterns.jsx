@@ -13,19 +13,35 @@ export default function TemporalPatterns() {
   return (
     <div className="space-y-6">
       {/* Day of Week */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Day-of-Week Demand Pattern</h3>
-        <div className="grid grid-cols-7 gap-2">
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-white">Day-of-Week Fare Dynamics</h3>
+            <p className="text-xs text-ink-muted">Statistical demand multipliers relative to mid-week baseline</p>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-canvas text-accent-lime border border-ink-border">
+            Baseline: 1.00x
+          </span>
+        </div>
+        <div className="grid grid-cols-7 gap-3 pt-4">
           {dow.map((d) => {
-            const barHeight = Math.round(d.multiplier * 80);
+            const barHeight = Math.round(d.multiplier * 75);
             const isPeak = d.multiplier >= 1.15;
             return (
               <div key={d.day} className="flex flex-col items-center">
-                <div className="text-xs font-mono mb-1">{d.multiplier?.toFixed(2)}x</div>
-                <div className={`w-full rounded-t ${isPeak ? 'bg-red-400' : d.multiplier < 1.0 ? 'bg-green-400' : 'bg-blue-400'}`}
-                  style={{ height: `${barHeight}px` }} />
-                <p className="text-xs text-slate-600 mt-1 text-center">{d.day?.slice(0, 3)}</p>
-                <p className="text-[10px] text-slate-400 text-center leading-tight">{d.avg_fare_delta_pct > 0 ? '+' : ''}{d.avg_fare_delta_pct}%</p>
+                <div className="text-xs font-mono font-bold text-white mb-1.5">{d.multiplier?.toFixed(2)}x</div>
+                <div className="w-full bg-canvas/60 rounded-t h-24 flex items-end p-1">
+                  <div
+                    className={`w-full rounded-t transition-all ${
+                      isPeak ? 'bg-accent-pink shadow-[0_0_12px_rgba(250,127,170,0.3)]' : d.multiplier < 1.0 ? 'bg-accent-lime shadow-[0_0_12px_rgba(194,239,78,0.2)]' : 'bg-accent-violet'
+                    }`}
+                    style={{ height: `${barHeight}px` }}
+                  />
+                </div>
+                <p className="text-xs font-mono font-bold text-white mt-2 text-center uppercase">{d.day?.slice(0, 3)}</p>
+                <p className={`text-[11px] font-mono text-center mt-0.5 ${d.avg_fare_delta_pct > 0 ? 'text-accent-pink' : 'text-accent-lime'}`}>
+                  {d.avg_fare_delta_pct > 0 ? '+' : ''}{d.avg_fare_delta_pct}%
+                </p>
               </div>
             );
           })}
@@ -33,37 +49,54 @@ export default function TemporalPatterns() {
       </div>
 
       {/* Advance Booking Yield Curve */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Advance Booking Yield Curve</h3>
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-white">Advance Booking Yield Curve</h3>
+            <p className="text-xs text-ink-muted">Empirical price progression by departure proximity window</p>
+          </div>
+        </div>
         <div className="space-y-3">
           {horizon.map((h) => (
-            <div key={h.horizon} className="flex items-center gap-4">
-              <span className="w-12 text-sm font-mono font-bold text-slate-900">{h.horizon}</span>
-              <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-end pr-2"
-                  style={{ width: `${Math.min(100, (h.average_multiplier / 3.0) * 100)}%` }}>
-                  <span className="text-xs text-white font-mono font-bold">{h.average_multiplier?.toFixed(2)}x</span>
+            <div key={h.horizon} className="flex items-center gap-4 bg-card-elevated/40 border border-ink-border/40 p-2.5 rounded-xl">
+              <span className="w-12 text-xs font-mono font-bold text-accent-lime">{h.horizon}</span>
+              <div className="flex-1 bg-canvas rounded-full h-5 overflow-hidden p-0.5 border border-ink-border/40">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-accent-violet to-accent-lime flex items-center justify-end pr-2 transition-all"
+                  style={{ width: `${Math.min(100, (h.average_multiplier / 3.0) * 100)}%` }}
+                >
+                  <span className="text-[10px] text-ink-night font-mono font-bold">{h.average_multiplier?.toFixed(2)}x</span>
                 </div>
               </div>
-              <span className="text-xs text-slate-500 w-32">{h.name}</span>
-              <span className="text-xs text-slate-400 w-20 text-right">σ {h.volatility_pct}%</span>
+              <span className="text-xs text-ink-muted w-32 truncate">{h.name}</span>
+              <span className="text-xs font-mono text-ink-faint w-20 text-right">σ {h.volatility_pct}%</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Seasonal Quarters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Seasonal Quarterly Factors</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-card border border-ink-border rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-white">Seasonal Quarterly Multipliers</h3>
+            <p className="text-xs text-ink-muted">Quarterly seasonality factors across India's domestic aviation calendar</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {seasonal.map((s) => (
-            <div key={s.quarter} className="p-4 rounded-lg border border-slate-200">
-              <p className="text-sm font-medium text-slate-900">{s.quarter}</p>
-              <p className="text-xs text-slate-500 mb-2">{s.name}</p>
-              <p className="text-2xl font-bold text-slate-900">{s.seasonal_factor?.toFixed(2)}x</p>
-              <p className={`text-xs mt-1 ${s.inflation_impact?.includes('Critical') ? 'text-red-600' : s.inflation_impact?.includes('Elevated') ? 'text-orange-600' : 'text-green-600'}`}>
-                {s.inflation_impact}
-              </p>
+            <div key={s.quarter} className="p-4 rounded-xl bg-card-elevated border border-ink-border/80">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-mono uppercase font-bold text-accent-cyan">{s.quarter}</p>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                  s.inflation_impact?.includes('Critical') ? 'bg-rose-500/20 text-rose-300' : s.inflation_impact?.includes('Elevated') ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
+                }`}>
+                  {s.inflation_impact}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted mt-1 truncate">{s.name}</p>
+              <p className="text-2xl font-mono font-bold text-white mt-2">{s.seasonal_factor?.toFixed(2)}x</p>
+              <p className="text-[11px] text-ink-faint mt-1 font-mono">Quarterly multiplier</p>
             </div>
           ))}
         </div>
