@@ -6,28 +6,31 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Rubik', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
       colors: {
-        slate: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
+        canvas: '#150f23',
+        card: {
+          DEFAULT: '#1f1633',
+          elevated: '#261b40',
+          hover: '#2d1f4d',
         },
-        indigo: {
-          500: '#6366f1',
-          600: '#4f46e5',
+        ink: {
+          deep: '#1f1633',
+          night: '#150f23',
+          border: '#362d59',
+          borderLight: '#4a3b75',
+          muted: '#b3a8c9',
+          faint: '#786c91',
         },
-        emerald: {
-          500: '#10b981',
-        },
-        rose: {
-          500: '#f43f5e',
+        accent: {
+          lime: '#c2ef4e',
+          pink: '#fa7faa',
+          violet: '#6a5fc1',
+          violetDeep: '#422082',
+          cyan: '#4ecdc4',
         },
       },
     },
