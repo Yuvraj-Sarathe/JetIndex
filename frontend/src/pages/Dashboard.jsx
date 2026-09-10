@@ -167,7 +167,9 @@ function Dashboard() {
         <Heatmap />
         <ElasticityCurve />
         <BacktestChart />
-        <ScrapedVsDGCA />
+        <div className="lg:col-span-2">
+          <ScrapedVsDGCA />
+        </div>
       </div>
 
       {/* Unbundling inspector */}

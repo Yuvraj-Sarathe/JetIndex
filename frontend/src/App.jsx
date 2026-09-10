@@ -5,16 +5,13 @@ import AnomaliesPage from './pages/AnomaliesPage';
 import DataQualityPage from './pages/DataQualityPage';
 import AlertsPage from './pages/AlertsPage';
 import ScenarioPage from './pages/ScenarioPage';
-import ProvenancePage from './pages/ProvenancePage';
 import ValidationPage from './pages/ValidationPage';
-import TemporalPage from './pages/TemporalPage';
 
 const TAB_CATEGORIES = [
   {
     category: 'Market Analytics',
     tabs: [
       { id: 'overview', label: 'Publishing Overview', component: Dashboard },
-      { id: 'temporal', label: 'Temporal & Lead-Time', component: TemporalPage },
       { id: 'anomalies', label: 'Spike Anomalies', component: AnomaliesPage },
     ],
   },
@@ -30,7 +27,6 @@ const TAB_CATEGORIES = [
     category: 'Data Governance',
     tabs: [
       { id: 'quality', label: 'Trust & Quality', component: DataQualityPage },
-      { id: 'provenance', label: 'Quote Provenance', component: ProvenancePage },
       { id: 'alerts', label: 'Alerts', component: AlertsPage },
     ],
   },
@@ -45,11 +41,11 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-white selection:bg-accent-lime selection:text-ink-night">
       {/* Top Authority Header */}
-      <header className="bg-card border-b border-ink-border sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
+      <header className="bg-card/95 border-b border-ink-border sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-accent-violet/20 border border-accent-violet flex items-center justify-center font-bold text-lg text-accent-lime font-mono shadow-sm">
+              <div className="w-9 h-9 rounded-lg bg-accent-violet/20 border border-accent-violet/60 flex items-center justify-center font-bold text-lg text-accent-lime font-mono shadow-sm">
                 ✈
               </div>
               <div>
@@ -81,25 +77,28 @@ function App() {
         </div>
 
         {/* Categorized Tab Navigation */}
-        <div className="border-t border-ink-border/60 bg-canvas/40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto">
-            <nav className="flex items-center gap-6 min-w-max" aria-label="Tabs">
-              {TAB_CATEGORIES.map((group) => (
-                <div key={group.category} className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-semibold text-ink-faint tracking-wider pr-1">
+        <div className="border-t border-ink-border/60 bg-canvas/60 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <nav className="flex items-center justify-start lg:justify-between gap-3 sm:gap-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
+              {TAB_CATEGORIES.map((group, groupIdx) => (
+                <div key={group.category} className="flex items-center gap-2 shrink-0">
+                  {groupIdx > 0 && (
+                    <div className="h-4 w-px bg-ink-border/50 mr-1 hidden lg:block" aria-hidden="true" />
+                  )}
+                  <span className="text-[10px] font-mono uppercase font-bold text-ink-muted/80 tracking-wider">
                     {group.category}:
                   </span>
-                  <div className="flex items-center gap-1 bg-card/60 p-1 rounded-lg border border-ink-border/40">
+                  <div className="flex items-center gap-1 bg-card/80 p-1 rounded-xl border border-ink-border/60 shadow-inner">
                     {group.tabs.map((tab) => {
                       const isActive = activeTab === tab.id;
                       return (
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`px-3 py-1 text-xs rounded-md transition-all font-medium ${
+                          className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-150 font-medium ${
                             isActive
-                              ? 'bg-accent-violet text-white shadow-sm font-semibold'
-                              : 'text-ink-muted hover:text-white hover:bg-card-hover'
+                              ? 'bg-accent-violet text-white shadow-md shadow-accent-violet/30 ring-1 ring-accent-violet/60 font-semibold'
+                              : 'text-ink-muted hover:text-white hover:bg-card-hover/80'
                           }`}
                         >
                           {tab.label}
