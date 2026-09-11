@@ -17,10 +17,17 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
-    # CORS for frontend dev server
+    # Create all tables on startup (safe — no-ops if they already exist)
+    from db.session import Base, engine
+    Base.metadata.create_all(bind=engine)
+
+    # CORS for frontend dev server + Vercel production
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=[
+            "http://localhost:5173",
+            "https://jetindex.vercel.app",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
