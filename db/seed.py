@@ -65,6 +65,10 @@ def seed_routes(session) -> int:
         if "base_fare_benchmark" in route_data:
             route_kwargs["base_fare_benchmark"] = route_data["base_fare_benchmark"]
 
+        # Remove fields not present on the Route model
+        for key in ("weight", "distance_km", "is_metro", "base_fare_benchmark"):
+            route_kwargs.pop(key, None)
+
         route = Route(**route_kwargs)
 
         session.add(route)
