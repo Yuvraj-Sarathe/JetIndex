@@ -75,7 +75,7 @@ function ElasticityCurve({ routeId }) {
           <Tooltip
             contentStyle={{
               backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
+              borderColor: '#222222',
               borderRadius: '8px',
               color: '#ffffff',
               fontSize: '12px',

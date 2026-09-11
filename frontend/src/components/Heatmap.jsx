@@ -52,7 +52,7 @@ function Heatmap({ date }) {
           center={center}
           zoom={4}
           scrollWheelZoom={false}
-          style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
+          style={{ height: '100%', width: '100%', background: '#000000' }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
@@ -76,10 +76,10 @@ function Heatmap({ date }) {
 
             return (
               <div key={route.route_id ?? route.route_code ?? idx}>
-                <CircleMarker center={origin} radius={4} fillColor="#faff69" fillOpacity={1} color="#0a0a0a" weight={1}>
+                <CircleMarker center={origin} radius={4} fillColor="#faff69" fillOpacity={1} color="#000000" weight={1}>
                   <Popup>{route.origin}</Popup>
                 </CircleMarker>
-                <CircleMarker center={dest} radius={4} fillColor="#faff69" fillOpacity={1} color="#0a0a0a" weight={1}>
+                <CircleMarker center={dest} radius={4} fillColor="#faff69" fillOpacity={1} color="#000000" weight={1}>
                   <Popup>{destLabel}</Popup>
                 </CircleMarker>
                 <Polyline

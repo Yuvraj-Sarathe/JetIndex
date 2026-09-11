@@ -72,7 +72,7 @@ function ScrapedVsDGCA() {
           <Tooltip
             contentStyle={{
               backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
+              borderColor: '#222222',
               borderRadius: '8px',
               color: '#ffffff',
               fontSize: '12px',
@@ -98,7 +98,7 @@ function ScrapedVsDGCA() {
             dataKey="dgca"
             stroke="#ffffff"
             strokeWidth={2.5}
-            dot={{ r: 4, fill: '#ffffff', stroke: '#0a0a0a', strokeWidth: 1.5 }}
+            dot={{ r: 4, fill: '#ffffff', stroke: '#000000', strokeWidth: 1.5 }}
             activeDot={{ r: 6, fill: '#ffffff', stroke: '#faff69', strokeWidth: 2 }}
             name="DGCA (Official Published)"
             connectNulls={false}

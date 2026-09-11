@@ -53,7 +53,7 @@ function ApixTrend({ data }) {
           <Tooltip
             contentStyle={{
               backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
+              borderColor: '#222222',
               borderRadius: '8px',
               color: '#ffffff',
               fontSize: '12px',
@@ -65,7 +65,7 @@ function ApixTrend({ data }) {
           <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
           <ReferenceLine
             y={100}
-            stroke="#2a2a2a"
+            stroke="#333333"
             strokeDasharray="4 4"
             label={{ value: 'Base 100', position: 'insideTopLeft', fill: '#888888', fontSize: 10 }}
           />
@@ -75,7 +75,7 @@ function ApixTrend({ data }) {
             stroke="#faff69"
             strokeWidth={2.5}
             dot={{ r: 2, fill: '#faff69' }}
-            activeDot={{ r: 5, fill: '#faff69', stroke: '#0a0a0a', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: '#faff69', stroke: '#000000', strokeWidth: 2 }}
             name="APIx (Published All-In)"
           />
           {data[0]?.apix_base_only !== undefined && (
