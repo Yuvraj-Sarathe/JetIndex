@@ -1,0 +1,24 @@
+name: Daily Playwright Scraper
+
+on:
+  schedule:
+    - cron: '30 20 * * *' # Runs daily at 02:00 IST
+  workflow_dispatch: # Enables the "Run workflow" button in Actions tab
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+      - name: Run Scraper
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: python -m scrapers.run_sweep
