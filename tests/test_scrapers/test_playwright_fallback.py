@@ -107,6 +107,7 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     mock_page = AsyncMock()
     # page.on() is synchronous in Playwright — must not be an AsyncMock
     mock_page.on = MagicMock()
+    mock_page.goto = AsyncMock()  # Mock goto to complete without raising
 
     mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
     mock_browser.new_context = AsyncMock(return_value=mock_context)
@@ -114,11 +115,11 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
 
     fake_fares = [{"flight_no": "6E-101", "total_fare": 4500.0}]
 
-    # Mock the request.fetch() to return a response with async json() method
+    # Mock the API response from page.request.fetch()
     mock_api_resp = AsyncMock()
     mock_api_resp.ok = True
-    # Properly configure json() to return the fake_fares when awaited
     mock_api_resp.json = AsyncMock(return_value=fake_fares)
+
     mock_page.request = AsyncMock()
     mock_page.request.fetch = AsyncMock(return_value=mock_api_resp)
 
