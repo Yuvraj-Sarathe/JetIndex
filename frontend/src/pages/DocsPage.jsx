@@ -217,7 +217,7 @@ export default function DocsPage() {
                   The National Airfare Inflation Blindspot
                 </h2>
                 <p className="text-xs text-ink-muted mt-1 leading-relaxed">
-                  Historically, India's Consumer Price Index (CPI) computed the civil aviation sub-component via manual monthly ticket-counter surveys. In a modern economy where &gt;90% of bookings occur dynamically online, this created three critical policy failures:
+                  Historically, India&apos;s Consumer Price Index (CPI) computed the civil aviation sub-component via manual monthly ticket-counter surveys. In a modern economy where &gt;90% of bookings occur dynamically online, this created three critical policy failures:
                 </p>
               </div>
 
@@ -237,7 +237,7 @@ export default function DocsPage() {
                 <div className="p-4 rounded-xl bg-card-elevated border border-hairline">
                   <div className="text-accent-rose font-mono text-sm font-bold mb-1">03. Composite Bias</div>
                   <p className="text-xs text-ink-muted leading-relaxed">
-                    A single "total price" was recorded, conflating statutory taxes (GST, UDF) with pure airline base fare movements, misleading monetary policy transmission.
+                    A single &quot;total price&quot; was recorded, conflating statutory taxes (GST, UDF) with pure airline base fare movements, misleading monetary policy transmission.
                   </p>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default function DocsPage() {
                   <span className="text-primary">✓</span> The APIx Solution
                 </h3>
                 <p className="text-xs text-ink-muted mt-1 leading-relaxed">
-                  APIx autonomously ingests high-frequency online quotes across India's top 20 domestic city-pairs, isolates pure base fares from statutory charges via an unbundling pipeline, computes a DGCA volume-weighted Laspeyres Price Index daily, and provides macro-econometric transmission models for the Reserve Bank of India.
+                  APIx autonomously ingests high-frequency online quotes across India&apos;s top 20 domestic city-pairs, isolates pure base fares from statutory charges via an unbundling pipeline, computes a DGCA volume-weighted Laspeyres Price Index daily, and provides macro-econometric transmission models for the Reserve Bank of India.
                 </p>
               </div>
             </div>
@@ -340,7 +340,7 @@ export default function DocsPage() {
                   DGCA Top 20 Domestic Air Route Basket
                 </h2>
                 <p className="text-xs text-ink-muted mt-1 leading-relaxed">
-                  These 20 corridors represent over 65% of India's scheduled domestic passenger throughput. Weights are derived from statutory DGCA City-Pair Traffic Reports.
+                  These 20 corridors represent over 65% of India&apos;s scheduled domestic passenger throughput. Weights are derived from statutory DGCA City-Pair Traffic Reports.
                 </p>
               </div>
 
@@ -481,7 +481,7 @@ export default function DocsPage() {
                   CPI Passthrough Transmission Mechanism
                 </h2>
                 <p className="text-xs text-ink-muted mt-1 leading-relaxed">
-                  How airfare swings feed mathematically into MoSPI's official Headline Consumer Price Index and the Transport & Communication subgroup.
+                  How airfare swings feed mathematically into MoSPI&apos;s official Headline Consumer Price Index and the Transport & Communication subgroup.
                 </p>
               </div>
 
