@@ -14,9 +14,13 @@ async def require_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     """Validate Bearer token against settings.API_TOKEN."""
-    if not secrets.compare_digest(credentials.credentials, settings.API_TOKEN):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API token",
-        )
-    return credentials.credentials
+    # TEMPORARY HACKATHON BYPASS: allow all requests
+    return "bypass"
+
+    # Original check (restore after hackathon):
+    # if not secrets.compare_digest(credentials.credentials, settings.API_TOKEN):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Invalid or missing API token",
+    #     )
+    # return credentials.credentials
