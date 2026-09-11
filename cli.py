@@ -5,21 +5,16 @@ scenario simulation, and AI Policy Analyst CLI.
 """
 
 import argparse
-import asyncio
 import datetime
-import json
-import os
-import sys
 
-from engine.compute_national_index import compute_national_index
-from engine.model_trainer import train_nowcast_model
-from engine.nowcast_predictor import InflationNowcastPredictor
-from engine.analytics.pressure_score import get_inflation_pressure_score
+from auth import authenticate_user, get_demo_users
+from data_quality.trust_score import get_latest_data_quality
 from engine.analytics.cpi_decomposition import get_cpi_decomposition
 from engine.analytics.heatmap import get_airfare_heatmap
-from data_quality.trust_score import get_latest_data_quality
+from engine.analytics.pressure_score import get_inflation_pressure_score
+from engine.model_trainer import train_nowcast_model
+from engine.nowcast_predictor import InflationNowcastPredictor
 from scrapers.market_feed import MarketFeedGenerator, SimulationConfig
-from auth import get_demo_users, authenticate_user
 
 
 def cmd_auth(args):
@@ -52,6 +47,7 @@ def cmd_auth(args):
 def cmd_serve(args):
     print(f"[*] Starting JetIndex Production Service on {args.host}:{args.port} (Workers: {args.workers})...")
     import uvicorn
+
     uvicorn.run("app.main:app", host=args.host, port=args.port, workers=args.workers)
 
 
@@ -63,10 +59,10 @@ def cmd_ingest(args):
     feed = MarketFeedGenerator(SimulationConfig(seed=None, anomaly_rate=0.015))
     raw_quotes = feed.generate_quotes_for_date(booking_date, day_index=1)
 
-    print(f"[+] Ingestion Complete:")
+    print("[+] Ingestion Complete:")
     print(f"    - Raw Quotes Generated: {len(raw_quotes)}")
-    print(f"    - Routes: 20 DGCA top domestic routes")
-    print(f"    - Advance Windows: T+1, T+7, T+15, T+30, T+45")
+    print("    - Routes: 20 DGCA top domestic routes")
+    print("    - Advance Windows: T+1, T+7, T+15, T+30, T+45")
 
 
 def cmd_train(args):
@@ -103,10 +99,14 @@ def cmd_pressure(args):
 
 def cmd_cpi_decomp(args):
     rep = get_cpi_decomposition()
-    print(f"[+] Headline CPI Impact: {rep.total_headline_cpi_impact_bps:+.4f} bps (Transport: {rep.total_transport_impact_bps:+.2f} bps)")
+    print(
+        f"[+] Headline CPI Impact: {rep.total_headline_cpi_impact_bps:+.4f} bps (Transport: {rep.total_transport_impact_bps:+.2f} bps)"
+    )
     print("    - Top Contributors:")
     for r in rep.top_positive_contributors[:4]:
-        print(f"      • {r.route_code} ({r.corridor_name}): {r.headline_cpi_impact_bps:+.4f} bps ({r.share_of_total_inflation_pct:.1f}% share)")
+        print(
+            f"      • {r.route_code} ({r.corridor_name}): {r.headline_cpi_impact_bps:+.4f} bps ({r.share_of_total_inflation_pct:.1f}% share)"
+        )
 
 
 def cmd_heatmap(args):
@@ -129,7 +129,7 @@ def cmd_data_quality(args):
 
 def cmd_backtest(args):
     from engine.backtest import DGCABacktestEngine
-    init_db()
+
     engine = DGCABacktestEngine()
     res = engine.run_backtest(num_days=args.days)
     print(f"[+] Backtest Validation Report ({res.sample_days} Days / {res.total_quotes_evaluated:,} Quotes):")
@@ -140,8 +140,7 @@ def cmd_backtest(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="jetindex",
-        description="JetIndex - National Airfare Intelligence & Inflation Decision Platform CLI"
+        prog="jetindex", description="JetIndex - National Airfare Intelligence & Inflation Decision Platform CLI"
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

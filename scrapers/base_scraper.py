@@ -413,8 +413,7 @@ class BaseScraper(ABC):
         except Exception as exc:
             # Connection errors (SSL, timeout, DNS) — also trigger Playwright fallback
             is_connection_error = any(
-                keyword in str(exc).lower()
-                for keyword in ("ssl", "connect", "timeout", "connection", "errno", "curl")
+                keyword in str(exc).lower() for keyword in ("ssl", "connect", "timeout", "connection", "errno", "curl")
             )
             if is_connection_error:
                 use_pw = source_cfg.get("use_playwright_fallback", False)

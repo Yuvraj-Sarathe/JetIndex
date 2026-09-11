@@ -5,20 +5,20 @@ for the Reserve Bank of India (RBI) Monetary Policy Committee and MoSPI.
 """
 
 import datetime
+import logging
 import math
 import os
-import logging
 from dataclasses import dataclass
-from typing import Dict, List, Any, Optional
+
 import numpy as np
 import pandas as pd
 
 from .model_trainer import (
+    CPI_WEIGHTS,
+    MODEL_ARTIFACT_PATH,
     EconometricNowcastEnsemble,
     FeatureEngineer,
-    MODEL_ARTIFACT_PATH,
     train_nowcast_model,
-    CPI_WEIGHTS,
 )
 
 logger = logging.getLogger("jetindex.nowcast")
@@ -27,6 +27,7 @@ logger = logging.getLogger("jetindex.nowcast")
 @dataclass
 class ForecastStep:
     """A single daily forward forecast step with uncertainty bands and CPI transmission."""
+
     forecast_date: str
     horizon_days: int
     predicted_laspeyres_index: float
@@ -40,6 +41,7 @@ class ForecastStep:
 @dataclass
 class NowcastReport:
     """Complete multi-horizon macroeconomic nowcast report."""
+
     as_of_date: str
     current_index: float
     model_version: str
@@ -48,8 +50,8 @@ class NowcastReport:
     net_projected_transport_bps: float
     net_projected_headline_cpi_bps: float
     monetary_policy_alert: str
-    forecast_steps: List[ForecastStep]
-    feature_importances: Dict[str, float]
+    forecast_steps: list[ForecastStep]
+    feature_importances: dict[str, float]
     generated_at: str
 
 
@@ -60,7 +62,7 @@ class InflationNowcastPredictor:
 
     def __init__(self, model_path: str = MODEL_ARTIFACT_PATH):
         self.model_path = model_path
-        self._model: Optional[EconometricNowcastEnsemble] = None
+        self._model: EconometricNowcastEnsemble | None = None
 
     def get_model(self) -> EconometricNowcastEnsemble:
         """Retrieves active model or triggers initial training."""
@@ -86,30 +88,38 @@ class InflationNowcastPredictor:
 
         # Load historical data from database
         from db.session import get_engine
+
         engine = get_engine()
 
         with engine.connect() as conn:
-            df_raw = pd.read_sql("""
+            df_raw = pd.read_sql(
+                """
                 SELECT calculation_date, laspeyres_index, fisher_index, paasche_index,
                        spot_t1_index, daily_pct_change, bps_transport_impact,
                        bps_headline_cpi_impact, observations_count, valid_quotes_count,
                        outliers_rejected_count
                 FROM national_indices
                 ORDER BY calculation_date ASC
-            """, conn)
+            """,
+                conn,
+            )
 
         if len(df_raw) < 10:
             from engine.backtest import DGCABacktestEngine
+
             DGCABacktestEngine().run_backtest(num_days=35)
             with engine.connect() as conn:
-                df_raw = pd.read_sql("""
+                df_raw = pd.read_sql(
+                    """
                     SELECT calculation_date, laspeyres_index, fisher_index, paasche_index,
                            spot_t1_index, daily_pct_change, bps_transport_impact,
                            bps_headline_cpi_impact, observations_count, valid_quotes_count,
                            outliers_rejected_count
                     FROM national_indices
                     ORDER BY calculation_date ASC
-                """, conn)
+                """,
+                    conn,
+                )
 
         # Working copy for iterative autoregressive rollout
         df_sim = df_raw.copy()
@@ -119,7 +129,7 @@ class InflationNowcastPredictor:
         latest_date = df_sim["calculation_date"].iloc[-1].date()
         current_index = float(df_sim["laspeyres_index"].iloc[-1])
 
-        forecast_steps: List[ForecastStep] = []
+        forecast_steps: list[ForecastStep] = []
         prev_idx = current_index
         residual_std = model.residual_std or 1.20
 
@@ -244,5 +254,5 @@ class InflationNowcastPredictor:
             monetary_policy_alert=alert,
             forecast_steps=forecast_steps,
             feature_importances=feat_importances,
-            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
         )

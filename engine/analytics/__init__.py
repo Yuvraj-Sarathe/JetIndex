@@ -25,17 +25,18 @@ from engine.analytics_engine import (
     generate_temporal_heatmap,
 )
 
+from .cpi_decomposition import CPIDecompositionEngine, CPIDecompositionReport, get_cpi_decomposition
+from .heatmap import AirfareHeatmapEngine, HeatmapReport, get_airfare_heatmap
+
+# Standalone modules (ported from VayuSutra-APIx)
+from .pressure_score import PressureScoreEngine, PressureScoreReport, get_inflation_pressure_score
+
 # Package-level exports
 from .route_intelligence import RouteIntelligenceEngine, route_intel_engine
 from .source_analytics import SourceAnalyticsEngine
 from .source_consensus import RouteConsensusRecord, SourceConsensusReport, SourcePriceEntry
 from .source_telemetry import PORTAL_LABELS
 from .temporal import TemporalAnalyticsEngine
-
-# Standalone modules (ported from VayuSutra-APIx)
-from .pressure_score import PressureScoreEngine, PressureScoreReport, get_inflation_pressure_score
-from .cpi_decomposition import CPIDecompositionEngine, CPIDecompositionReport, get_cpi_decomposition
-from .heatmap import AirfareHeatmapEngine, HeatmapReport, get_airfare_heatmap
 
 __all__ = [
     "_AIRFARE_SHARE",

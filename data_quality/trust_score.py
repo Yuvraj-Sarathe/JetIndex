@@ -5,28 +5,43 @@ Transparent, mathematically defined 0-100 composite index for MoSPI & RBI data g
 
 import datetime
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+
 import numpy as np
 
 logger = logging.getLogger("jetindex.data_quality")
 
 # Route coverage targets (from config)
 DGCA_TOP_20_ROUTES = [
-    "DEL-BOM", "DEL-BLR", "DEL-MAA", "DEL-CCU", "DEL-HYD",
-    "BOM-BLR", "BOM-MAA", "BOM-CCU", "BOM-HYD", "BLR-MAA",
-    "BLR-CCU", "BLR-HYD", "MAA-CCU", "MAA-HYD", "CCU-HYD",
-    "DEL-GOI", "DEL-PNQ", "BOM-GOI", "BLR-GOI", "MAA-GOI"
+    "DEL-BOM",
+    "DEL-BLR",
+    "DEL-MAA",
+    "DEL-CCU",
+    "DEL-HYD",
+    "BOM-BLR",
+    "BOM-MAA",
+    "BOM-CCU",
+    "BOM-HYD",
+    "BLR-MAA",
+    "BLR-CCU",
+    "BLR-HYD",
+    "MAA-CCU",
+    "MAA-HYD",
+    "CCU-HYD",
+    "DEL-GOI",
+    "DEL-PNQ",
+    "BOM-GOI",
+    "BLR-GOI",
+    "MAA-GOI",
 ]
 
-ADVANCE_PURCHASE_WINDOWS = [
-    "T-0", "T-7", "T-14", "T-21", "T-30"
-]
+ADVANCE_PURCHASE_WINDOWS = ["T-0", "T-7", "T-14", "T-21", "T-30"]
 
 
 @dataclass
 class DataTrustMetrics:
     """Comprehensive data quality telemetry metrics."""
+
     snapshot_date: str
     overall_trust_score: float
     freshness_pct: float
@@ -38,7 +53,7 @@ class DataTrustMetrics:
     validation_success_pct: float
     consensus_score: float
     status_rating: str
-    weights_breakdown: Dict[str, float]
+    weights_breakdown: dict[str, float]
     data_tag: str = "REAL_COMPUTED"
     generated_at: str = ""
 
@@ -68,15 +83,16 @@ class DataQualityEngine:
     def __init__(self):
         self.expected_cells = len(DGCA_TOP_20_ROUTES) * len(ADVANCE_PURCHASE_WINDOWS)  # 100 cells
 
-    def evaluate_quality(self, target_date: Optional[str] = None) -> DataTrustMetrics:
+    def evaluate_quality(self, target_date: str | None = None) -> DataTrustMetrics:
         """
         Computes deterministic, reproducible Data Trust Score directly from database observations.
         """
-        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        now_dt = datetime.datetime.now(datetime.UTC)
 
         # Get database engine
-        from db.session import get_engine
         from sqlalchemy import text
+
+        from db.session import get_engine
 
         engine = get_engine()
 
@@ -99,11 +115,14 @@ class DataQualityEngine:
 
         # 2. Route Coverage & Cell Completeness
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(
+                text("""
                 SELECT route_code, advance_window, sample_size
                 FROM route_indices
                 WHERE calculation_date = :calc_date
-            """), {"calc_date": calc_date})
+            """),
+                {"calc_date": calc_date},
+            )
             rows = result.fetchall()
 
         observed_routes = set(r[0] for r in rows)
@@ -117,18 +136,18 @@ class DataQualityEngine:
             result = conn.execute(text("SELECT success_rate_24h, is_active FROM sources"))
             source_rows = result.fetchall()
 
-        if source_rows:
-            source_health_pct = float(np.mean([r[0] for r in source_rows if r[1] == 1]))
-        else:
-            source_health_pct = 0.0
+        source_health_pct = float(np.mean([r[0] for r in source_rows if r[1] == 1])) if source_rows else 0.0
 
         # 4. Outlier & Duplicate Rates
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(
+                text("""
                 SELECT observations_count, valid_quotes_count, outliers_rejected_count
                 FROM national_indices
                 WHERE calculation_date = :calc_date
-            """), {"calc_date": calc_date})
+            """),
+                {"calc_date": calc_date},
+            )
             nat_row = result.fetchone()
 
         if nat_row and nat_row[0] > 0:
@@ -155,6 +174,7 @@ class DataQualityEngine:
         # corridors with real observations contribute; no fabricated consensus.
         try:
             from engine.analytics.source_consensus import get_source_consensus_report
+
             consensus_rep = get_source_consensus_report(target_date=calc_date)
             consensus_score = float(consensus_rep.overall_market_consensus_score)
         except Exception as e:
@@ -163,13 +183,13 @@ class DataQualityEngine:
 
         # 6. Overall Weighted Trust Score
         overall = (
-            (freshness * self.WEIGHTS["freshness"]) +
-            (completeness_pct * self.WEIGHTS["completeness"]) +
-            (coverage_pct * self.WEIGHTS["route_coverage"]) +
-            (source_health_pct * self.WEIGHTS["source_health"]) +
-            (duplicate_integrity * self.WEIGHTS["duplicate_integrity"]) +
-            (outlier_cleanliness * self.WEIGHTS["outlier_cleanliness"]) +
-            (consensus_score * self.WEIGHTS["cross_source_consensus"])
+            (freshness * self.WEIGHTS["freshness"])
+            + (completeness_pct * self.WEIGHTS["completeness"])
+            + (coverage_pct * self.WEIGHTS["route_coverage"])
+            + (source_health_pct * self.WEIGHTS["source_health"])
+            + (duplicate_integrity * self.WEIGHTS["duplicate_integrity"])
+            + (outlier_cleanliness * self.WEIGHTS["outlier_cleanliness"])
+            + (consensus_score * self.WEIGHTS["cross_source_consensus"])
         )
         overall = round(max(0.0, min(100.0, overall)), 2)
 
@@ -195,13 +215,14 @@ class DataQualityEngine:
             consensus_score=round(consensus_score, 1),
             status_rating=status,
             weights_breakdown=self.WEIGHTS,
-            generated_at=now_dt.isoformat()
+            generated_at=now_dt.isoformat(),
         )
 
         # Persist snapshot (if table exists)
         try:
             with engine.connect() as conn:
-                conn.execute(text("""
+                conn.execute(
+                    text("""
                     INSERT INTO data_quality_snapshots (
                         snapshot_date, overall_trust_score, freshness_pct, completeness_pct,
                         route_coverage_pct, source_health_pct, duplicate_rate_pct, outlier_rate_pct,
@@ -209,20 +230,22 @@ class DataQualityEngine:
                     ) VALUES (:snapshot_date, :overall_trust_score, :freshness_pct, :completeness_pct,
                               :route_coverage_pct, :source_health_pct, :duplicate_rate_pct, :outlier_rate_pct,
                               :validation_success_pct, :consensus_score, :status_rating, :created_at)
-                """), {
-                    "snapshot_date": metrics.snapshot_date,
-                    "overall_trust_score": metrics.overall_trust_score,
-                    "freshness_pct": metrics.freshness_pct,
-                    "completeness_pct": metrics.completeness_pct,
-                    "route_coverage_pct": metrics.route_coverage_pct,
-                    "source_health_pct": metrics.source_health_pct,
-                    "duplicate_rate_pct": metrics.duplicate_rate_pct,
-                    "outlier_rate_pct": metrics.outlier_rate_pct,
-                    "validation_success_pct": metrics.validation_success_pct,
-                    "consensus_score": metrics.consensus_score,
-                    "status_rating": metrics.status_rating,
-                    "created_at": metrics.generated_at
-                })
+                """),
+                    {
+                        "snapshot_date": metrics.snapshot_date,
+                        "overall_trust_score": metrics.overall_trust_score,
+                        "freshness_pct": metrics.freshness_pct,
+                        "completeness_pct": metrics.completeness_pct,
+                        "route_coverage_pct": metrics.route_coverage_pct,
+                        "source_health_pct": metrics.source_health_pct,
+                        "duplicate_rate_pct": metrics.duplicate_rate_pct,
+                        "outlier_rate_pct": metrics.outlier_rate_pct,
+                        "validation_success_pct": metrics.validation_success_pct,
+                        "consensus_score": metrics.consensus_score,
+                        "status_rating": metrics.status_rating,
+                        "created_at": metrics.generated_at,
+                    },
+                )
                 conn.commit()
         except Exception as e:
             logger.debug(f"Snapshot insert error (table may not exist): {e}")

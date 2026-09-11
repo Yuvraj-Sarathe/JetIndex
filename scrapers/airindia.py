@@ -118,9 +118,7 @@ class AirIndiaScraper(BaseScraper):
             "searchPreferences": {
                 "showUnavailableEntries": True,
             },
-            "travelers": [
-                {"passengerTypeCode": "ADT"}
-            ],
+            "travelers": [{"passengerTypeCode": "ADT"}],
         }
 
         return RequestSpec(
@@ -138,11 +136,7 @@ class AirIndiaScraper(BaseScraper):
         if hasattr(response, "status_code") and response.status_code != 200:
             return False
 
-        payload = (
-            response.json()
-            if hasattr(response, "json") and callable(response.json)
-            else response
-        )
+        payload = response.json() if hasattr(response, "json") and callable(response.json) else response
 
         if isinstance(payload, dict):
             if payload.get("error") or payload.get("errors"):
@@ -164,11 +158,7 @@ class AirIndiaScraper(BaseScraper):
 
         if isinstance(payload, list):
             return len(payload) > 0 and any(
-                isinstance(item, dict)
-                and any(
-                    k in item
-                    for k in ("totalFare", "total_fare", "price", "fare")
-                )
+                isinstance(item, dict) and any(k in item for k in ("totalFare", "total_fare", "price", "fare"))
                 for item in payload
             )
 

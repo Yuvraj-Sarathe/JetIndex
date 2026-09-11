@@ -12,10 +12,9 @@ Usage:
 """
 
 import argparse
-import json
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 # Ensure project root is in path
@@ -109,8 +108,8 @@ def run_pipeline(scrape_date_str: str) -> dict:
 def run_index(compute_date_str: str) -> dict:
     """Compute the daily index."""
     try:
-        from engine.index_calculator import compute_daily
         from db.session import SessionLocal
+        from engine.index_calculator import compute_daily
 
         compute_date = date.fromisoformat(compute_date_str)
         session = SessionLocal()

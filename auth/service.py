@@ -3,21 +3,19 @@ JetIndex - Authentication Service
 User login/session management, role switching, demo role switching, and database interaction.
 """
 
+import os
 import sqlite3
 import time
-import uuid
-import os
-from typing import Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from .models import (
-    User, UserRole, LoginRequest, LoginResponse, SwitchRoleRequest,
-    ROLE_PERMISSIONS
-)
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from .models import LoginRequest, SwitchRoleRequest, User, UserRole
 from .security import (
-    hash_password, verify_password, create_access_token,
-    verify_access_token, get_permissions_for_role, TOKEN_EXPIRY_SECONDS
+    get_permissions_for_role,
+    hash_password,
+    verify_access_token,
+    verify_password,
 )
 
 DATABASE_DIR = os.path.join(os.path.expanduser("~"), ".jetindex", "data")
@@ -88,7 +86,7 @@ PRE_SEEDED_USERS = [
         "designation": "Deputy Director",
         "organization": "Ministry of Statistics and Programme Implementation",
         "department": "CPI Division",
-        "avatar_color": "#ef4444"
+        "avatar_color": "#ef4444",
     },
     {
         "user_id": "usr_mospi_analyst",
@@ -99,7 +97,7 @@ PRE_SEEDED_USERS = [
         "designation": "Statistical Officer",
         "organization": "Ministry of Statistics and Programme Implementation",
         "department": "Price Statistics",
-        "avatar_color": "#f59e0b"
+        "avatar_color": "#f59e0b",
     },
     {
         "user_id": "usr_rbi_mpc",
@@ -110,7 +108,7 @@ PRE_SEEDED_USERS = [
         "designation": "Executive Director",
         "organization": "Reserve Bank of India",
         "department": "Monetary Policy Committee",
-        "avatar_color": "#6366f1"
+        "avatar_color": "#6366f1",
     },
     {
         "user_id": "usr_rbi_economist",
@@ -121,7 +119,7 @@ PRE_SEEDED_USERS = [
         "designation": "Research Officer",
         "organization": "Reserve Bank of India",
         "department": "Department of Economic and Policy Research",
-        "avatar_color": "#8b5cf6"
+        "avatar_color": "#8b5cf6",
     },
     {
         "user_id": "usr_dgca_regulator",
@@ -132,7 +130,7 @@ PRE_SEEDED_USERS = [
         "designation": "Joint Director",
         "organization": "Directorate General of Civil Aviation",
         "department": "Economic Regulation",
-        "avatar_color": "#10b981"
+        "avatar_color": "#10b981",
     },
     {
         "user_id": "usr_dgca_inspector",
@@ -143,7 +141,7 @@ PRE_SEEDED_USERS = [
         "designation": "Air Safety Inspector",
         "organization": "Directorate General of Civil Aviation",
         "department": "Flight Operations",
-        "avatar_color": "#3b82f6"
+        "avatar_color": "#3b82f6",
     },
     {
         "user_id": "usr_sys_admin",
@@ -154,7 +152,7 @@ PRE_SEEDED_USERS = [
         "designation": "Lead Platform Engineer",
         "organization": "JetIndex Platform",
         "department": "Engineering",
-        "avatar_color": "#64748b"
+        "avatar_color": "#64748b",
     },
     {
         "user_id": "usr_public_auditor",
@@ -165,8 +163,8 @@ PRE_SEEDED_USERS = [
         "designation": "Independent Auditor",
         "organization": "Comptroller and Auditor General",
         "department": "Performance Audit",
-        "avatar_color": "#f59e0b"
-    }
+        "avatar_color": "#f59e0b",
+    },
 ]
 
 
@@ -178,22 +176,33 @@ def ensure_demo_users_seeded():
             existing = conn.execute("SELECT user_id FROM users WHERE user_id = ?", (user["user_id"],)).fetchone()
             if not existing:
                 password_hash, password_salt = hash_password(DEMO_PASSWORD)
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO users (user_id, username, email, full_name, role, designation,
                                        organization, department, avatar_color, password_hash, password_salt, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    user["user_id"], user["username"], user["email"], user["full_name"],
-                    user["role"].value, user["designation"], user["organization"],
-                    user["department"], user["avatar_color"], password_hash, password_salt,
-                    time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                ))
+                """,
+                    (
+                        user["user_id"],
+                        user["username"],
+                        user["email"],
+                        user["full_name"],
+                        user["role"].value,
+                        user["designation"],
+                        user["organization"],
+                        user["department"],
+                        user["avatar_color"],
+                        password_hash,
+                        password_salt,
+                        time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    ),
+                )
         conn.commit()
     finally:
         conn.close()
 
 
-def authenticate_user(req: LoginRequest) -> Optional[User]:
+def authenticate_user(req: LoginRequest) -> User | None:
     """Authenticates user with username/email and password."""
     conn = get_db_connection()
     try:
@@ -225,13 +234,13 @@ def authenticate_user(req: LoginRequest) -> Optional[User]:
             permissions=get_permissions_for_role(role),
             is_active=bool(user_row["is_active"]),
             last_login_at=now,
-            created_at=user_row["created_at"]
+            created_at=user_row["created_at"],
         )
     finally:
         conn.close()
 
 
-def get_user_by_id(user_id: str) -> Optional[User]:
+def get_user_by_id(user_id: str) -> User | None:
     """Fetches user by ID."""
     conn = get_db_connection()
     try:
@@ -252,7 +261,7 @@ def get_user_by_id(user_id: str) -> Optional[User]:
             permissions=get_permissions_for_role(role),
             is_active=bool(user_row["is_active"]),
             last_login_at=user_row["last_login_at"],
-            created_at=user_row["created_at"]
+            created_at=user_row["created_at"],
         )
     finally:
         conn.close()
@@ -273,7 +282,7 @@ def get_demo_users() -> list[dict]:
             "default_password": DEMO_PASSWORD,
             "role_description": f"{u['role'].value} - {u['designation']}",
             "key_features": _get_key_features(u["role"]),
-            "badge_theme": _get_badge_theme(u["role"])
+            "badge_theme": _get_badge_theme(u["role"]),
         }
         for u in PRE_SEEDED_USERS
     ]
@@ -282,14 +291,29 @@ def get_demo_users() -> list[dict]:
 
 def _get_key_features(role: UserRole) -> list[str]:
     features = {
-        UserRole.MOSPI_ADMIN: ["Statutory data management", "National index configuration", "CPI data sync from eSankhyiki", "Audit trail export"],
-        UserRole.MOSPI_ANALYST: ["Read CPI weights", "Price scenario projections", "Provenance inspection", "Statistical reports"],
-        UserRole.RBI_MPC: ["Policy impact simulations", "Real-time dashboard", "Model training", "High-level CPI tracking"],
+        UserRole.MOSPI_ADMIN: [
+            "Statutory data management",
+            "National index configuration",
+            "CPI data sync from eSankhyiki",
+            "Audit trail export",
+        ],
+        UserRole.MOSPI_ANALYST: [
+            "Read CPI weights",
+            "Price scenario projections",
+            "Provenance inspection",
+            "Statistical reports",
+        ],
+        UserRole.RBI_MPC: [
+            "Policy impact simulations",
+            "Real-time dashboard",
+            "Model training",
+            "High-level CPI tracking",
+        ],
         UserRole.RBI_ECONOMIST: ["CPI dashboard", "Basic forecasts", "Report export"],
         UserRole.DGCA_REGULATOR: ["Route monitoring", "Alert management", "Corridor tracking", "Collusion detection"],
         UserRole.DGCA_INSPECTOR: ["Route corridor tracking", "Public dashboard", "Audit trails"],
         UserRole.SYSTEM_ADMIN: ["Full platform access", "Worker management", "Model training", "All dashboards"],
-        UserRole.PUBLIC_AUDITOR: ["Read-only dashboard", "Provenance inspection", "Validation reports"]
+        UserRole.PUBLIC_AUDITOR: ["Read-only dashboard", "Provenance inspection", "Validation reports"],
     }
     return features.get(role, ["Basic dashboard access"])
 
@@ -303,12 +327,12 @@ def _get_badge_theme(role: UserRole) -> str:
         UserRole.DGCA_REGULATOR: "dgca",
         UserRole.DGCA_INSPECTOR: "dgca",
         UserRole.SYSTEM_ADMIN: "dev",
-        UserRole.PUBLIC_AUDITOR: "public"
+        UserRole.PUBLIC_AUDITOR: "public",
     }
     return themes.get(role, "default")
 
 
-def switch_user_role(user_id: str, req: SwitchRoleRequest) -> Optional[User]:
+def switch_user_role(user_id: str, req: SwitchRoleRequest) -> User | None:
     """Switches user to a different pre-seeded role (demo mode only)."""
     new_user = next((u for u in PRE_SEEDED_USERS if u["role"] == req.target_role), None)
     if not new_user:
@@ -329,7 +353,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 
-async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[User]:
+async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User | None:
     """Non-raising user extraction for public endpoints."""
     if not credentials:
         return None
@@ -344,10 +368,14 @@ async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = 
 
 def require_permission(permission: str):
     """FastAPI dependency enforcing specific permission."""
+
     async def _check(user: User = Depends(get_current_user)):
         if permission not in user.permissions and "system_admin" not in user.permissions:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Missing required permission: {permission}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"Missing required permission: {permission}"
+            )
         return user
+
     return _check
 
 
@@ -366,5 +394,5 @@ def get_default_guest_user() -> User:
         permissions=get_permissions_for_role(UserRole.PUBLIC_AUDITOR),
         is_active=True,
         last_login_at=None,
-        created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     )

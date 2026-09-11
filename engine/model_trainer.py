@@ -5,17 +5,16 @@ to predict forward 7-day, 14-day, and 30-day CPI Transport sub-group inflation t
 """
 
 import datetime
-import math
+import logging
 import os
 import pickle
-import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Any, Optional
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import Ridge, ElasticNet
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error, mean_absolute_error
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, mean_squared_error, r2_score
 
 logger = logging.getLogger("jetindex.ml")
 
@@ -30,13 +29,14 @@ CPI_WEIGHTS = {
     "airfare_share_within_transport": 0.0385,
     "base_year": 2012,
     "numerator": "CPI Transport & Communication",
-    "denominator": "CPI Rural + CPI Urban"
+    "denominator": "CPI Rural + CPI Urban",
 }
 
 
 @dataclass
 class TrainingMetrics:
     """Model evaluation metrics across train and validation folds."""
+
     r2_train: float
     r2_test: float
     rmse_train: float
@@ -47,8 +47,8 @@ class TrainingMetrics:
     sample_size: int
     train_size: int
     test_size: int
-    features_used: List[str]
-    feature_importances: Dict[str, float]
+    features_used: list[str]
+    feature_importances: dict[str, float]
     trained_at: str
     model_version: str = "v1.0.0-JetIndex"
 
@@ -77,7 +77,7 @@ class FeatureEngineer:
     ]
 
     @classmethod
-    def build_feature_dataframe(cls, raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    def build_feature_dataframe(cls, raw_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         """
         Extracts multi-lag features and aligns target forward 1-day/7-day price indices.
         """
@@ -97,9 +97,13 @@ class FeatureEngineer:
         df["rolling_mean_14d"] = df["laspeyres_index"].rolling(window=14, min_periods=1).mean()
 
         # 3. Momentum & Spreads
-        df["momentum_7d"] = (df["laspeyres_index"] - df["lag_7_laspeyres"].fillna(df["laspeyres_index"])) / df["laspeyres_index"].clip(lower=1.0)
+        df["momentum_7d"] = (df["laspeyres_index"] - df["lag_7_laspeyres"].fillna(df["laspeyres_index"])) / df[
+            "laspeyres_index"
+        ].clip(lower=1.0)
         df["spot_t1_spread_ratio"] = df["spot_t1_index"] / df["laspeyres_index"].clip(lower=1.0)
-        df["fisher_relative_spread"] = (df["fisher_index"] - df["laspeyres_index"]) / df["laspeyres_index"].clip(lower=1.0)
+        df["fisher_relative_spread"] = (df["fisher_index"] - df["laspeyres_index"]) / df["laspeyres_index"].clip(
+            lower=1.0
+        )
 
         # 4. Cyclical Calendar & Day-of-Week Encoding
         dow = df["calculation_date"].dt.weekday
@@ -137,21 +141,21 @@ class EconometricNowcastEnsemble:
             learning_rate=0.03,
             min_samples_leaf=2,
             subsample=0.80,
-            random_state=random_state
+            random_state=random_state,
         )
         self.feature_names = FeatureEngineer.FEATURE_NAMES
-        self.metrics: Optional[TrainingMetrics] = None
+        self.metrics: TrainingMetrics | None = None
         self.is_trained: bool = False
         self.residual_std: float = 1.25
 
-    def fit(self, X: pd.DataFrame, y: pd.Series, test_ratio: float = 0.20) -> TrainingMetrics:
+    def fit(self, x_data: pd.DataFrame, y: pd.Series, test_ratio: float = 0.20) -> TrainingMetrics:
         """
         Trains the ensemble using chronological time-series split to prevent lookahead bias.
         """
-        n_samples = len(X)
+        n_samples = len(x_data)
         split_idx = max(5, int(n_samples * (1.0 - test_ratio)))
 
-        X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
+        X_train, X_test = x_data.iloc[:split_idx], x_data.iloc[split_idx:]
         y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
 
         # Train both models
@@ -189,7 +193,9 @@ class EconometricNowcastEnsemble:
         blended_importances = 0.5 * gbr_importances + 0.5 * normalized_ridge
         feat_imp_dict = {
             name: round(float(imp), 4)
-            for name, imp in sorted(zip(self.feature_names, blended_importances), key=lambda x: x[1], reverse=True)
+            for name, imp in sorted(
+                zip(self.feature_names, blended_importances, strict=False), key=lambda x: x[1], reverse=True
+            )
         }
 
         self.metrics = TrainingMetrics(
@@ -205,15 +211,15 @@ class EconometricNowcastEnsemble:
             test_size=len(X_test),
             features_used=self.feature_names,
             feature_importances=feat_imp_dict,
-            trained_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            trained_at=datetime.datetime.now(datetime.UTC).isoformat(),
         )
 
         self.is_trained = True
         return self.metrics
 
-    def predict_one_step(self, X_vec: pd.DataFrame) -> float:
+    def predict_one_step(self, x_vec: pd.DataFrame) -> float:
         """Predicts single step forward."""
-        pred = (0.40 * self.ridge_model.predict(X_vec)) + (0.60 * self.gbr_model.predict(X_vec))
+        pred = (0.40 * self.ridge_model.predict(x_vec)) + (0.60 * self.gbr_model.predict(x_vec))
         return float(pred[0])
 
     def save(self, filepath: str = MODEL_ARTIFACT_PATH) -> None:
@@ -232,17 +238,16 @@ class EconometricNowcastEnsemble:
         return obj
 
 
-def train_nowcast_model() -> Tuple[EconometricNowcastEnsemble, TrainingMetrics]:
+def train_nowcast_model() -> tuple[EconometricNowcastEnsemble, TrainingMetrics]:
     """
     Orchestrates end-to-end training pipeline from database records.
     Uses engine.backtest for data ingestion if insufficient historical records exist.
     """
-    from engine.compute_national_index import compute_national_index
-    from engine.pipeline.loader import load_quotes_to_db
 
     # Check if we have enough data
-    from db.session import get_engine
     from sqlalchemy import text
+
+    from db.session import get_engine
 
     engine = get_engine()
     with engine.connect() as conn:
@@ -252,19 +257,23 @@ def train_nowcast_model() -> Tuple[EconometricNowcastEnsemble, TrainingMetrics]:
     if count < 15:
         # Run backtest ingestion to get enough data
         from engine.backtest import DGCABacktestEngine
+
         backtest_engine = DGCABacktestEngine()
         backtest_engine.run_backtest(num_days=35)
 
     # Load historical data
     with engine.connect() as conn:
-        df_raw = pd.read_sql("""
+        df_raw = pd.read_sql(
+            """
             SELECT calculation_date, laspeyres_index, fisher_index, paasche_index,
                    spot_t1_index, daily_pct_change, bps_transport_impact,
                    bps_headline_cpi_impact, observations_count, valid_quotes_count,
                    outliers_rejected_count
             FROM national_indices
             ORDER BY calculation_date ASC
-        """, conn)
+        """,
+            conn,
+        )
 
     X, y = FeatureEngineer.build_feature_dataframe(df_raw)
 

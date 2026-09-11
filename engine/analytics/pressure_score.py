@@ -5,8 +5,8 @@ A composite, mathematically defined 0-100 macroeconomic indicator designed for t
 
 import datetime
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+
 import numpy as np
 
 logger = logging.getLogger("jetindex.pressure")
@@ -45,14 +45,15 @@ DGCA_TOP_20_ROUTES = [
 @dataclass
 class PressureScoreReport:
     """Comprehensive composite inflation pressure report."""
+
     as_of_date: str
-    pressure_score: float              # 0 to 100
-    pressure_level: str                # LOW (0-25), MODERATE (26-50), HIGH (51-75), CRITICAL (76-100)
+    pressure_score: float  # 0 to 100
+    pressure_level: str  # LOW (0-25), MODERATE (26-50), HIGH (51-75), CRITICAL (76-100)
     previous_score: float
     score_change_24h: float
-    components: Dict[str, float]       # Raw scores 0-100 per component
-    component_weights: Dict[str, float]
-    ranked_drivers: List[str]          # Human-readable percentage contribution of drivers
+    components: dict[str, float]  # Raw scores 0-100 per component
+    component_weights: dict[str, float]
+    ranked_drivers: list[str]  # Human-readable percentage contribution of drivers
     rbi_monetary_policy_alert: str
     data_tag: str = "REAL_COMPUTED"
     generated_at: str = ""
@@ -64,23 +65,24 @@ class PressureScoreEngine:
     """
 
     COMPONENT_WEIGHTS = {
-        "airfare_acceleration": 0.25,      # 7-day velocity of the Master Laspeyres Index
-        "volatility_dispersion": 0.20,     # Intra-week price variance across all 20 routes
+        "airfare_acceleration": 0.25,  # 7-day velocity of the Master Laspeyres Index
+        "volatility_dispersion": 0.20,  # Intra-week price variance across all 20 routes
         "route_breadth_increases": 0.20,  # Percentage of domestic corridors inflating simultaneously
-        "spot_t1_pressure": 0.15,          # Last-minute emergency capacity crunch spread
-        "urgent_t7_pressure": 0.10,        # Corporate business travel surge premium
-        "cpi_transmission_impact": 0.10,   # Macro basis point transmission on CPI
+        "spot_t1_pressure": 0.15,  # Last-minute emergency capacity crunch spread
+        "urgent_t7_pressure": 0.10,  # Corporate business travel surge premium
+        "cpi_transmission_impact": 0.10,  # Macro basis point transmission on CPI
     }
 
-    def compute_pressure_score(self, target_date: Optional[str] = None) -> PressureScoreReport:
+    def compute_pressure_score(self, target_date: str | None = None) -> PressureScoreReport:
         """
         Calculates composite pressure score directly from database time panels.
         """
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
 
         # Get database engine
-        from db.session import get_engine
         from sqlalchemy import text
+
+        from db.session import get_engine
 
         engine = get_engine()
 
@@ -94,13 +96,16 @@ class PressureScoreEngine:
 
         # Fetch recent 14 days of national indices
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(
+                text("""
                 SELECT calculation_date, laspeyres_index, spot_t1_index, daily_pct_change, bps_transport_impact
                 FROM national_indices
                 WHERE calculation_date <= :calc_date
                 ORDER BY calculation_date DESC
                 LIMIT 14
-            """), {"calc_date": calc_date})
+            """),
+                {"calc_date": calc_date},
+            )
             rows = result.fetchall()
 
         if not rows:
@@ -111,11 +116,24 @@ class PressureScoreEngine:
                 pressure_level="MODERATE",
                 previous_score=40.0,
                 score_change_24h=+2.5,
-                components={"airfare_acceleration": 40.0, "volatility_dispersion": 45.0, "route_breadth_increases": 45.0, "spot_t1_pressure": 42.0, "urgent_t7_pressure": 40.0, "cpi_transmission_impact": 43.0},
+                components={
+                    "airfare_acceleration": 40.0,
+                    "volatility_dispersion": 45.0,
+                    "route_breadth_increases": 45.0,
+                    "spot_t1_pressure": 42.0,
+                    "urgent_t7_pressure": 40.0,
+                    "cpi_transmission_impact": 43.0,
+                },
                 component_weights=self.COMPONENT_WEIGHTS,
-                ranked_drivers=["Route breadth increases: 24%", "Volatility dispersion: 21%", "Airfare acceleration: 20%", "Spot T+1 pressure: 18%", "CPI transmission: 17%"],
+                ranked_drivers=[
+                    "Route breadth increases: 24%",
+                    "Volatility dispersion: 21%",
+                    "Airfare acceleration: 20%",
+                    "Spot T+1 pressure: 18%",
+                    "CPI transmission: 17%",
+                ],
                 rbi_monetary_policy_alert="NEUTRAL_PRICE_STABILITY",
-                generated_at=now_iso
+                generated_at=now_iso,
             )
 
         current = rows[0]
@@ -138,11 +156,14 @@ class PressureScoreEngine:
 
         # 3. Component: Route Breadth Increases (% of routes with positive DoD relative)
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(
+                text("""
                 SELECT price_relative
                 FROM route_indices
                 WHERE calculation_date = :calc_date
-            """), {"calc_date": calc_date})
+            """),
+                {"calc_date": calc_date},
+            )
             route_rows = result.fetchall()
 
         if route_rows:
@@ -200,8 +221,7 @@ class PressureScoreEngine:
 
         # Ranked Drivers Attribution
         weighted_contributions = {
-            k: (components[k] * self.COMPONENT_WEIGHTS[k]) / max(1e-4, score) * 100.0
-            for k in components
+            k: (components[k] * self.COMPONENT_WEIGHTS[k]) / max(1e-4, score) * 100.0 for k in components
         }
         driver_names = {
             "airfare_acceleration": "Airfare 7d acceleration momentum",
@@ -226,12 +246,12 @@ class PressureScoreEngine:
             component_weights=self.COMPONENT_WEIGHTS,
             ranked_drivers=ranked_drivers,
             rbi_monetary_policy_alert=alert,
-            generated_at=now_iso
+            generated_at=now_iso,
         )
 
 
 pressure_engine = PressureScoreEngine()
 
 
-def get_inflation_pressure_score(target_date: Optional[str] = None) -> PressureScoreReport:
+def get_inflation_pressure_score(target_date: str | None = None) -> PressureScoreReport:
     return pressure_engine.compute_pressure_score(target_date=target_date)

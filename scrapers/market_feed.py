@@ -9,7 +9,7 @@ import math
 import random
 import uuid
 from dataclasses import dataclass
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 
 # Route definitions (from config/routes.py equivalent)
@@ -94,10 +94,11 @@ TAX_RULES = {
 @dataclass
 class SimulationConfig:
     """Configurable parameters for synthetic econometric feed generation."""
-    seed: Optional[int] = 42
-    anomaly_rate: float = 0.015       # 1.5% intentional statistical outliers
-    multi_ota_ratio: float = 0.65     # 65% of flights appear on both Direct & OTAs
-    atf_trend_drift: float = 0.0012   # Fuel drift per day across time series
+
+    seed: int | None = 42
+    anomaly_rate: float = 0.015  # 1.5% intentional statistical outliers
+    multi_ota_ratio: float = 0.65  # 65% of flights appear on both Direct & OTAs
+    atf_trend_drift: float = 0.0012  # Fuel drift per day across time series
     enable_noise: bool = True
 
 
@@ -106,7 +107,7 @@ class MarketFeedGenerator:
     Simulates high-frequency transaction quotes across India's domestic aviation network.
     """
 
-    def __init__(self, config: Optional[SimulationConfig] = None):
+    def __init__(self, config: SimulationConfig | None = None):
         self.config = config or SimulationConfig()
         if self.config.seed is not None:
             random.seed(self.config.seed)
@@ -156,7 +157,7 @@ class MarketFeedGenerator:
             return random.uniform(0.96, 1.01)
         return random.uniform(0.98, 1.02)
 
-    def _calculate_tax_components(self, base_and_fuel: float, is_ota: bool = False) -> Dict[str, float]:
+    def _calculate_tax_components(self, base_and_fuel: float, is_ota: bool = False) -> dict[str, float]:
         """Statutory tax breakdown adhering to MoSPI / DGCA airline accounting standards."""
         asf = TAX_RULES["aviation_security_fee_asf"]
         psf = TAX_RULES["passenger_service_fee_psf"]
@@ -165,7 +166,9 @@ class MarketFeedGenerator:
 
         convenience_fee = round(
             random.uniform(TAX_RULES["ota_convenience_fee_min"], TAX_RULES["ota_convenience_fee_max"])
-            if is_ota else TAX_RULES["direct_convenience_fee"], 2
+            if is_ota
+            else TAX_RULES["direct_convenience_fee"],
+            2,
         )
 
         base_fare = round(base_and_fuel * 0.65, 2)
@@ -183,15 +186,11 @@ class MarketFeedGenerator:
             "total_fare": total_fare,
         }
 
-    def generate_quotes_for_date(
-        self,
-        booking_date: datetime.date,
-        day_index: int = 0
-    ) -> List[Dict[str, Any]]:
+    def generate_quotes_for_date(self, booking_date: datetime.date, day_index: int = 0) -> list[dict[str, Any]]:
         """
         Generates simulated flight quotes for all 20 DGCA routes across all 5 advance purchase windows.
         """
-        all_quotes: List[Dict[str, Any]] = []
+        all_quotes: list[dict[str, Any]] = []
         macro_atf_drift = 1.0 + (day_index * self.config.atf_trend_drift) + (0.02 * math.sin(day_index / 5.0))
 
         for route in DGCA_TOP_20_ROUTES:
@@ -220,12 +219,12 @@ class MarketFeedGenerator:
 
                     # Dynamic Base Price Formulation
                     base_price = (
-                        route.base_fare_benchmark *
-                        adv_mult *
-                        dow_mult *
-                        carrier_mult *
-                        macro_atf_drift *
-                        random.uniform(0.97, 1.03)
+                        route.base_fare_benchmark
+                        * adv_mult
+                        * dow_mult
+                        * carrier_mult
+                        * macro_atf_drift
+                        * random.uniform(0.97, 1.03)
                     )
 
                     # 1. Direct Portal Quote
@@ -262,8 +261,8 @@ class MarketFeedGenerator:
                         "arrival_time": arr,
                         "is_direct": 1,
                         "currency": "INR",
-                        "scraped_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                        **taxes
+                        "scraped_at": datetime.datetime.now(datetime.UTC).isoformat(),
+                        **taxes,
                     }
                     all_quotes.append(direct_quote)
 
@@ -288,20 +287,16 @@ class MarketFeedGenerator:
                             "arrival_time": arr,
                             "is_direct": 0,
                             "currency": "INR",
-                            "scraped_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                            **ota_tax
+                            "scraped_at": datetime.datetime.now(datetime.UTC).isoformat(),
+                            **ota_tax,
                         }
                         all_quotes.append(ota_quote)
 
         return all_quotes
 
-    def generate_multi_day_dataset(
-        self,
-        start_date: datetime.date,
-        num_days: int = 35
-    ) -> List[Dict[str, Any]]:
+    def generate_multi_day_dataset(self, start_date: datetime.date, num_days: int = 35) -> list[dict[str, Any]]:
         """Generates continuous daily panels across the specified multi-day window."""
-        master_quotes: List[Dict[str, Any]] = []
+        master_quotes: list[dict[str, Any]] = []
         for d in range(num_days):
             current_date = start_date + datetime.timedelta(days=d)
             daily_quotes = self.generate_quotes_for_date(current_date, day_index=d)

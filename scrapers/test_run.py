@@ -98,9 +98,9 @@ def main():
     results = []
     for source in sources:
         for route in routes:
-            print(f"\n{'='*50}")
+            print(f"\n{'=' * 50}")
             print(f"Testing {source} | {route} | T+{args.lead}")
-            print(f"{'='*50}")
+            print(f"{'=' * 50}")
 
             result = test_scraper(source, route, args.lead, verbose=args.verbose)
             results.append(result)
@@ -119,9 +119,9 @@ def main():
                         print(f"  {key}: {result[key]}")
 
     # Summary
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"SUMMARY: {sum(1 for r in results if r['ok'])}/{len(results)} passed")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
 
     for r in results:
         status = "PASS" if r["ok"] else "FAIL"

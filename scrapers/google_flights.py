@@ -1,4 +1,5 @@
 """Google Flights scraper — extracts structured fare data with airline info."""
+
 import asyncio
 import json
 import re
@@ -101,45 +102,49 @@ async def scrape_route(origin: str, dest: str, depart: str) -> list[dict]:
                 return flights;
             }""")
 
-            for fd in (flight_data or []):
+            for fd in flight_data or []:
                 if fd.get("total_fare") and fd.get("airline"):
-                    fares.append({
-                        "source": "google_flights",
-                        "route_code": f"{origin}-{dest}",
-                        "origin": origin,
-                        "destination": dest,
-                        "depart_date": depart,
-                        "carrier": fd["airline"],
-                        "depart_time": fd.get("depart_time", ""),
-                        "arrive_time": fd.get("arrive_time", ""),
-                        "duration": fd.get("duration", ""),
-                        "stops": fd.get("stops", "Nonstop"),
-                        "total_fare": fd["total_fare"],
-                        "currency": "INR",
-                        "scrape_date": date.today().isoformat(),
-                        "scraped_at": date.today().isoformat(),
-                    })
-
-            # Fallback: regex extraction if structured extraction missed
-            if not fares:
-                content = await page.content()
-                price_matches = re.findall(r'₹([\d,]+)', content)
-                seen = set()
-                for pm in price_matches:
-                    val = int(pm.replace(",", ""))
-                    if 1000 < val < 50000 and val not in seen:
-                        seen.add(val)
-                        fares.append({
+                    fares.append(
+                        {
                             "source": "google_flights",
                             "route_code": f"{origin}-{dest}",
                             "origin": origin,
                             "destination": dest,
                             "depart_date": depart,
-                            "total_fare": val,
+                            "carrier": fd["airline"],
+                            "depart_time": fd.get("depart_time", ""),
+                            "arrive_time": fd.get("arrive_time", ""),
+                            "duration": fd.get("duration", ""),
+                            "stops": fd.get("stops", "Nonstop"),
+                            "total_fare": fd["total_fare"],
                             "currency": "INR",
                             "scrape_date": date.today().isoformat(),
                             "scraped_at": date.today().isoformat(),
-                        })
+                        }
+                    )
+
+            # Fallback: regex extraction if structured extraction missed
+            if not fares:
+                content = await page.content()
+                price_matches = re.findall(r"₹([\d,]+)", content)
+                seen = set()
+                for pm in price_matches:
+                    val = int(pm.replace(",", ""))
+                    if 1000 < val < 50000 and val not in seen:
+                        seen.add(val)
+                        fares.append(
+                            {
+                                "source": "google_flights",
+                                "route_code": f"{origin}-{dest}",
+                                "origin": origin,
+                                "destination": dest,
+                                "depart_date": depart,
+                                "total_fare": val,
+                                "currency": "INR",
+                                "scrape_date": date.today().isoformat(),
+                                "scraped_at": date.today().isoformat(),
+                            }
+                        )
 
             # Screenshot
             Path("data/raw/google_flights").mkdir(parents=True, exist_ok=True)
@@ -156,8 +161,12 @@ async def scrape_route(origin: str, dest: str, depart: str) -> list[dict]:
 async def main():
     depart = (date.today() + timedelta(days=7)).isoformat()
     routes = [
-        ("DEL", "BOM"), ("DEL", "BLR"), ("BOM", "BLR"),
-        ("DEL", "CCU"), ("DEL", "HYD"), ("BOM", "GOI"),
+        ("DEL", "BOM"),
+        ("DEL", "BLR"),
+        ("BOM", "BLR"),
+        ("DEL", "CCU"),
+        ("DEL", "HYD"),
+        ("BOM", "GOI"),
     ]
 
     all_fares = []

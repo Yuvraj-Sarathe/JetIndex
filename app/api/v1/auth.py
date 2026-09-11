@@ -4,22 +4,15 @@ JetIndex - Authentication & RBAC API Endpoints
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional
 
-from auth.models import (
-    User, UserRole, LoginRequest, LoginResponse, SwitchRoleRequest,
-    ROLE_PERMISSIONS
-)
-from auth.security import create_access_token, get_permissions_for_role
+from auth.models import ROLE_PERMISSIONS, SwitchRoleRequest, User, UserRole
+from auth.security import create_access_token
 from auth.service import (
     authenticate_user,
-    get_user_by_id,
-    get_demo_users,
-    switch_user_role,
     get_current_user,
-    get_current_user_optional,
-    require_permission,
-    get_default_guest_user
+    get_demo_users,
+    get_user_by_id,
+    switch_user_role,
 )
 
 router = APIRouter()
@@ -44,17 +37,9 @@ async def login(req: LoginRequestAPI):
     """Authenticate user and return JWT token."""
     user = authenticate_user(req)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    token = create_access_token(
-        user_id=user.user_id,
-        username=user.username,
-        email=user.email,
-        role=user.role
-    )
+    token = create_access_token(user_id=user.user_id, username=user.username, email=user.email, role=user.role)
 
     role_descriptions = {
         UserRole.MOSPI_ADMIN: "MoSPI Administrator - Full statutory data management",
@@ -64,7 +49,7 @@ async def login(req: LoginRequestAPI):
         UserRole.DGCA_REGULATOR: "DGCA Regulator - Route monitoring and alerts",
         UserRole.DGCA_INSPECTOR: "DGCA Inspector - Route corridor tracking",
         UserRole.SYSTEM_ADMIN: "System Administrator - Full platform access",
-        UserRole.PUBLIC_AUDITOR: "Public Auditor - Read-only dashboard"
+        UserRole.PUBLIC_AUDITOR: "Public Auditor - Read-only dashboard",
     }
 
     return LoginResponseAPI(
@@ -80,10 +65,10 @@ async def login(req: LoginRequestAPI):
             "organization": user.organization,
             "department": user.department,
             "avatar_color": user.avatar_color,
-            "permissions": user.permissions
+            "permissions": user.permissions,
         },
         role_description=role_descriptions.get(user.role, "Unknown role"),
-        accessible_features=user.permissions
+        accessible_features=user.permissions,
     )
 
 
@@ -107,17 +92,10 @@ async def demo_login(username: str):
         raise HTTPException(status_code=404, detail="User not found in database")
 
     token = create_access_token(
-        user_id=full_user.user_id,
-        username=full_user.username,
-        email=full_user.email,
-        role=full_user.role
+        user_id=full_user.user_id, username=full_user.username, email=full_user.email, role=full_user.role
     )
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": full_user.model_dump()
-    }
+    return {"access_token": token, "token_type": "bearer", "user": full_user.model_dump()}
 
 
 @router.get("/me")
@@ -127,36 +105,24 @@ async def get_current_user_info(user: User = Depends(get_current_user)):
 
 
 @router.post("/switch-role")
-async def switch_role(
-    req: SwitchRoleRequest,
-    user: User = Depends(get_current_user)
-):
+async def switch_role(req: SwitchRoleRequest, user: User = Depends(get_current_user)):
     """Switch to a different demo role (demo mode only)."""
     new_user = switch_user_role(user.user_id, req)
     if not new_user:
         raise HTTPException(status_code=404, detail="Target role not found")
 
     token = create_access_token(
-        user_id=new_user.user_id,
-        username=new_user.username,
-        email=new_user.email,
-        role=new_user.role
+        user_id=new_user.user_id, username=new_user.username, email=new_user.email, role=new_user.role
     )
 
-    return {
-        "access_token": token,
-        "user": new_user.model_dump()
-    }
+    return {"access_token": token, "user": new_user.model_dump()}
 
 
 @router.get("/roles")
 async def get_roles():
     """List all available roles and their permissions."""
     return {
-        role.value: {
-            "permissions": permissions,
-            "description": f"{role.value} role"
-        }
+        role.value: {"permissions": permissions, "description": f"{role.value} role"}
         for role, permissions in ROLE_PERMISSIONS.items()
     }
 

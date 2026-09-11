@@ -3,31 +3,28 @@ JetIndex - Security & Token Management
 Cryptographic hashing, token signing, session lifecycle, and RBAC verification.
 """
 
+import base64
 import hashlib
 import hmac
+import json
+import os
 import secrets
 import time
-import json
-import base64
-import os
-from typing import Optional
-from .models import UserRole, ROLE_PERMISSIONS
+
+from .models import ROLE_PERMISSIONS, UserRole
 
 # Platform secret for HMAC token signing (REQUIRED from the environment in production).
-AUTH_SECRET = os.environ.get("AUTH_SECRET_KEY", "").strip() or "dev-only-insecure-secret--set-AUTH_SECRET_KEY-before-production"
+AUTH_SECRET = (
+    os.environ.get("AUTH_SECRET_KEY", "").strip() or "dev-only-insecure-secret--set-AUTH_SECRET_KEY-before-production"
+)
 TOKEN_EXPIRY_SECONDS = 86400 * 7  # 7 days
 
 
-def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
+def hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
     """Hashes a password using PBKDF2-HMAC-SHA256 with a cryptographically secure salt."""
     if not salt:
         salt = secrets.token_hex(16)
-    pw_hash = hashlib.pbkdf2_hmac(
-        "sha256",
-        password.encode("utf-8"),
-        salt.encode("utf-8"),
-        100_000
-    ).hex()
+    pw_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000).hex()
     return pw_hash, salt
 
 
@@ -37,7 +34,9 @@ def verify_password(plain_password: str, stored_hash: str, salt: str) -> bool:
     return hmac.compare_digest(pw_hash, stored_hash)
 
 
-def create_access_token(user_id: str, username: str, email: str, role: UserRole, custom_expiry: Optional[int] = None) -> str:
+def create_access_token(
+    user_id: str, username: str, email: str, role: UserRole, custom_expiry: int | None = None
+) -> str:
     """Creates a signed tamper-proof token containing user payload."""
     expiry = int(time.time()) + (custom_expiry or TOKEN_EXPIRY_SECONDS)
     payload = {
@@ -47,21 +46,17 @@ def create_access_token(user_id: str, username: str, email: str, role: UserRole,
         "rol": role.value if hasattr(role, "value") else str(role),
         "exp": expiry,
         "iat": int(time.time()),
-        "iss": "jetindex"
+        "iss": "jetindex",
     }
     raw_payload = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     encoded_payload = base64.urlsafe_b64encode(raw_payload).decode("utf-8").rstrip("=")
 
-    signature = hmac.new(
-        AUTH_SECRET.encode("utf-8"),
-        encoded_payload.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
+    signature = hmac.new(AUTH_SECRET.encode("utf-8"), encoded_payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
     return f"{encoded_payload}.{signature}"
 
 
-def verify_access_token(token: str) -> Optional[dict]:
+def verify_access_token(token: str) -> dict | None:
     """Verifies signature and expiration of access token. Returns payload dict or None."""
     try:
         parts = token.strip().split(".")
@@ -71,9 +66,7 @@ def verify_access_token(token: str) -> Optional[dict]:
 
         # Verify HMAC signature
         expected_sig = hmac.new(
-            AUTH_SECRET.encode("utf-8"),
-            encoded_payload.encode("utf-8"),
-            hashlib.sha256
+            AUTH_SECRET.encode("utf-8"), encoded_payload.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
         if not hmac.compare_digest(signature, expected_sig):

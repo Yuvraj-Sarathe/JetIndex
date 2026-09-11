@@ -26,9 +26,7 @@ class MakeMyTripScraper(BaseScraper):
     ENDPOINT_URL = "https://flights-cb.makemytrip.com/api/postSearch"
     CR_ID = "f22d4102-dbca-4611-9f79-08fbfe782a56"
 
-    def _build_x_flt_header(
-        self, origin: str, destination: str, depart_date: str
-    ) -> str:
+    def _build_x_flt_header(self, origin: str, destination: str, depart_date: str) -> str:
         """Build the x-flt Base64 header with search metadata."""
         payload = {
             "c": "E",  # cabin class
@@ -68,9 +66,7 @@ class MakeMyTripScraper(BaseScraper):
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/124.0.0.0 Safari/537.36"
             ),
-            "x-flt": self._build_x_flt_header(
-                job.origin, job.destination, depart_date_iso
-            ),
+            "x-flt": self._build_x_flt_header(job.origin, job.destination, depart_date_iso),
             "os": "Mac OS",
             "domain": "in",
             "mcid": device_id,
@@ -105,11 +101,7 @@ class MakeMyTripScraper(BaseScraper):
             "rkeys": [],  # Empty on first call — Playwright needed for initial search
         }
 
-        url = (
-            f"{self.ENDPOINT_URL}"
-            f"?crId={self.CR_ID}"
-            f"&region=in&currency=INR&language=eng&cmpId="
-        )
+        url = f"{self.ENDPOINT_URL}?crId={self.CR_ID}&region=in&currency=INR&language=eng&cmpId="
 
         return RequestSpec(
             url=url,
@@ -126,11 +118,7 @@ class MakeMyTripScraper(BaseScraper):
         if hasattr(response, "status_code") and response.status_code != 200:
             return False
 
-        payload = (
-            response.json()
-            if hasattr(response, "json") and callable(response.json)
-            else response
-        )
+        payload = response.json() if hasattr(response, "json") and callable(response.json) else response
 
         if isinstance(payload, list):
             return len(payload) > 0 and any(
@@ -152,15 +140,10 @@ class MakeMyTripScraper(BaseScraper):
             if "searchResult" in payload:
                 sr = payload["searchResult"]
                 if isinstance(sr, dict) and "flightOffers" in sr:
-                    return len(sr["flightOffers"]) > 0 or isinstance(
-                        sr["flightOffers"], list
-                    )
+                    return len(sr["flightOffers"]) > 0 or isinstance(sr["flightOffers"], list)
                 return True
 
-            if any(
-                k in payload
-                for k in ("flightOffers", "flights", "journeys", "data", "results")
-            ):
+            if any(k in payload for k in ("flightOffers", "flights", "journeys", "data", "results")):
                 return True
 
         return False

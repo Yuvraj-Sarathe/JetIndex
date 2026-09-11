@@ -42,25 +42,27 @@ def update_mock_data_from_scraped(scraped_fares: list[dict]) -> dict:
     # Add new scraped quotes
     new_quotes = []
     for fare in scraped_fares:
-        new_quotes.append({
-            "route_code": fare.get("route_code", ""),
-            "origin": fare.get("origin", ""),
-            "destination": fare.get("destination", ""),
-            "carrier": fare.get("carrier", "Unknown"),
-            "flight_no": fare.get("flight_no", ""),
-            "depart_date": fare.get("depart_date", ""),
-            "scrape_date": fare.get("scrape_date", date.today().isoformat()),
-            "lead_time": 7,
-            "fare_class": "Economy",
-            "base_fare": round(fare.get("total_fare", 0) * 0.75, 2),
-            "udf": 400,
-            "taxes": round(fare.get("total_fare", 0) * 0.15, 2),
-            "convenience_fee": round(fare.get("total_fare", 0) * 0.05, 2),
-            "other_fees": 200,
-            "total_fare": fare.get("total_fare", 0),
-            "source": fare.get("source", "google_flights"),
-            "quality_flag": "ok",
-        })
+        new_quotes.append(
+            {
+                "route_code": fare.get("route_code", ""),
+                "origin": fare.get("origin", ""),
+                "destination": fare.get("destination", ""),
+                "carrier": fare.get("carrier", "Unknown"),
+                "flight_no": fare.get("flight_no", ""),
+                "depart_date": fare.get("depart_date", ""),
+                "scrape_date": fare.get("scrape_date", date.today().isoformat()),
+                "lead_time": 7,
+                "fare_class": "Economy",
+                "base_fare": round(fare.get("total_fare", 0) * 0.75, 2),
+                "udf": 400,
+                "taxes": round(fare.get("total_fare", 0) * 0.15, 2),
+                "convenience_fee": round(fare.get("total_fare", 0) * 0.05, 2),
+                "other_fees": 200,
+                "total_fare": fare.get("total_fare", 0),
+                "source": fare.get("source", "google_flights"),
+                "quality_flag": "ok",
+            }
+        )
 
     # Keep existing + add new, dedup by (route, carrier, depart_date, fare)
     seen = set()
@@ -85,6 +87,7 @@ def update_mock_data_from_scraped(scraped_fares: list[dict]) -> dict:
         weights = {}
         with open("config/routes.yaml") as f:
             import yaml
+
             config = yaml.safe_load(f)
         for route in config.get("routes", []):
             code = route.get("route_code", "")
@@ -116,14 +119,16 @@ def update_mock_data_from_scraped(scraped_fares: list[dict]) -> dict:
 
         # Add today's entry (or update if exists)
         daily_data = [d for d in daily_data if d.get("date") != today]
-        daily_data.append({
-            "date": today,
-            "apix": round(api_index, 4),
-            "apix_base_only": round(api_index * 0.99, 4),
-            "pct_change_dod": 0,
-            "n_quotes": len(scraped_fares),
-            "n_routes": len(route_fares),
-        })
+        daily_data.append(
+            {
+                "date": today,
+                "apix": round(api_index, 4),
+                "apix_base_only": round(api_index * 0.99, 4),
+                "pct_change_dod": 0,
+                "n_quotes": len(scraped_fares),
+                "n_routes": len(route_fares),
+            }
+        )
         daily_data.sort(key=lambda x: x["date"])
 
         with open(daily_path, "w") as f:
@@ -150,13 +155,15 @@ def update_mock_data_from_scraped(scraped_fares: list[dict]) -> dict:
             existing[0]["avg_scraped"] = round(avg, 2)
             existing[0]["n_scraped"] = len(fares)
         else:
-            scraped_data.append({
-                "month": m,
-                "avg_scraped": round(avg, 2),
-                "n_scraped": len(fares),
-                "avg_dgca": None,
-                "n_dgca": 0,
-            })
+            scraped_data.append(
+                {
+                    "month": m,
+                    "avg_scraped": round(avg, 2),
+                    "n_scraped": len(fares),
+                    "avg_dgca": None,
+                    "n_dgca": 0,
+                }
+            )
 
     with open(scraped_path, "w") as f:
         json.dump(scraped_data, f, indent=2)
@@ -173,9 +180,15 @@ async def run_sweep(routes: list[tuple[str, str]] | None = None, depart: str | N
 
     if routes is None:
         routes = [
-            ("DEL", "BOM"), ("DEL", "BLR"), ("BOM", "BLR"),
-            ("DEL", "CCU"), ("DEL", "HYD"), ("BOM", "GOI"),
-            ("DEL", "MAA"), ("BOM", "CCU"), ("BLR", "HYD"),
+            ("DEL", "BOM"),
+            ("DEL", "BLR"),
+            ("BOM", "BLR"),
+            ("DEL", "CCU"),
+            ("DEL", "HYD"),
+            ("BOM", "GOI"),
+            ("DEL", "MAA"),
+            ("BOM", "CCU"),
+            ("BLR", "HYD"),
             ("HYD", "DEL"),
         ]
 
@@ -214,9 +227,15 @@ def main():
         routes = [(o, d)]
     else:
         routes = [
-            ("DEL", "BOM"), ("DEL", "BLR"), ("BOM", "BLR"),
-            ("DEL", "CCU"), ("DEL", "HYD"), ("BOM", "GOI"),
-            ("DEL", "MAA"), ("BOM", "CCU"), ("BLR", "HYD"),
+            ("DEL", "BOM"),
+            ("DEL", "BLR"),
+            ("BOM", "BLR"),
+            ("DEL", "CCU"),
+            ("DEL", "HYD"),
+            ("BOM", "GOI"),
+            ("DEL", "MAA"),
+            ("BOM", "CCU"),
+            ("BLR", "HYD"),
             ("HYD", "DEL"),
         ]
 

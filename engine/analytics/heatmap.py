@@ -5,9 +5,9 @@ Computes interactive pricing heatmaps across 20 DGCA routes and 5 advance bookin
 
 import datetime
 import logging
-import random
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
 
 logger = logging.getLogger("jetindex.heatmap")
@@ -51,6 +51,7 @@ ADVANCE_PURCHASE_WINDOWS = [
 @dataclass
 class HeatmapCell:
     """Individual cell in the 20x5 heatmap grid."""
+
     route_code: str
     advance_window: str
     days_advance: int
@@ -58,29 +59,31 @@ class HeatmapCell:
     base_benchmark_fare: float
     price_change_pct: float
     volatility_score: float
-    status: str            # SURGE, ELEVATED, NORMAL, DISCOUNTED
+    status: str  # SURGE, ELEVATED, NORMAL, DISCOUNTED
     sample_size: int
 
 
 @dataclass
 class HeatmapRow:
     """Complete row representing a DGCA route across all 5 horizons."""
+
     route_code: str
     origin_city: str
     destination_city: str
     dgca_weight_pct: float
     corridor_average_fare: float
     composite_relative: float
-    horizon_cells: Dict[str, HeatmapCell]  # T+1, T+7, T+15, T+30, T+45
+    horizon_cells: dict[str, HeatmapCell]  # T+1, T+7, T+15, T+30, T+45
 
 
 @dataclass
 class HeatmapReport:
     """Full 20x5 interactive heatmap payload."""
+
     as_of_date: str
     total_routes: int
     total_horizons: int
-    matrix_rows: List[HeatmapRow]
+    matrix_rows: list[HeatmapRow]
     summary_surge_count: int
     summary_discount_count: int
     generated_at: str
@@ -92,16 +95,14 @@ class AirfareHeatmapEngine:
     """
 
     def generate_heatmap(
-        self,
-        target_date: Optional[str] = None,
-        sort_by: str = "weight",
-        route_filter: Optional[str] = None
+        self, target_date: str | None = None, sort_by: str = "weight", route_filter: str | None = None
     ) -> HeatmapReport:
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        now_iso = datetime.datetime.now(datetime.UTC).isoformat()
 
         # Get database engine
-        from db.session import get_engine
         from sqlalchemy import text
+
+        from db.session import get_engine
 
         engine = get_engine()
 
@@ -114,14 +115,17 @@ class AirfareHeatmapEngine:
             calc_date = target_date
 
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(
+                text("""
                 SELECT * FROM route_indices
                 WHERE calculation_date = :calc_date
-            """), {"calc_date": calc_date})
+            """),
+                {"calc_date": calc_date},
+            )
             rows = result.fetchall()
 
         # Build index map
-        cell_index_map: Dict[str, Dict[str, Any]] = {}
+        cell_index_map: dict[str, dict[str, Any]] = {}
         for r in rows:
             rcode = r[1]  # route_code
             if rcode not in cell_index_map:
@@ -133,7 +137,7 @@ class AirfareHeatmapEngine:
                 "price_relative": r[7],  # price_relative
             }
 
-        matrix_rows: List[HeatmapRow] = []
+        matrix_rows: list[HeatmapRow] = []
         surge_count = 0
         discount_count = 0
 
@@ -142,7 +146,7 @@ class AirfareHeatmapEngine:
             target_routes = [r for r in target_routes if route_filter.upper() in r["route_code"]]
 
         for r in target_routes:
-            cells_dict: Dict[str, HeatmapCell] = {}
+            cells_dict: dict[str, HeatmapCell] = {}
             fares_list = []
 
             for w in ADVANCE_PURCHASE_WINDOWS:
@@ -153,7 +157,17 @@ class AirfareHeatmapEngine:
                     samples = c_data["sample_size"]
                     rel = c_data["price_relative"]
                 else:
-                    mult = 2.45 if w["window_id"] == "T+1" else 1.60 if w["window_id"] == "T+7" else 1.18 if w["window_id"] == "T+15" else 1.00 if w["window_id"] == "T+30" else 0.92
+                    mult = (
+                        2.45
+                        if w["window_id"] == "T+1"
+                        else 1.60
+                        if w["window_id"] == "T+7"
+                        else 1.18
+                        if w["window_id"] == "T+15"
+                        else 1.00
+                        if w["window_id"] == "T+30"
+                        else 0.92
+                    )
                     c_fare = round(r["base_fare_benchmark"] * mult, 2)
                     p0 = c_fare
                     samples = 15
@@ -184,21 +198,23 @@ class AirfareHeatmapEngine:
                     price_change_pct=change_pct,
                     volatility_score=vol_score,
                     status=status,
-                    sample_size=samples
+                    sample_size=samples,
                 )
 
             avg_fare = round(float(np.mean(fares_list)), 2)
             comp_rel = round(float(np.mean([c.price_change_pct / 100.0 + 1.0 for c in cells_dict.values()])), 4)
 
-            matrix_rows.append(HeatmapRow(
-                route_code=r["route_code"],
-                origin_city=r["origin"],
-                destination_city=r["destination"],
-                dgca_weight_pct=round(r["weight"] * 100.0, 2),
-                corridor_average_fare=avg_fare,
-                composite_relative=comp_rel,
-                horizon_cells=cells_dict
-            ))
+            matrix_rows.append(
+                HeatmapRow(
+                    route_code=r["route_code"],
+                    origin_city=r["origin"],
+                    destination_city=r["destination"],
+                    dgca_weight_pct=round(r["weight"] * 100.0, 2),
+                    corridor_average_fare=avg_fare,
+                    composite_relative=comp_rel,
+                    horizon_cells=cells_dict,
+                )
+            )
 
         # Sort matrix rows
         if sort_by == "fare_desc":
@@ -217,12 +233,14 @@ class AirfareHeatmapEngine:
             matrix_rows=matrix_rows,
             summary_surge_count=surge_count,
             summary_discount_count=discount_count,
-            generated_at=now_iso
+            generated_at=now_iso,
         )
 
 
 heatmap_engine = AirfareHeatmapEngine()
 
 
-def get_airfare_heatmap(target_date: Optional[str] = None, sort_by: str = "weight", route_filter: Optional[str] = None) -> HeatmapReport:
+def get_airfare_heatmap(
+    target_date: str | None = None, sort_by: str = "weight", route_filter: str | None = None
+) -> HeatmapReport:
     return heatmap_engine.generate_heatmap(target_date=target_date, sort_by=sort_by, route_filter=route_filter)

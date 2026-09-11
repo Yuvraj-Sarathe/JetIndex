@@ -4,7 +4,6 @@ JetIndex - ML Model Training & Nowcast API Endpoints
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
 
 router = APIRouter()
 
@@ -48,8 +47,8 @@ class NowcastResponse(BaseModel):
     net_projected_transport_bps: float
     net_projected_headline_cpi_bps: float
     monetary_policy_alert: str
-    forecast_steps: List[ForecastStepResponse]
-    feature_importances: Dict[str, float]
+    forecast_steps: list[ForecastStepResponse]
+    feature_importances: dict[str, float]
     generated_at: str
 
 
@@ -58,6 +57,7 @@ async def train_model(req: TrainRequest):
     """Train the econometric nowcast ensemble (Ridge + GBDT)."""
     try:
         from engine.model_trainer import train_nowcast_model
+
         ensemble, metrics = train_nowcast_model()
 
         return TrainResponse(
@@ -68,10 +68,10 @@ async def train_model(req: TrainRequest):
             rmse_test=metrics.rmse_test,
             mape_test=metrics.mape_test,
             sample_size=metrics.sample_size,
-            message="Model trained successfully"
+            message="Model trained successfully",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}") from e
 
 
 @router.post("/nowcast", response_model=NowcastResponse)
@@ -101,32 +101,34 @@ async def generate_nowcast(req: NowcastRequest):
                     confidence_interval_95_upper=step.confidence_interval_95_upper,
                     projected_daily_change_pct=step.projected_daily_change_pct,
                     projected_transport_impact_bps=step.projected_transport_impact_bps,
-                    projected_headline_cpi_impact_bps=step.projected_headline_cpi_impact_bps
+                    projected_headline_cpi_impact_bps=step.projected_headline_cpi_impact_bps,
                 )
                 for step in report.forecast_steps
             ],
             feature_importances=report.feature_importances,
-            generated_at=report.generated_at
+            generated_at=report.generated_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Nowcast failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Nowcast failed: {str(e)}") from e
 
 
 @router.get("/model/status")
 async def get_model_status():
     """Check if a trained model exists and get its metadata."""
     import os
+
     from engine.model_trainer import MODEL_ARTIFACT_PATH
 
     if os.path.exists(MODEL_ARTIFACT_PATH):
         from engine.model_trainer import EconometricNowcastEnsemble
+
         try:
             model = EconometricNowcastEnsemble.load(MODEL_ARTIFACT_PATH)
             return {
                 "exists": True,
                 "is_trained": model.is_trained,
                 "model_version": model.metrics.model_version if model.metrics else "unknown",
-                "metrics": model.metrics.__dict__ if model.metrics else None
+                "metrics": model.metrics.__dict__ if model.metrics else None,
             }
         except Exception:
             return {"exists": True, "is_trained": False, "error": "Failed to load model"}

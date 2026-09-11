@@ -2,7 +2,6 @@
 JetIndex - Pressure Score, CPI Decomposition & Heatmap API Endpoints
 """
 
-
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
@@ -10,6 +9,7 @@ router = APIRouter()
 
 
 # ===== Pressure Score Endpoints =====
+
 
 class PressureScoreResponse(BaseModel):
     as_of_date: str
@@ -29,6 +29,7 @@ class PressureScoreResponse(BaseModel):
 async def get_pressure_score(target_date: str | None = Query(None)):
     """Get the Airfare Inflation Pressure Score (AIPS)."""
     from app.core.config import settings
+
     if settings.MOCK_MODE:
         return PressureScoreResponse(
             as_of_date=target_date or "2026-07-21",
@@ -36,15 +37,30 @@ async def get_pressure_score(target_date: str | None = Query(None)):
             pressure_level="moderate",
             previous_score=4.2,
             score_change_24h=0.3,
-            components={"passthrough_lag": 0.32, "fuel_impact": 0.18, "demand_surge": 0.12, "capacity_utilization": 0.15, "seasonal_adjustment": 0.08, "cross_route_substitution": 0.15},
-            component_weights={"passthrough_lag": 0.30, "fuel_impact": 0.25, "demand_surge": 0.20, "capacity_utilization": 0.10, "seasonal_adjustment": 0.10, "cross_route_substitution": 0.05},
+            components={
+                "passthrough_lag": 0.32,
+                "fuel_impact": 0.18,
+                "demand_surge": 0.12,
+                "capacity_utilization": 0.15,
+                "seasonal_adjustment": 0.08,
+                "cross_route_substitution": 0.15,
+            },
+            component_weights={
+                "passthrough_lag": 0.30,
+                "fuel_impact": 0.25,
+                "demand_surge": 0.20,
+                "capacity_utilization": 0.10,
+                "seasonal_adjustment": 0.10,
+                "cross_route_substitution": 0.05,
+            },
             ranked_drivers=["passthrough_lag", "fuel_impact", "demand_surge"],
             rbi_monetary_policy_alert="FAIR",
             data_tag="synthetic",
-            generated_at="2026-07-21T12:00:00"
+            generated_at="2026-07-21T12:00:00",
         )
     try:
         from engine.analytics.pressure_score import get_inflation_pressure_score
+
         report = get_inflation_pressure_score(target_date=target_date)
         return PressureScoreResponse(
             as_of_date=report.as_of_date,
@@ -57,13 +73,14 @@ async def get_pressure_score(target_date: str | None = Query(None)):
             ranked_drivers=report.ranked_drivers,
             rbi_monetary_policy_alert=report.rbi_monetary_policy_alert,
             data_tag=report.data_tag,
-            generated_at=report.generated_at
+            generated_at=report.generated_at,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Pressure score failed: {e}") from e
 
 
 # ===== CPI Decomposition Endpoints =====
+
 
 class RouteCPIContributionResponse(BaseModel):
     rank: int
@@ -93,13 +110,19 @@ class CPIDecompositionResponse(BaseModel):
 async def get_cpi_decomposition(target_date: str | None = Query(None)):
     """Get CPI impact decomposition by route."""
     from app.core.config import settings
+
     if settings.MOCK_MODE:
         mock_route = RouteCPIContributionResponse(
-            rank=1, route_code="DEL-BOM", corridor_name="Delhi-Mumbai",
-            route_weight_pct=0.0817, price_movement_pct=3.2,
-            transport_subgroup_impact_bps=0.26, headline_cpi_impact_bps=0.044,
-            share_of_total_inflation_pct=3.58, cumulative_headline_bps=0.044,
-            contribution_direction="positive"
+            rank=1,
+            route_code="DEL-BOM",
+            corridor_name="Delhi-Mumbai",
+            route_weight_pct=0.0817,
+            price_movement_pct=3.2,
+            transport_subgroup_impact_bps=0.26,
+            headline_cpi_impact_bps=0.044,
+            share_of_total_inflation_pct=3.58,
+            cumulative_headline_bps=0.044,
+            contribution_direction="positive",
         )
         return CPIDecompositionResponse(
             calculation_date=target_date or "2026-07-21",
@@ -109,35 +132,32 @@ async def get_cpi_decomposition(target_date: str | None = Query(None)):
             top_negative_contributors=[mock_route],
             full_route_waterfall=[mock_route],
             methodology_summary="synthetic",
-            generated_at="2026-07-21T12:00:00"
+            generated_at="2026-07-21T12:00:00",
         )
     try:
         from engine.analytics.cpi_decomposition import get_cpi_decomposition
+
         report = get_cpi_decomposition(target_date=target_date)
         return CPIDecompositionResponse(
             calculation_date=report.calculation_date,
             total_transport_impact_bps=report.total_transport_impact_bps,
             total_headline_cpi_impact_bps=report.total_headline_cpi_impact_bps,
             top_positive_contributors=[
-                RouteCPIContributionResponse(**r.__dict__)
-                for r in report.top_positive_contributors
+                RouteCPIContributionResponse(**r.__dict__) for r in report.top_positive_contributors
             ],
             top_negative_contributors=[
-                RouteCPIContributionResponse(**r.__dict__)
-                for r in report.top_negative_contributors
+                RouteCPIContributionResponse(**r.__dict__) for r in report.top_negative_contributors
             ],
-            full_route_waterfall=[
-                RouteCPIContributionResponse(**r.__dict__)
-                for r in report.full_route_waterfall
-            ],
+            full_route_waterfall=[RouteCPIContributionResponse(**r.__dict__) for r in report.full_route_waterfall],
             methodology_summary=report.methodology_summary,
-            generated_at=report.generated_at
+            generated_at=report.generated_at,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"CPI decomposition failed: {e}") from e
 
 
 # ===== Heatmap Endpoints =====
+
 
 class HeatmapCellResponse(BaseModel):
     route_code: str
@@ -175,30 +195,44 @@ class HeatmapReportResponse(BaseModel):
 async def get_heatmap(
     target_date: str | None = Query(None),
     sort_by: str = Query("weight", pattern="^(weight|fare_desc|fare_asc|change)$"),
-    route_filter: str | None = Query(None)
+    route_filter: str | None = Query(None),
 ):
     """Get 20x5 airfare heatmap matrix."""
     from app.core.config import settings
+
     if settings.MOCK_MODE:
         mock_cell = HeatmapCellResponse(
-            route_code="DEL-BOM", advance_window="T-7", days_advance=7,
-            current_fare_inr=5195.0, base_benchmark_fare=4907.87,
-            price_change_pct=3.2, volatility_score=0.12, status="normal", sample_size=50
+            route_code="DEL-BOM",
+            advance_window="T-7",
+            days_advance=7,
+            current_fare_inr=5195.0,
+            base_benchmark_fare=4907.87,
+            price_change_pct=3.2,
+            volatility_score=0.12,
+            status="normal",
+            sample_size=50,
         )
         mock_row = HeatmapRowResponse(
-            route_code="DEL-BOM", origin_city="Delhi", destination_city="Mumbai",
-            dgca_weight_pct=8.17, corridor_average_fare=5195.0, composite_relative=1.0,
-            horizon_cells={f"T-{d}": mock_cell for d in [1,7,15,30,45]}
+            route_code="DEL-BOM",
+            origin_city="Delhi",
+            destination_city="Mumbai",
+            dgca_weight_pct=8.17,
+            corridor_average_fare=5195.0,
+            composite_relative=1.0,
+            horizon_cells={f"T-{d}": mock_cell for d in [1, 7, 15, 30, 45]},
         )
         return HeatmapReportResponse(
             as_of_date=target_date or "2026-07-21",
-            total_routes=1, total_horizons=5,
+            total_routes=1,
+            total_horizons=5,
             matrix_rows=[mock_row],
-            summary_surge_count=0, summary_discount_count=0,
-            generated_at="2026-07-21T12:00:00"
+            summary_surge_count=0,
+            summary_discount_count=0,
+            generated_at="2026-07-21T12:00:00",
         )
     try:
         from engine.analytics.heatmap import get_airfare_heatmap
+
         report = get_airfare_heatmap(target_date=target_date, sort_by=sort_by, route_filter=route_filter)
         return HeatmapReportResponse(
             as_of_date=report.as_of_date,
@@ -212,16 +246,13 @@ async def get_heatmap(
                     dgca_weight_pct=row.dgca_weight_pct,
                     corridor_average_fare=row.corridor_average_fare,
                     composite_relative=row.composite_relative,
-                    horizon_cells={
-                        k: HeatmapCellResponse(**v.__dict__)
-                        for k, v in row.horizon_cells.items()
-                    }
+                    horizon_cells={k: HeatmapCellResponse(**v.__dict__) for k, v in row.horizon_cells.items()},
                 )
                 for row in report.matrix_rows
             ],
             summary_surge_count=report.summary_surge_count,
             summary_discount_count=report.summary_discount_count,
-            generated_at=report.generated_at
+            generated_at=report.generated_at,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Heatmap generation failed: {e}") from e
