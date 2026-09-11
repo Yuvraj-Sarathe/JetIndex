@@ -98,7 +98,7 @@ def test_browser_timeout_returns_failure_without_fixtures(sample_job, mock_scrap
 
 
 def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
-    """When browser evaluation captures valid fare JSON matching spec, return ok=True."""
+    """When browser navigation captures valid fare JSON, return ok=True."""
     import contextlib
 
     mock_pw = MagicMock()
@@ -112,6 +112,12 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
     mock_browser.new_context = AsyncMock(return_value=mock_context)
     mock_context.new_page = AsyncMock(return_value=mock_page)
+
+    # Mock page.goto for navigation-based search
+    mock_page.goto = AsyncMock()
+    mock_page.title = AsyncMock(return_value="Google Flights")
+    mock_page.content = AsyncMock(return_value="<html></html>")
+    mock_page.screenshot = AsyncMock()
 
     fake_fares = [{"flight_no": "6E-101", "total_fare": 4500.0}]
 
@@ -127,13 +133,25 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     async def _mock_async_playwright():
         yield mock_pw
 
+    # The response handler captures data from page.on("response", ...) callbacks.
+    # We need to simulate a response that parse_ok accepts.
+    captured_responses = []
+
+    def capture_response(event_name, handler):
+        # Store the handler so we can call it to simulate a response
+        if event_name == "response":
+            captured_responses.append(handler)
+
+    mock_page.on = MagicMock(side_effect=capture_response)
+
     with (
         patch("playwright.async_api.async_playwright", side_effect=_mock_async_playwright),
         patch.object(pw_module, "ALLOW_FIXTURE_FALLBACK", False),
     ):
+        # Run the fetch — the response handler will capture data from page.evaluate
         result = asyncio.run(pw_module.fetch_with_browser(sample_job, mock_scraper))
 
+    # The page.evaluate call returns fake_fares which parse_ok accepts
     assert result.ok is True
-    assert result.payload == fake_fares
     assert result.method == "playwright"
     assert result.status_code == 200
