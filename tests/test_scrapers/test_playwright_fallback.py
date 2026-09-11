@@ -113,7 +113,13 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     mock_context.new_page = AsyncMock(return_value=mock_page)
 
     fake_fares = [{"flight_no": "6E-101", "total_fare": 4500.0}]
-    mock_page.evaluate = AsyncMock(return_value=fake_fares)
+    
+    # Mock the request.fetch() to return a response with async json() method
+    mock_api_resp = AsyncMock()
+    mock_api_resp.ok = True
+    mock_api_resp.json = AsyncMock(return_value=fake_fares)
+    mock_page.request = AsyncMock()
+    mock_page.request.fetch = AsyncMock(return_value=mock_api_resp)
 
     @contextlib.asynccontextmanager
     async def _mock_async_playwright():
