@@ -113,10 +113,11 @@ def test_browser_post_spec_captured_returns_success(sample_job, mock_scraper):
     mock_context.new_page = AsyncMock(return_value=mock_page)
 
     fake_fares = [{"flight_no": "6E-101", "total_fare": 4500.0}]
-    
+
     # Mock the request.fetch() to return a response with async json() method
     mock_api_resp = AsyncMock()
     mock_api_resp.ok = True
+    # Properly configure json() to return the fake_fares when awaited
     mock_api_resp.json = AsyncMock(return_value=fake_fares)
     mock_page.request = AsyncMock()
     mock_page.request.fetch = AsyncMock(return_value=mock_api_resp)
