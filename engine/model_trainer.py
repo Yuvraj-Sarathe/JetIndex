@@ -217,11 +217,7 @@ class EconometricNowcastEnsemble:
         self.is_trained = True
         return self.metrics
 
-<<<<<<< HEAD
     def predict_one_step(self, x_vec: pd.DataFrame) -> float:
-=======
-    def predict_one_step(self, X_vec: pd.DataFrame) -> float:  # noqa: N803
->>>>>>> 2b0774f (fix: resolve all ruff lint/format issues for CI compliance)
         """Predicts single step forward."""
         pred = (0.40 * self.ridge_model.predict(x_vec)) + (0.60 * self.gbr_model.predict(x_vec))
         return float(pred[0])
