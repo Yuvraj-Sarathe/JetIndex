@@ -61,7 +61,7 @@ function SuperlativeMatrix({ data }) {
       {/* Substitution Bias */}
       <div className="mt-4 p-3 bg-card-elevated border border-hairline rounded-xl flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-accent-blue font-medium text-xs">Substitution Bias:</span>
+          <span className="text-primary font-semibold text-xs">Substitution Bias:</span>
           <span className="font-mono text-white text-xs font-bold">{substitutionBias.toFixed(4)} points</span>
         </div>
         <p className="text-[11px] text-ink-faint">

@@ -108,7 +108,7 @@ function Dashboard() {
                   <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span>
                   STATUS: PUBLISHED · FINAL
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono text-accent-blue border border-accent-blue/30 bg-accent-blue/10">
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono text-ink-strong border border-hairline bg-card-elevated font-semibold">
                   MoSPI / NSO SIH26056
                 </span>
               </div>

@@ -65,12 +65,12 @@ function CPIImpactCard({ data }) {
               {scenarios.map((s, i) => (
                 <tr key={i} className="hover:bg-card-hover transition-colors">
                   <td className="py-2.5 px-2 font-bold text-white">{s.airfare_swing_pct > 0 ? '+' : ''}{s.airfare_swing_pct}%</td>
-                  <td className="py-2.5 px-2 text-right text-accent-blue font-bold">{s.transport_subgroup_impact_bps > 0 ? '+' : ''}{s.transport_subgroup_impact_bps}</td>
+                  <td className="py-2.5 px-2 text-right text-primary font-bold">{s.transport_subgroup_impact_bps > 0 ? '+' : ''}{s.transport_subgroup_impact_bps}</td>
                   <td className="py-2.5 px-2 text-right text-accent-rose font-bold">{s.headline_cpi_impact_bps > 0 ? '+' : ''}{s.headline_cpi_impact_bps}</td>
                   <td className="py-2.5 px-2 hidden md:table-cell">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
                       s.monetary_policy_significance === 'High' ? 'bg-accent-rose/20 text-accent-rose border border-accent-rose/30' :
-                      s.monetary_policy_significance === 'Moderate' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                      s.monetary_policy_significance === 'Moderate' ? 'bg-primary/10 text-primary border border-primary/30' :
                       'bg-accent-emerald/20 text-accent-emerald border border-accent-emerald/30'
                     }`}>
                       {s.monetary_policy_significance}

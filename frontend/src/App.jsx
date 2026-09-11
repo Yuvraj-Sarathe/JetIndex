@@ -131,7 +131,7 @@ function App() {
               </div>
               <div className="hidden md:block text-right border-l border-hairline pl-3">
                 <p className="text-[11px] font-medium text-white">MoSPI / NSO</p>
-                <p className="text-[10px] text-accent-blue font-mono font-semibold">Official Authority</p>
+                <p className="text-[10px] text-primary font-mono font-semibold">Official Authority</p>
               </div>
             </div>
           </div>

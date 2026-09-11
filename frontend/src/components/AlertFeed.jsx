@@ -81,7 +81,7 @@ export default function AlertFeed() {
               {rules?.rules?.map((rule) => (
                 <tr key={rule.rule_id} className="hover:bg-card-hover transition-colors">
                   <td className="py-3 pr-4 font-sans font-medium text-white">{rule.rule_name}</td>
-                  <td className="py-3 pr-4 text-accent-blue">{rule.metric_target}</td>
+                  <td className="py-3 pr-4 text-primary font-semibold">{rule.metric_target}</td>
                   <td className="py-3 pr-4 text-ink-muted">{rule.condition}</td>
                   <td className="py-3 pr-4 text-white font-bold">{rule.threshold}</td>
                   <td className="py-3 pr-4">

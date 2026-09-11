@@ -37,7 +37,7 @@ function Heatmap({ date }) {
         </div>
         <div className="flex items-center gap-3 text-[11px] font-mono">
           <span className="flex items-center gap-1 text-ink-muted">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-blue"></span> Low (&lt;5%)
+            <span className="w-2.5 h-2.5 rounded-full bg-[#4a4a4a]"></span> Low (&lt;5%)
           </span>
           <span className="flex items-center gap-1 text-ink-muted">
             <span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Med (5-10%)
@@ -47,11 +47,17 @@ function Heatmap({ date }) {
           </span>
         </div>
       </div>
-      <div className="h-[320px] rounded-lg overflow-hidden border border-hairline">
-        <MapContainer center={center} zoom={4.5} style={{ height: '100%', width: '100%', background: '#0a0a0a' }}>
+      <div className="h-[320px] rounded-lg overflow-hidden border border-hairline bg-canvas">
+        <MapContainer
+          center={center}
+          zoom={4}
+          scrollWheelZoom={false}
+          style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
+        >
           <TileLayer
+            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+            maxZoom={16}
           />
           {routes.map((route, idx) => {
             const origin = route.o_lat != null && route.o_lon != null
@@ -64,20 +70,21 @@ function Heatmap({ date }) {
 
             const destLabel = route.dest ?? route.destination;
             const volatility = route.volatility || 0;
-            const color = volatility > 0.1 ? '#ef4444' : volatility > 0.05 ? '#faff69' : '#3b82f6';
-            const weight = route.index_contrib != null ? Math.max(2, route.index_contrib * 3) : 2.5;
+            const color = volatility > 0.1 ? '#ef4444' : volatility > 0.05 ? '#faff69' : '#4a4a4a';
+            const opacity = volatility > 0.1 ? 0.95 : volatility > 0.05 ? 0.85 : 0.45;
+            const weight = volatility > 0.1 ? 2.5 : volatility > 0.05 ? 2 : 1.2;
 
             return (
               <div key={route.route_id ?? route.route_code ?? idx}>
-                <CircleMarker center={origin} radius={5} fillColor="#faff69" fillOpacity={0.95} color="#0a0a0a" weight={1}>
+                <CircleMarker center={origin} radius={4} fillColor="#faff69" fillOpacity={1} color="#0a0a0a" weight={1}>
                   <Popup>{route.origin}</Popup>
                 </CircleMarker>
-                <CircleMarker center={dest} radius={5} fillColor="#faff69" fillOpacity={0.95} color="#0a0a0a" weight={1}>
+                <CircleMarker center={dest} radius={4} fillColor="#faff69" fillOpacity={1} color="#0a0a0a" weight={1}>
                   <Popup>{destLabel}</Popup>
                 </CircleMarker>
                 <Polyline
                   positions={[origin, dest]}
-                  pathOptions={{ color, weight, opacity: 0.85 }}
+                  pathOptions={{ color, weight, opacity }}
                 >
                   <Popup>
                     <div className="text-xs font-sans text-slate-900">

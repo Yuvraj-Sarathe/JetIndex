@@ -87,9 +87,9 @@ export default function TemporalPatterns() {
           {seasonal.map((s) => (
             <div key={s.quarter} className="p-4 rounded-xl bg-card-elevated border border-hairline">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-mono uppercase font-bold text-accent-blue">{s.quarter}</p>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                  s.inflation_impact?.includes('Critical') ? 'bg-accent-rose/20 text-accent-rose' : s.inflation_impact?.includes('Elevated') ? 'bg-amber-500/20 text-amber-300' : 'bg-accent-emerald/20 text-accent-emerald'
+                <p className="text-xs font-mono uppercase font-bold text-primary">{s.quarter}</p>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                  s.inflation_impact?.includes('Critical') ? 'bg-accent-rose/20 text-accent-rose border-accent-rose/30' : s.inflation_impact?.includes('Elevated') ? 'bg-primary/10 text-primary border-primary/30' : 'bg-accent-emerald/20 text-accent-emerald border-accent-emerald/30'
                 }`}>
                   {s.inflation_impact}
                 </span>

@@ -37,7 +37,7 @@ const COMPONENT_CONFIG = {
   },
   other_fees: {
     label: 'Other Surcharges',
-    color: '#a855f7', // Purple
+    color: '#e6eb52', // ClickHouse active accent
     desc: 'Fuel, baggage & miscellaneous ancillaries',
   },
 };
@@ -374,7 +374,7 @@ function UnbundlingInspector() {
 
                 {/* Progress bar */}
                 <div className="w-full h-2 rounded-full overflow-hidden flex bg-canvas">
-                  <div className="h-full bg-indigo-600 transition-all duration-500" style={{ width: `${avgBaseRatio}%` }} />
+                  <div className="h-full bg-primary transition-all duration-500" style={{ width: `${avgBaseRatio}%` }} />
                   <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${avgAncillaryRatio}%` }} />
                 </div>
               </div>
@@ -446,7 +446,7 @@ function UnbundlingInspector() {
                   </th>
                   <th className="text-right py-2.5 px-3 font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-sm bg-purple-500" />
+                      <span className="w-2 h-2 rounded-sm bg-primary-active" />
                       Other Fees
                     </span>
                   </th>

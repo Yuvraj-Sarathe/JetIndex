@@ -43,7 +43,7 @@ function AnomalyFeed({ anomalies }) {
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${SEVERITY_COLORS[anomaly.severity] || 'bg-canvas text-ink-muted'}`}>
                     {anomaly.severity}
                   </span>
-                  <span className="text-xs font-mono text-accent-blue uppercase tracking-wider">
+                  <span className="text-xs font-mono text-ink-muted uppercase tracking-wider">
                     {anomaly.type?.replace(/_/g, ' ')}
                   </span>
                 </div>

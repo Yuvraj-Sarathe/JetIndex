@@ -136,7 +136,7 @@ export default function ModelValidation() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-accent-blue mt-3 font-mono">
+        <p className="text-xs text-accent-emerald mt-3 font-mono">
           ✓ Normality status: {errorDist.normality_test_status || errorDist.normality_test || 'Gaussian distributed'}
         </p>
       </div>

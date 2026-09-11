@@ -67,11 +67,11 @@ function ForecastChart({ data }) {
         ))}
 
         {/* CI band */}
-        <path d={areaPath} fill="#3b82f6" fillOpacity="0.15" />
+        <path d={areaPath} fill="#faff69" fillOpacity="0.08" />
 
         {/* Upper/lower bounds */}
-        <path d={upperPath} fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" />
-        <path d={lowerPath} fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" />
+        <path d={upperPath} fill="none" stroke="#e6eb52" strokeWidth="1" strokeDasharray="4,4" strokeOpacity="0.5" />
+        <path d={lowerPath} fill="none" stroke="#e6eb52" strokeWidth="1" strokeDasharray="4,4" strokeOpacity="0.5" />
 
         {/* Main forecast line */}
         <path d={linePath} fill="none" stroke="#faff69" strokeWidth="2.5" />
@@ -95,7 +95,7 @@ function ForecastChart({ data }) {
         <g transform={`translate(${padding.left + 10}, ${padding.top + 5})`}>
           <line x1="0" y1="0" x2="20" y2="0" stroke="#faff69" strokeWidth="2.5" />
           <text x="26" y="3" fontSize="10" fill="#cccccc" className="font-mono">Predicted</text>
-          <rect x="0" y="10" width="20" height="8" fill="#3b82f6" fillOpacity="0.15" />
+          <rect x="0" y="10" width="20" height="8" fill="#faff69" fillOpacity="0.1" stroke="#e6eb52" strokeWidth="0.5" />
           <text x="26" y="17" fontSize="10" fill="#cccccc" className="font-mono">95% CI Band</text>
         </g>
       </svg>

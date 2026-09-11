@@ -88,7 +88,7 @@ function ElasticityCurve({ routeId }) {
             name="All-In Fare"
             data={chartData}
             fill="#faff69"
-            line={{ stroke: '#3b82f6', strokeWidth: 2 }}
+            line={{ stroke: '#ffffff', strokeWidth: 2 }}
           />
         </ScatterChart>
       </ResponsiveContainer>

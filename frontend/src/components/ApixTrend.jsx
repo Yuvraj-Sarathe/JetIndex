@@ -82,7 +82,7 @@ function ApixTrend({ data }) {
             <Line
               type="monotone"
               dataKey="apix_base_only"
-              stroke="#3b82f6"
+              stroke="#a1a1aa"
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}

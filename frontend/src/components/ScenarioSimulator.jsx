@@ -107,7 +107,7 @@ export default function ScenarioSimulator() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3.5 bg-card-elevated border border-hairline rounded-xl">
-              <p className="text-xs font-mono uppercase text-accent-blue">Transport CPI Transmission</p>
+              <p className="text-xs font-mono uppercase text-primary">Transport CPI Transmission</p>
               <p className="text-2xl font-mono font-bold text-white mt-1">{result.projected_transport_subgroup_impact_bps?.toFixed(2)} bps</p>
               <p className="text-[11px] text-ink-faint mt-0.5">Contribution to official monthly transport CPI subgroup</p>
             </div>

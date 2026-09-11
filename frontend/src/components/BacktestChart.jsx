@@ -36,8 +36,8 @@ function BacktestChart() {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-white">DGCA Official Backtest</h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-blue/15 text-accent-blue border border-accent-blue/30 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse"></span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-card-elevated text-white border border-hairline flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
               PUBLISHED ACTUALS
             </span>
           </div>
@@ -85,10 +85,10 @@ function BacktestChart() {
             <Line
               type="monotone"
               dataKey="dgca_avg_fare"
-              stroke="#3b82f6"
+              stroke="#ffffff"
               strokeWidth={2.5}
-              dot={{ r: 4, fill: '#3b82f6', stroke: '#0a0a0a', strokeWidth: 1.5 }}
-              activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 }}
+              dot={{ r: 4, fill: '#ffffff', stroke: '#0a0a0a', strokeWidth: 1.5 }}
+              activeDot={{ r: 6, fill: '#ffffff', stroke: '#faff69', strokeWidth: 2 }}
               name="DGCA (Official Published)"
               connectNulls={false}
             />
