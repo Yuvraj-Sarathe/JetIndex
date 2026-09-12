@@ -1,11 +1,11 @@
 """Bearer token authentication dependency."""
 
-import secrets
+import secrets  # noqa: F401 — needed when auth is restored
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status  # noqa: F401 — needed when auth is restored
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.config import settings
+from app.core.config import settings  # noqa: F401 — needed when auth is restored
 
 security = HTTPBearer()
 

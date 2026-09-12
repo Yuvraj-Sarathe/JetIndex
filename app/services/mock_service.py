@@ -4,7 +4,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-MOCK_DIR = Path("data/mock")
+MOCK_DIR = Path(__file__).resolve().parents[2] / "data" / "mock"
 
 
 def _load_mock(filename: str) -> list | dict:

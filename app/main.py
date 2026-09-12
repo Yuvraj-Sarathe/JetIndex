@@ -21,12 +21,15 @@ def create_app() -> FastAPI:
     # Skip in mock mode to avoid needing a real database connection
     if not settings.MOCK_MODE:
         try:
-            from db.session import Base, engine, SessionLocal
+            from db.session import Base, SessionLocal, engine
+
             Base.metadata.create_all(bind=engine)
 
             # Auto-enable mock mode if DB has no routes (prevents empty-dashboard 500s)
             from sqlalchemy import select
+
             from db.models import Route
+
             session = SessionLocal()
             try:
                 has_routes = session.execute(select(Route).limit(1)).scalar_one_or_none()
