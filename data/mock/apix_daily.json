@@ -283,8 +283,8 @@
     "date": "2026-09-10",
     "apix": 161.6553,
     "apix_base_only": 160.0387,
-    "pct_change_dod": 0,
-    "n_quotes": 106,
-    "n_routes": 3
+    "pct_change_dod": 3.42,
+    "n_quotes": 498,
+    "n_routes": 20
   }
 ]
