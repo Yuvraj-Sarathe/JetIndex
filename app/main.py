@@ -18,20 +18,25 @@ def create_app() -> FastAPI:
     )
 
     # Create all tables on startup (safe — no-ops if they already exist)
-    from db.session import Base, engine, SessionLocal
-    Base.metadata.create_all(bind=engine)
-
-    # Auto-enable mock mode if DB has no routes (prevents empty-dashboard 500s)
+    # Skip in mock mode to avoid needing a real database connection
     if not settings.MOCK_MODE:
-        from sqlalchemy import select
-        from db.models import Route
-        session = SessionLocal()
         try:
-            has_routes = session.execute(select(Route).limit(1)).scalar_one_or_none()
-            if not has_routes:
-                settings.MOCK_MODE = True
-        finally:
-            session.close()
+            from db.session import Base, engine, SessionLocal
+            Base.metadata.create_all(bind=engine)
+
+            # Auto-enable mock mode if DB has no routes (prevents empty-dashboard 500s)
+            from sqlalchemy import select
+            from db.models import Route
+            session = SessionLocal()
+            try:
+                has_routes = session.execute(select(Route).limit(1)).scalar_one_or_none()
+                if not has_routes:
+                    settings.MOCK_MODE = True
+            finally:
+                session.close()
+        except Exception:
+            # DB unreachable — fall back to mock mode so the app still starts
+            settings.MOCK_MODE = True
 
     # CORS for frontend dev server + Vercel production
     app.add_middleware(
