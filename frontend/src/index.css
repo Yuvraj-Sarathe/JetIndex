@@ -9,6 +9,7 @@
     -moz-osx-font-smoothing: grayscale;
     background-color: #000000;
     color: #cccccc;
+    cursor: url('/cursors/cursor.png') 0 0, auto;
   }
 
   /* Tabular numbers for all analytical figures */
