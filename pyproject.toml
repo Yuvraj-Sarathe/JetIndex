@@ -1,13 +1,39 @@
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "jetindex"
 version = "0.1.0"
 description = "APIx — Real-time Airfare Price Index for India"
 requires-python = ">=3.11"
-license = "MIT"
+readme = "README.md"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic>=2",
+    "pydantic-settings",
+    "sqlalchemy>=2",
+    "psycopg[binary]",
+    "alembic",
+    "celery[redis]",
+    "redis",
+    "flower",
+    "curl_cffi",
+    "playwright",
+    "playwright-stealth",
+    "fake-useragent",
+    "polars",
+    "numpy",
+    "scipy",
+    "pandas",
+    "pyyaml",
+    "httpx",
+    "python-dotenv",
+    "loguru",
+    "tenacity",
+    "scikit-learn",
+]
 
 [tool.ruff]
 line-length = 120
